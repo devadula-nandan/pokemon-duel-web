@@ -40,7 +40,7 @@
   }   /* a phone is already the full-screen view, so the switch that leaves it is not offered there */
   /* mobile view: the board fills the screen and the log sits in the menu. On a phone this is on by itself; the fullscreen button turns it on anywhere. */
   html.mview #game { grid-template-columns:1fr !important; max-width:none; padding:0; flex:1 1 0; min-height:0; height:auto; overflow:hidden; }
-  html.mview #game .ibar { display:flex; align-items:center; gap:8px; } html.mview #ibMid { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  html.mview #game .ibar { display:flex; align-items:center; gap:8px; } html.mview #ibMid { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; border-left:0; border-right:0; }   /* its neighbours already draw the lines */
   html.mview #sideBtn, html.mview #fsGame { display:inline-flex; align-items:center; justify-content:center; flex:none; width:31px; height:31px; padding:0; line-height:0; } html.mview #sideBtn .m { display:flex; }
   html.mview #sideBtn .c, html.mview:has(.side.open) #sideBtn .m { display:none; } html.mview:has(.side.open) #sideBtn .c { display:flex; }
   html.mview .side { position:fixed; top:var(--side-top,0); right:0; bottom:var(--side-bottom,0); z-index:3; width:min(88vw,380px); padding:0; border-left:1px solid var(--line); transform:translateX(100%); transition:transform .2s; }
@@ -116,7 +116,7 @@
   #log { height:160px; overflow:auto; font-size:12px; color:var(--dim); } #log > div { padding:3px 8px; background:color-mix(in srgb, var(--dim) 12%, transparent); }   /* neutral lines are grey; the two below tint a player's lines */ #log > .me { background:color-mix(in srgb, var(--p0) 11%, transparent); } #log > .op { background:color-mix(in srgb, var(--p1) 11%, transparent); } #log b, .ink { color:var(--ink); font-weight:700; }
   #log > div + div { border-top:1px solid var(--line); }   /* flush rows split by 1px lines */
   #list, #plist { height:300px; overflow:auto; } .row { display:flex; gap:8px; padding:6px 8px; cursor:pointer; align-items:center; }
-  .row:hover { background:var(--ctl2); } .row .n { flex:1; } .team .row { background:var(--ctl); margin-bottom:4px; border:1px solid var(--line); }
+  .row:hover { background:var(--ctl2); } .row .n { flex:1; } .team .row { background:var(--ctl); }
   .chip.rar1 { background:#8a8f98; color:#fff; } .chip.rar2 { background:#2e9e5b; color:#fff; } .chip.rar3 { background:#2f7fe0; color:#fff; } .chip.rar4 { background:#d9a514; color:#111; } .chip.rar5 { background:#c0392b; color:#fff; }   /* rarity: C, UC, R, EX, UX */
   /* soft shadow under every figure picture (cards, lists, saved teams, home, popups, evolve, battle SVG) */
   .tok image, .card img, .row img, .dot img, .tcard .tp img, .hfig img, .evo-fig img, .pics img,
@@ -239,10 +239,10 @@
   #setup .bar select { flex:1 1 104px; min-width:0; }
   #setup .tsave button, #setup #pickExp, #setup .gobar > button { display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; }
   #pickBar { display:flex; align-items:stretch; gap:0; flex:none; height:var(--ctl-h); padding:0; margin:0; } #pickBar > * + * { margin-left:-1px; }   /* inset so :focus-visible on tabs / Expand is not clipped by #pickSide overflow */
-  .pickTabs { flex:1; display:flex; gap:1px; min-width:0; height:100%; padding:0; background:var(--line); border-width:0 0 1px; box-sizing:border-box; background:var(--ctl); border:1px solid var(--line); }
+  .pickTabs { flex:1; display:flex; gap:1px; min-width:0; height:100%; padding:0; box-sizing:border-box; background:var(--line); }
   .pickTabs button { flex:1; min-width:0; height:100%; padding:0 8px; border:0; background:var(--ctl); color:var(--dim); font:700 11px/1 "Segoe UI",system-ui,sans-serif; letter-spacing:.06em; text-transform:uppercase; text-align:center; display:inline-flex; align-items:center; justify-content:center; }
   .pickTabs button[aria-selected=true] { background:var(--ink); color:var(--bg); } .pickTabs button:hover:not([aria-selected=true]) { background:var(--ctl2); color:var(--ink); }
-  #pickExp { flex:none; min-width:5.5em; padding:0 10px; font-size:12px; border-width:0 0 1px 1px; } #pickExp[hidden] { display:none !important; }
+  #pickExp { flex:none; min-width:5.5em; padding:0 10px; font-size:12px; border-width:0 0 0 1px; } #pickSide #figPanel, #pickSide #pltPanel { border-top:1px solid var(--line); }   /* one line between the tabs and the open list */ #pickExp[hidden] { display:none !important; }
   #pickSide #figPanel, #pickSide #pltPanel { display:none; flex-direction:column; min-height:0; overflow:hidden; margin:0; }
   #pickSide[data-tab=fig] #figPanel, #pickSide[data-tab=plt] #pltPanel { display:flex; flex:1 1 0; }
   #pickSide.pick-collapsed { flex-grow:0 !important; flex-basis:auto !important; min-height:0 !important; }
@@ -261,7 +261,7 @@
     /* the right column is kept short enough to fit the window (compact team cards); it scrolls only when the window is too short */
     #setup > section:last-child > .panel:first-child { flex:1 0 auto; } #tmsg { min-height:18px; }   /* the team panel takes the height that is left; the message line under the saved teams is always there for the same reason */
     #setup { --slot-h:146px; } #team .card { height:var(--slot-h); min-height:0; padding-top:28px; gap:4px; } #team .card img { width:52px; height:52px; }   /* one fixed height, empty or filled, so loading a team does not move the page; plates share --slot-h */
-    #setup > section:last-child > .panel:last-child { position:sticky; bottom:0; z-index:2; border-top:1px solid var(--line); }   /* the duel button panel stays pinned at the column's foot */
+    #setup > section:last-child > .panel:last-child { position:sticky; bottom:0; z-index:2; }   /* the duel button panel stays pinned at the column's foot */
   }
   @media (max-width:860px) {
     /* Home: one non-scrolling column — compact league, deck fills the middle, boosters + actions pinned at the bottom */
