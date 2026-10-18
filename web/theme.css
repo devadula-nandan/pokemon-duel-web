@@ -46,6 +46,7 @@ button { cursor:pointer; text-align:left; font-weight:600; transition:background
 button:hover:not(:disabled) { background:var(--ctl2); border-color:var(--dim); } button:active:not(:disabled) { transform:translateY(1px); } button:disabled { opacity:.4; cursor:default; }
 button.primary { background:var(--ink); border-color:var(--ink); color:var(--bg); } button.primary:hover:not(:disabled) { background:var(--ink); border-color:var(--ink); opacity:.85; }
 .iconbtn { display:inline-flex; align-items:center; justify-content:center; flex:none; width:30px; height:30px; padding:0; line-height:0; color:var(--ink); cursor:pointer; text-decoration:none; }
+.iconbtn[aria-pressed="true"] { background:var(--ink) !important; color:var(--bg) !important; border-color:var(--ink) !important; }   /* a toggle that is on (e.g. the view lock) */
 .iconbtn.updatebtn { color:var(--gold); border-color:color-mix(in srgb, var(--gold) 55%, var(--line)); background:color-mix(in srgb, var(--gold) 14%, var(--ctl)); }
 .iconbtn.updatebtn:hover:not(:disabled) { background:color-mix(in srgb, var(--gold) 22%, var(--ctl2)); border-color:var(--gold); }
 input[type=checkbox], input[type=radio] { accent-color:var(--ink); width:15px; height:15px; padding:0; vertical-align:-2px; }

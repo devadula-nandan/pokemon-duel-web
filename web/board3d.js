@@ -278,10 +278,14 @@ if (camBar) {
   if (grow) grow.insertAdjacentHTML('afterend', camHtml);   /* top-bar controls left; camera + fullscreen on the right */
   else camBar.insertAdjacentHTML('beforeend', camHtml);
 } else host.insertAdjacentHTML('beforeend', `<div style="position:absolute;left:8px;bottom:8px;display:flex;gap:6px">${camHtml}</div>`);
-function paintLock() { const b = document.getElementById('camLock'), locked = !controls.enabled; b.title = locked ? 'Unlock view' : 'Lock view'; b.setAttribute('aria-label', b.title); b.innerHTML = window.icon(locked ? CAM_OPEN : CAM_LOCK); }
+function paintLock() {   // the button shows the state: a closed, pressed lock while the view is locked, an open one while it is free
+  const b = document.getElementById('camLock'), locked = !controls.enabled;
+  b.title = locked ? 'View locked (click to unlock)' : 'View unlocked (click to lock)'; b.setAttribute('aria-label', 'Lock view'); b.setAttribute('aria-pressed', String(locked)); b.innerHTML = window.icon(locked ? CAM_LOCK : CAM_OPEN);
+}
 document.getElementById('camReset').onclick = () => { home(true); if (!controls.enabled) keepCamera(); };
 document.getElementById('camLock').onclick = () => { controls.enabled = !controls.enabled; paintLock(); keepCamera(); };
-if (kept) { controls.enabled = false; paintLock(); home(); }
+if (kept) { controls.enabled = false; home(); }
+paintLock();
 
 const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
 function spriteSolid(hit) {   // the clear margin of a picture is not part of the figure; only an opaque pixel is
