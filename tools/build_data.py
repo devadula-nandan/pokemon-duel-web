@@ -55,15 +55,14 @@ for key in sorted(masters, key=int):
     for s in sorted(fm["FigureSkillMasters"], key=lambda s: s["FigureSkillIndex"]):   # every row, in skill-index order
         sid = add_skill(s["SkillMaster"])
         rows.append([sid, s["SkillRange"], s["SkillStar"] if s["SkillStar"] is not None else s["SkillPower"], s["PieceExtPriority"]])
-    for z in (fm.get("TypeZSkillMasters") or []) + (fm.get("SkillZSkillMasters") or []):
-        add_skill(z["SkillMaster"])
+    zs = [add_skill(z["SkillMaster"]) for z in (fm.get("TypeZSkillMasters") or []) + (fm.get("SkillZSkillMasters") or []) if z.get("SkillMaster")]   # MiniDetailFigure.SetSkillZData order
     ab = fm.get("PokepowerId") or 0
     if ab:
         abilities[ab] = [loc.get("FigureMaster.PokepowerName.%d" % ab) or fm.get("PokepowerName") or "", loc.get("FigureMaster.PokepowerDescription.%d" % ab) or fm.get("PokepowerDescription") or ""]
     figures.append({"id": int(key), "rule": fm["RulePokeId"], "n": loc.get("ItemMaster.ItemNameFull.%s" % key) or loc.get("ItemMaster.ItemName.%s" % key) or "Figure " + key,
                     "no": fm["FigureNo"], "dex": fm.get("PokeNo") or 0, "mp": fm["Mp"], "r": fm["Rarity"], "t": [t for t in (fm["Type0"], fm["Type1"]) if t is not None], "ab": ab,
                     "w": rows, "g": fm["EvoGroupId"], "fr": fm.get("FromEvoGroupIds") or [], "to": fm.get("ToEvoGroupIds") or [], "fmx": fm.get("FormMax") or 0,
-                    "rm": fm.get("RarityModel") or 0, "n3": 1 if fm.get("IsNot3Limit") else 0, **({} if fm.get("IsPokepowerGood", True) else {"bad": 1})})   # bad: IsPokepowerGood false (Se122 / Character_Bad on its ability notice)
+                    "rm": fm.get("RarityModel") or 0, "n3": 1 if fm.get("IsNot3Limit") else 0, **({} if fm.get("IsPokepowerGood", True) else {"bad": 1}), **({"z": zs} if zs else {})})   # z: its Z-Moves (skill ids)   # bad: IsPokepowerGood false (Se122 / Character_Bad on its ability notice)
 
 # Figures of the original's final roster that the league-only FigureMaster dump lacks, and five rows it holds as pre-release drafts.
 # Ids, wheels, MP and abilities are the rows the original client was served (kept by a fan server); types come from the original engine's

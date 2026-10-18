@@ -141,6 +141,7 @@
   .fp-side { display:grid; gap:12px; justify-items:center; } .fp-body { display:grid; grid-template-columns:180px minmax(0,1fr); gap:16px; align-items:start; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
   .fp-atk { display:grid; grid-template-columns:minmax(0,1fr) auto auto; } .fp-atk.carm { grid-template-columns:minmax(0,1fr) auto auto auto; } .fp-atk > * { padding:6px 0 6px 12px; border-top:1px solid var(--line); text-align:right; font-weight:700; } .fp-atk > .h { padding-top:0; border-top:0; }
   .fp-atk > .an, .fp-atk > .h:first-child { padding-left:0; text-align:left; } .fp-atk .an { display:flex; gap:8px; align-items:flex-start; font-weight:400; } .fp-atk .an .sw { flex:none; } .fp-atk .an { align-items:center; } .fp-atk .an b { font-weight:600; } .fp-atk > .desc { grid-column:1 / -1; padding:0 0 8px 20px; border-top:0; text-align:left; font-weight:400; }   /* an attack's effect runs the table's full width under its row */
+  .fp-z { margin-top:12px; } .fp-z .zr + .zr { margin-top:8px; } .fp-z .zr .sw { display:inline-block; vertical-align:-1px; margin:0; } .fp-z .zr b { margin-left:6px; } .fp-z .zr .desc { margin-top:2px; }   /* Z-Moves, as MiniDetailFigure's SkillZ list: name and colour, then what it does */
   .fp-body + .fp-ab { margin-top:12px; } .fp-ab { justify-self:stretch; padding:8px 12px; border:1px solid var(--line); border-radius:8px; background:var(--ctl); } .fp-ab .h { margin-bottom:4px; } .fp-ab .desc { margin-top:4px; }
   @media (max-width:860px) { #figpop:not(.duel):not(.sheet) { left:0; right:0; bottom:0; transform:none; width:auto; max-height:72dvh; border-width:1px 0 0; border-radius:0; } #figpop.duel { max-height:78%; border-radius:14px 14px 0 0; } .fp-body { grid-template-columns:minmax(0,1fr); } .fp-side { display:contents; } .fp-wheel { justify-self:center; } .fp-ab { order:3; } }
   #figPanel > .pbody, #pltPanel > .pbody { flex:1 1 0; min-height:0; display:flex; flex-direction:column; overflow:hidden; gap:8px; padding:4px; }   /* 4px inset so :focus-visible rings on filters are not clipped */
@@ -713,6 +714,9 @@ function slotCard(slot, src, o = {}) {
 }
 // The details panel: picture, data wheel, ability and every attack of one figure, and for a slot the whole line to step through.
 // `src` names the slot the card stands for ("team:2", "deck:0"), which carries levels and boosts; without it the figure is shown as printed.
+// MiniDetailFigure.SetSkillZData: the figure's Z-Moves, its type Z-Moves first, then its own (FigureMaster Type/SkillZSkillMasters)
+const zBox = f => !f || !(f.z || []).length ? '' : `<div class="fp-ab fp-z"><span class="h">Z-Moves</span>${f.z.map(id => { const k = D.skills[id] || ['Z-Move ' + id, '', 0];
+  return `<div class="zr"><span class="sw" style="background:${SEG_COL[k[2]]}"></span><b>${esc(k[0])}</b>${k[1] ? `<div class="desc">${esc(k[1])}</div>` : ''}</div>`; }).join('')}</div>`;
 function figInfo(id, src, at) {
   const slot = src ? (src.startsWith('team') ? team[+src.slice(5)] : profile.deck && slotFrom(profile.deck[+src.slice(5)])) : null, chain = slot ? chainOf(slot) : [[id, null]];
   const [fid, mod] = chain[at] || chain[0], f = byId.get(fid), rows = (mod && wheelRows(f, mod)) || wheelRows(f, blankMod(f)), ab = D.abilities[f.ab];
@@ -725,7 +729,7 @@ function figInfo(id, src, at) {
     <div class="fp-head">${pic(f)}<div><div class="fp-name"><b>${mod ? figText(fid, mod) : esc(f.n)}</b><span class="chip rar${f.r}">${RAR[f.r] || '?'}</span></div><div class="note">MP ${f.mp} · ${typeNames(f)}</div></div></div>
     ${chain.length > 1 ? `<div class="fp-line">${chain.map((x, k) => `<button data-at="${k}" class="${k === (at || 0) ? 'on' : ''}">${pic(byId.get(x[0]))}${esc(byId.get(x[0]).n)}</button>`).join('<span class="fp-chev" aria-hidden="true">›</span>')}</div>` : ''}
     <div class="fp-body"><div class="fp-side"><div class="fp-wheel">${wheelSvg(skills, 180)}</div>${long ? '' : abBox}</div>
-      <div class="fp-atk"><span class="h">Attack</span><span class="h">Size</span><span class="h">Power</span>${skills.filter(x => x.range > 0).map(x => { const k = D.skills[x.id] || ['Attack ' + x.id, '', 0]; return `<span class="an"><span class="sw" style="background:${SEG_COL[k[2]]}"></span><b>${esc(k[0])}</b></span><span>${x.range}</span><span>${power(x) || '–'}</span>${k[2] && k[1] ? `<span class="desc">${esc(k[1])}</span>` : ''}`; }).join('')}</div></div>${long ? abBox : ''}`;
+      <div class="fp-atk"><span class="h">Attack</span><span class="h">Size</span><span class="h">Power</span>${skills.filter(x => x.range > 0).map(x => { const k = D.skills[x.id] || ['Attack ' + x.id, '', 0]; return `<span class="an"><span class="sw" style="background:${SEG_COL[k[2]]}"></span><b>${esc(k[0])}</b></span><span>${x.range}</span><span>${power(x) || '–'}</span>${k[2] && k[1] ? `<span class="desc">${esc(k[1])}</span>` : ''}`; }).join('')}</div></div>${long ? abBox : ''}${zBox(f)}`;
 }
 // Pointing at a card's "i" previews its details; pressing it pins the panel open so it can be read, scrolled
 // and stepped through. A click anywhere else closes it. On a narrow screen the panel is a sheet along the bottom.
@@ -906,7 +910,7 @@ function openSheet(si, at, edit) {
           <div><span class="h">Wheel points</span><b>${sum(m.ext)} / ${extMax}</b></div><div><span class="h">Chain</span><b>${sum(m.boost)} / ${boostMax()}</b></div>
           ${carm ? `<div><span class="h">Carmonite</span><b>▲${sum(m.inc)} ▼${sum(m.dec)} / ${m.lv - EXP_LEVEL_MAX}</b></div>` : ''}</div>` : ''}
       ${f ? `<div class="fp-body"><div class="fp-side"><div class="fp-wheel">${wheelSvg(rows.filter(r => r.range > 0).map(r => ({ id: r.id, range: r.range, speed_or_damage: r.val })), 180)}</div>${long ? '' : abBox}</div>
-          <div class="fp-atk${sheet.edit && carm ? ' carm' : ''}"><span class="h">Attack</span><span class="h">Size</span><span class="h">Power</span>${sheet.edit && carm ? '<span class="h">Carmonite</span>' : ''}${atk}</div></div>${long ? abBox : ''}` : ''}
+          <div class="fp-atk${sheet.edit && carm ? ' carm' : ''}"><span class="h">Attack</span><span class="h">Size</span><span class="h">Power</span>${sheet.edit && carm ? '<span class="h">Carmonite</span>' : ''}${atk}</div></div>${long ? abBox : ''}${zBox(f)}` : ''}
     </div>`;
   p.hidden = false; p.classList.add('pin', 'sheet'); p.classList.toggle('edit', sheet.edit); p.classList.remove('duel', 'pl'); p.style.left = p.style.top = p.style.transform = '';
   const scroll = p.querySelector('.fp-scroll'); if (scroll) scroll.scrollTop = 0;
@@ -2082,7 +2086,7 @@ function drawCard(c) {
       <div class="note">MP ${p.mp}${c.effect && c.effect.mp ? ' (' + (c.effect.mp > 0 ? '+' : '') + c.effect.mp + ')' : ''} · ${typeNames(f)} · ${place(c.index)}</div>
       <div>${badges(c).map((b, k) => `<span class="chip w" title="${esc(badgeTips(c)[k] || '')}" style="cursor:help">${esc(b)}</span>`).join('')}</div></div></div>
     ${ab ? `<div style="margin:8px 0">Ability: <b>${esc(ab[0])}</b><div class="desc">${esc(ab[1])}</div></div>` : ''}
-    ${p.skills.map(s => { const k = D.skills[s.id] || ['Attack ' + s.id, '', 0]; return `<div class="atkrow"><span class="sw" style="background:${SEG_COL[k[2]]}"></span><span>${esc(k[0])}</span><span>${power(s)} <span class="note">${s.range}</span></span>${k[2] && k[1] ? `<span class="desc">${esc(k[1])}</span>` : ''}</div>`; }).join('')}`;
+    ${p.skills.map(s => { const k = D.skills[s.id] || ['Attack ' + s.id, '', 0]; return `<div class="atkrow"><span class="sw" style="background:${SEG_COL[k[2]]}"></span><span>${esc(k[0])}</span><span>${power(s)} <span class="note">${s.range}</span></span>${k[2] && k[1] ? `<span class="desc">${esc(k[1])}</span>` : ''}</div>`; }).join('')}${zBox(f)}`;
 }
 
 // ---------- input: every action is one of the engine's legal moves ----------
@@ -2116,7 +2120,7 @@ function boardDetail(i, view) {   // MiniDetailFigure: a long press opens this f
     ${evoBox}
     ${live && badges(c).length ? `<div style="margin-top:10px">${badges(c).map((b, k) => `<div class="desc"><b>${esc(b)}</b> — ${esc(tips[k] || '')}</div>`).join('')}</div>` : ''}
     <div class="fp-body"><div class="fp-side"><div class="fp-wheel">${wheelSvg(skills, 180)}</div>${long ? '' : abBox}</div>
-      <div class="fp-atk"><span class="h">Attack</span><span class="h">Size</span><span class="h">Power</span>${skills.filter(x => x.range > 0).map(x => { const k = x.sealed ? ['Miss', '', 0] : (D.skills[x.id] || ['Attack ' + x.id, '', 0]); return `<span class="an"><span class="sw" style="background:${SEG_COL[k[2]]}"></span><b>${esc(k[0])}</b></span><span>${x.range}</span><span>${power(x) || '–'}</span>${k[2] && k[1] ? `<span class="desc">${esc(k[1])}</span>` : ''}`; }).join('')}</div></div>${long ? abBox : ''}`;
+      <div class="fp-atk"><span class="h">Attack</span><span class="h">Size</span><span class="h">Power</span>${skills.filter(x => x.range > 0).map(x => { const k = x.sealed ? ['Miss', '', 0] : (D.skills[x.id] || ['Attack ' + x.id, '', 0]); return `<span class="an"><span class="sw" style="background:${SEG_COL[k[2]]}"></span><b>${esc(k[0])}</b></span><span>${x.range}</span><span>${power(x) || '–'}</span>${k[2] && k[1] ? `<span class="desc">${esc(k[1])}</span>` : ''}`; }).join('')}</div></div>${long ? abBox : ''}${zBox(f)}`;
   p.hidden = false; p.classList.add('pin', 'duel'); p.classList.remove('pl', 'drag'); p.style.left = p.style.top = p.style.transform = ''; p.scrollTop = 0; showInfo.pin = true; showInfo.card = null;
 }
 window.boardDetail = boardDetail;
