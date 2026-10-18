@@ -507,7 +507,8 @@ function fieldSpin(i, segs, results, still) {   // still: a frozen or melted whe
   const geo = new THREE.RingGeometry(SPIN_IN, SPIN_OUT, 96, 1), mat = new THREE.MeshBasicMaterial({ map: wheelTex(segs), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
   const ring = new THREE.Mesh(geo, mat); ring.rotation.x = -Math.PI / 2; ring.renderOrder = 55;
   const sideTex = tex(512, 8, (c, w, h) => { let a = 0; for (const sg of segs) {   // the outer wall in the slices' colours: CylinderGeometry u = 0.5 - t/96 lines up with the top face
-    const x = ((.5 - (a + sg.range) / 96) % 1 + 1) % 1 * w, len = sg.range / 96 * w; a += sg.range; c.fillStyle = sg.col; c.fillRect(x, 0, len, h); if (x + len > w) c.fillRect(x - w, 0, len, h); } });
+    const x = ((.5 - (a + sg.range) / 96) % 1 + 1) % 1 * w, len = sg.range / 96 * w; a += sg.range; c.fillStyle = sg.col; c.fillRect(x, 0, len, h); if (x + len > w) c.fillRect(x - w, 0, len, h); }
+    a = 0; c.fillStyle = '#111'; for (const sg of segs) { const x = ((.5 - a / 96) % 1 + 1) % 1 * w; a += sg.range; c.fillRect(x - 1.5, 0, 3, h); if (x < 1.5) c.fillRect(x + w - 1.5, 0, 3, h); } });   // black joins, as on the top face
   const side = new THREE.Mesh(new THREE.CylinderGeometry(SPIN_OUT, SPIN_OUT, AURA_H + .004, 96, 1, true), new THREE.MeshBasicMaterial({ map: sideTex, transparent: true, opacity: 0 }));
   side.position.y = (AURA_H + .004) / 2; ring.position.y = AURA_H + .006;   // a solid band over the status ring, the wheel on its top face
   const turnG = new THREE.Group(); turnG.add(side, ring);
