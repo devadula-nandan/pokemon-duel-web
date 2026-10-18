@@ -752,7 +752,7 @@ if (matchMedia('(hover: hover)').matches) {
 const slotText = slot => slot.st.map((id, k) => id == null ? null : figText(id, slot.mod[k])).filter(Boolean).join(' → ') + slot.forms.map((id, k) => id == null ? '' : ' ⇄ ' + figText(id, slot.fmod[k])).join('');
 // ---------- saved teams ----------
 // Six figures (with their attachments, levels and boosts) and the plates, kept on this device under a name. The list starts with meta synergy decks.
-const TEAMS_KEY = 'pokemonduelweb.teams.v1';
+const TEAMS_KEY = 'pokemonduelweb.teams.v1', LAST_KEY = 'pokemonduelweb.teams.last';   // the saved team last loaded or saved, preselected on the next visit
 // Meta decks from late Pokémon Duel ladder play (Dawn Wings era). A figure is "Name", optionally "RARITY:Name" when two figures share
 // a name, and "+Name" for each attachment beyond automatic evolutions (Mega, form, or a skipped stage).
 const STARTER_TEAMS = [
@@ -813,7 +813,7 @@ $('tsave').onclick = () => {
   if (team.length !== 6) return drawSaved('Pick six figures before saving.');
   const name = $('tname').value.trim() || 'Team ' + (savedTeams.length + 1), entry = { name, team: JSON.parse(JSON.stringify(team)), plates: myPlates.slice() }, at = savedTeams.findIndex(t => t.name === name);
   if (at >= 0) savedTeams[at] = entry; else savedTeams.unshift(entry);
-  storeSaved(); $('tname').value = ''; drawSaved(at >= 0 ? `Replaced "${name}".` : `Saved "${name}".`);
+  storeSaved(); try { localStorage.setItem(LAST_KEY, name); } catch (e) {} $('tname').value = ''; drawSaved(at >= 0 ? `Replaced "${name}".` : `Saved "${name}".`);
 };
 $('tlist').onclick = e => {
   const r = e.target.closest('.tcard'); if (!r) return; const i = +r.dataset.i, t = savedTeams[i];
@@ -825,7 +825,7 @@ $('tlist').onclick = e => {
     if (ids.some(id => !(profile.items[id] > 0)) || Object.keys(need).some(id => ((profile.plates || {})[id] || 0) < need[id])) return drawSaved(`"${t.name}" needs figures or plates that are not in your collection.`);
     team = t.team.map(slotFrom);
   } else team = JSON.parse(JSON.stringify(t.team));
-  myPlates = t.plates.slice(); replaceFig = null; drawTeam(); drawSaved(`Loaded "${t.name}".`);
+  myPlates = t.plates.slice(); replaceFig = null; try { localStorage.setItem(LAST_KEY, t.name); } catch (e) {} drawTeam(); drawSaved(`Loaded "${t.name}".`);
 };
 
 let pickBodyOpen = true;
@@ -1609,7 +1609,7 @@ const pk = i => { for (const p of st.players) for (const x of p.pokemons) if (x.
 const figOf = i => { const p = pk(i); return (p && byRule.get(p.id)) || { n: 'Figure ' + i, t: [5], r: 0 }; };
 // Evolving replaces the figure on the board with a new pokemon_index; the engine still tags battles / Z-Moves with the pre-evolution root.
 const evoRoot = i => { let cur = i; for (let n = 0; n < 8 && st; n++) { const parent = st.players.flatMap(p => p.pokemons).find(x => x.evolution === cur); if (!parent) return cur; cur = parent.pokemon_index; } return cur; };
-const fieldForm = i => { let cur = i; for (let n = 0; n < 8 && st; n++) { const kid = pk(cur); if (!kid || kid.evolution < 0 || !st.pokemon_conditions.some(c => c.pokemon_index === kid.evolution)) break; cur = kid.evolution; } return cur; };
+const fieldForm = (i, s = st) => { let cur = i; for (let n = 0; n < 8 && s; n++) { if (s.pokemon_conditions.some(c => c.pokemon_index === cur)) return cur; const x = s.players.flatMap(p => p.pokemons).find(x => x.pokemon_index === cur); if (!x || x.evolution < 0) break; cur = x.evolution; } return i; };   // the stage of i's line that is on the table (stages in between may never have been)
 const sameLine = (a, b) => a === b || evoRoot(a) === evoRoot(b);
 const nameOf = i => `<b style="color:${P_COL[colorOf(i)]}">${esc(figOf(fieldForm(i)).n)}</b>`;
 const condName = c => D.conds[c] || String(c).replace(/_/g, ' ');
@@ -1730,7 +1730,7 @@ function render() {
   if (mine && me) for (const m of legal) {
     const v = m.value;
     if ((v.type === 'mp_move' || v.type === 'route_move') && Array.isArray(v.route) && v.route.length >= 2 && v.route[0] === me.index) { const to = v.route[v.route.length - 1]; (routes.get(to) || routes.set(to, []).get(to)).push(m); }
-    if (v.type === 'declare_battle' && sameLine(v.from_pokemon, sel)) targets.set(v.to_pokemon, m);
+    if (v.type === 'declare_battle' && sameLine(v.from_pokemon, sel)) targets.set(fieldForm(v.to_pokemon), m);   // moves name the pre-evolution root; the board shows the evolved form
   }
   if (mine && !pick) {   // spot_move: post-battle landing (one from) or Misty Surge Water bench entry (many froms). Scope markers to the selected figure so shared tos don't pile into a dead routeChoice.
     const spots = legal.filter(m => m.value.type === 'spot_move' && m.value.to != null);
@@ -1744,7 +1744,7 @@ function render() {
   if (!mine) pick = null;
   const stage = pick ? pickStage() : null;
   if (stage) { routes.clear(); targets.clear();   // a choice is being made: the board offers its figures or points instead of the selected figure's moves
-    if (stage.map) for (const [v, ms] of stage.map) if (stage.kind === 'fig') targets.set(v, ms); else { routes.set(v, ms); const c = st.pokemon_conditions.find(c => c.index === v); if (c) targets.set(c.pokemon_index, ms); } }
+    if (stage.map) for (const [v, ms] of stage.map) if (stage.kind === 'fig') targets.set(fieldForm(v), ms); else { routes.set(v, ms); const c = st.pokemon_conditions.find(c => c.index === v); if (c) targets.set(c.pokemon_index, ms); } }
   // two ways onto the square just tapped: light the first dots where those ways split, the same gold dots as any other move
   if (!stage && mine && routeChoice) {
     routes.clear(); targets.clear();
@@ -2177,10 +2177,10 @@ const LEAN = 24;   // degrees the line through the two disk centres leans from t
 const sealed = new Map();   // figure -> attack ids the engine has sealed (disable_skill), kept until its conditions are removed
 const battleMark = text => { const t = String(text || ''); return t.includes('win') ? 1 : t.includes('draw') ? 0 : t.includes('lose') ? -1 : null; };   // the original matches with IndexOf, so win_with_effect and the rest count
 function wheelSnap(src, battler, spin) {   // the disk is drawn from the figure the spin names (results[0].figure), and from the status the wheel started with
-  const first = (spin.results || [])[0] || {}, figId = first.figure != null && first.figure >= 0 ? first.figure : battler, s = src || st;
+  const s = src || st, first = (spin.results || [])[0] || {}, figId = fieldForm(first.figure != null && first.figure >= 0 ? first.figure : battler, s);   // spins name the pre-evolution root; draw the form on the board
   let mon = null; if (s) for (const p of s.players) for (const x of p.pokemons) if (x.pokemon_index === figId) mon = x;
   const skills = ((mon && mon.skills) || []).filter(x => x.range > 0).map(x => (sealed.get(figId) || []).includes(x.id) ? Object.assign({}, x, { sealed: true }) : x);
-  const marker = ((s && (s.pokemon_conditions || []).find(c => c.pokemon_index === battler) || {}).marker) || {};
+  const marker = ((s && (s.pokemon_conditions || []).find(c => c.pokemon_index === figId) || {}).marker) || {};
   return { skills, frozen: marker.circle === 'freeze' || marker.circle === 'melt', marker };
 }
 function closeSpin() { if (window.sfxStop) sfxStop('spin'); const ov = $('battle'); if (ov) { ov.hidden = true; ov.innerHTML = ''; } battleView = null; }
@@ -2347,7 +2347,7 @@ const figAt = route => { const c = st.pokemon_conditions.find(c => c.index === r
 
 $('mode').onchange = () => { $('room').hidden = $('mode').value !== 'join'; $('go').disabled = false; $('go').textContent = $('mode').value === 'join' ? 'Join duel' : $('mode').value === 'host' ? 'Open room' : 'Start duel'; };
 $('ticker').firstElementChild.textContent = `pokemon duel web ◆ ${D.figures.length} figures · ${D.plates.length} plates · ${Object.keys(D.skills).length} attacks · ${Object.keys(D.abilities).length} abilities ◆ Parity: every legal move, spin, attack effect, ability, plate, evolution and AI decision is computed by the original game's own rule engine, not re-implemented ◆ Deck rules, levels, chain boosts, Rewind, league thresholds and booster odds follow the original client and its master data ◆ Not original: the look, the league opponent (the original AI with a random deck), fixed rating points, the starter set ◆ Missing because their data did not survive: quests, shop, level-up costs ◆ Everything runs in this page: no install, no server ◆ Online: one player opens a room and shares the code, the other joins with it`;
-drawList(); drawTeam(); drawSaved(); viewHref(); if (/^#g=\d+$/.test(location.hash)) resumeGame().catch(x => { showHome(); drawHome.msg = x.message; drawHome(); }); else showHome();
+drawList(); drawTeam(); drawSaved(); { let last = null; try { last = localStorage.getItem(LAST_KEY); } catch (e) {} const i = savedTeams.findIndex(t => t.name === last); if (i >= 0 && !team.length) { $('tlist').querySelector(`.tcard[data-i="${i}"]`).click(); drawSaved(); } } viewHref(); if (/^#g=\d+$/.test(location.hash)) resumeGame().catch(x => { showHome(); drawHome.msg = x.message; drawHome(); }); else showHome();
 </script>
 </body>
 </html>
