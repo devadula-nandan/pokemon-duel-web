@@ -2245,12 +2245,14 @@ function wheelSnap(src, battler, spin) {   // the disk is drawn from the figure 
 // MatchMain.DeclareSpinInit: a spin stays on the battle screen only when every figure it spins is in the battle; any other spin (Ice
 // Shard, Powder Snow, Origin Pulse, ...) is a field spin, its roulette turning around the figure's stand on the board.
 // MatchMain.IsFieldDeclareSpin: the attacks whose spin is always shown on the field, even when only battle figures spin (Bear Hug, Head Smash, ...).
+const probSealed = new Map();   // figure -> attacks that are a Miss for the next board spin only (disable_skill_for_prob_spin)
+let spinSkill = -1;   // MatchMain._declareSpinSkillId: the attack whose notice came last (the spin it declares is often the next system move); cleared once a spin is shown
 const FIELD_SPIN_SKILLS = new Set([1001, 1140, 1170, 1181, 1336, 1349, 1354, 1376, 1565, 1568, 1572, 1588, 1635, 1638, 1651, 1664, 1665, 1667, 1668, 1682, 1728, 1749]);
 const fieldSpinOf = (v, skill) => VIEW3D && window.Board3D && Board3D.fieldSpin && !(v.spins || []).some(s => (s.results || []).some(r => r.type === 'battle'))
   && (FIELD_SPIN_SKILLS.has(skill) || !(battleView && (v.spins || []).every(s => battleView.ids.includes(s.pokemon))));
 async function fieldSpins(v, opt) {
   if (battleView || !$('battle') || !$('battle').hidden) closeSpin();   // BattleEndToField: the battle screen closes before the board's wheels turn
-  const list = (v.spins || []).map(sp => ({ sp, info: wheelSnap(opt.wheelSt, sp.pokemon, sp) })), willSpin = list.some(x => !x.info.frozen);
+  const list = (v.spins || []).map(sp => { const info = wheelSnap(opt.wheelSt, sp.pokemon, sp), off = probSealed.get(sp.pokemon) || []; info.skills = info.skills.map(x => off.includes(x.id) ? Object.assign({}, x, { sealed: true }) : x); return { sp, info }; }), willSpin = list.some(x => !x.info.frozen);
   if (willSpin) sfx('spin');
   await Promise.all(list.map(async ({ sp, info }) => {
     const segs = info.skills.map(x => { const col = x.sealed ? 0 : (D.skills[x.id] || [0, 0, 0])[2];
@@ -2258,6 +2260,7 @@ async function fieldSpins(v, opt) {
     const landed = await Board3D.fieldSpin(fieldForm(sp.pokemon), segs, sp.results || [], info.frozen), x = info.skills[landed];
     log(`Spin · ${nameOf(sp.pokemon)} ${x ? (x.sealed ? 'Miss' : fmt('skill', x.id)) : (sp.results || []).map(r => r.num).join(', ')}`);
   }));
+  probSealed.clear();
   if (willSpin) { if (window.sfxStop) sfxStop('spin'); sfx('spin_stop'); }
 }
 function closeSpin() { if (window.sfxStop) sfxStop('spin'); const ov = $('battle'); if (ov) { ov.hidden = true; ov.innerHTML = ''; } battleView = null; }
@@ -2375,7 +2378,6 @@ async function playEffects(list, opt) {
   if (mv && (mv.type === 'use_pokepower' || mv.type === 'declare_pokepower') && !isEvolve(opt.move)) {
     await abilityCue(abilityFig(mv), badAb(abilityFig(mv)), true);
   }
-  let spinSkill = -1;   // MatchMain._declareSpinSkillId: the attack whose notice came last
   for (let k = 0; k < list.length; k++) {
     const e = list[k], v = e.value, t = v.type;
     if (t === 'declare_respin') {   // the respin stays on this screen: "More" on the wheel that spins again, then the next spin turns it
@@ -2385,7 +2387,8 @@ async function playEffects(list, opt) {
     else if (t === 'spin') {
       const after = list.slice(k + 1), ri = after.findIndex(x => x.value.type === 'battle_result'), result = ri < 0 ? null : after[ri];
       const typed = (v.spins || []).some(s => (s.results || []).some(r => r.type === 'battle'));
-      if (fieldSpinOf(v, spinSkill)) { await fieldSpins(v, opt); continue; }
+      if (fieldSpinOf(v, spinSkill)) { spinSkill = -1; await fieldSpins(v, opt); continue; }
+      spinSkill = -1;
       await showSpin(e, typed ? result : null, (ri < 0 ? after : after.slice(0, ri)).filter(x => /damage_notice$/.test(x.value.type)), opt);
       if (!result) log('Spin · ' + (v.spins || []).map(s => `${nameOf(s.pokemon)} ${(s.results || []).map(r => r.num).join(', ')}`).join(' · '));
     } else if (t === 'battle_result') {
@@ -2407,6 +2410,9 @@ async function playEffects(list, opt) {
     else if (/^remove_pokemon/.test(t)) { sfx('exclusion'); for (const i of v.pokemons || []) { log(`${nameOf(i)} is removed from the duel${v.duration > 0 ? ` for ${v.duration} turns` : ''}`); tickFig(i, `${plain(i)} was removed from the duel.`); } }   // RemovePokemonText: Exclusion
     else if (t === 'move_to_ultra_space' || t === 'move_to_ultra_space_with_duration' || t === 'ultra_portation') { for (const i of (v.pokemons || [v.pokemon])) { log(`${nameOf(i)} moves to Ultra Space`); tickFig(i, `${plain(i)} moved to Ultra Space.`); } }   // MoveToUltraSpaceText
     else if (t === 'move_from_ultra_space' || t === 'move_from_remove') { sfx('se034'); log(`${nameOf(v.pokemon)} returns to ${place(v.index)}`); }   // MoveFromUltraSpace: Se034
+    else if (t === 'disable_skill_for_prob_spin') {   // attacks that count as a Miss in the board spin that follows (empty lists say nothing)
+      for (const d of v.disable_skills || []) { const ids = [].concat(d.skill_id || []); if (!ids.length) continue; probSealed.set(d.pokemon, ids); log(`${nameOf(d.pokemon)}: ${ids.map(id => fmt('skill', id)).join(', ')} count as a Miss in this spin`); }
+    }
     else if (t === 'skill_notice') { spinSkill = v.skill; log(describe(v)); if (!battleView) tickFig(v.pokemon, `${plain(v.pokemon)} used ${(D.skills[v.skill] || ['an attack'])[0]}.`); }   // StartUseSkillCutIn: Skill, only outside the battle screen
     else if (t === 'touch') { log(describe(v)); tickFig(v.from_pokemon, `${plain(v.from_pokemon)} tagged ${plain(v.to_pokemon)}.`); }   // StartTouchCutIn: "{0} tagged {1}."
     else if (t === 'put_circle' || t === 'put_circle_auto') {
