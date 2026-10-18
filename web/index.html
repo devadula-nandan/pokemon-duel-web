@@ -685,11 +685,14 @@ const megaPlateOf = (() => {
   }
   return map;
 })();
-function syncMegaPlates() {   // when the team carries a Mega, add its stone if there is room (cost / slots / owned copies)
-  for (const sl of team) for (const id of slotIds(sl)) {
-    const pid = megaPlateOf.get(id); if (pid == null || myPlates.includes(pid)) continue;
-    if (myPlates.length >= PLATE_MAX || cost(myPlates) + plateById.get(pid).c > COST_MAX || !plateLeft(pid)) continue;
-    myPlates.push(pid);
+function syncMegaPlates() {   // every Mega on the team brings its stone: added by default, making room by dropping the last plate that is not a stone
+  const stones = new Set(team.flatMap(sl => slotIds(sl).map(id => megaPlateOf.get(id)).filter(pid => pid != null)));
+  for (const pid of stones) {
+    if (myPlates.includes(pid) || !plateLeft(pid)) continue;
+    while (myPlates.length && (myPlates.length >= PLATE_MAX || cost(myPlates) + plateById.get(pid).c > COST_MAX)) {
+      const k = myPlates.map(x => stones.has(x)).lastIndexOf(false); if (k < 0) break; myPlates.splice(k, 1);
+    }
+    if (myPlates.length < PLATE_MAX && cost(myPlates) + plateById.get(pid).c <= COST_MAX) myPlates.push(pid);
   }
 }
 let listBuilt = '', plateBuilt = '', listTimer = 0;
@@ -792,7 +795,7 @@ if (matchMedia('(hover: hover)').matches) {
 }
 const slotText = slot => slot.st.map((id, k) => id == null ? null : figText(id, slot.mod[k])).filter(Boolean).join(' → ') + slot.forms.map((id, k) => id == null ? '' : ' ⇄ ' + figText(id, slot.fmod[k])).join('');
 // ---------- saved teams ----------
-// Six figures (with their attachments, levels and boosts) and the plates, kept on this device under a name. The list starts with meta synergy decks.
+// Six figures (with their attachments, levels and boosts) and the plates, kept on this device under a name. The list starts with the preset Ice deck.
 const TEAMS_KEY = 'pokemonduelweb.teams.v1', LAST_KEY = 'pokemonduelweb.teams.last';
 // Everything picked in the free-duel builder survives a reload or a trip home: the team (with its attachments, levels and boosts), the
 // plates, and the setup controls (opponent, auto evo, opponent plates, list filters, Figures / Plates tab).
@@ -810,17 +813,10 @@ function loadUi() {
   if (ui.tab) setPickTab(ui.tab);
   if ($('mode').onchange) $('mode').onchange();
 }   // the saved team last loaded or saved, preselected on the next visit
-// Meta decks from late Pokémon Duel ladder play (Dawn Wings era). A figure is "Name", optionally "RARITY:Name" when two figures share
+// The preset deck (an Ice deck from late Pokémon Duel ladder play). A figure is "Name", optionally "RARITY:Name" when two figures share
 // a name, and "+Name" for each attachment beyond automatic evolutions (Mega, form, or a skipped stage).
 const STARTER_TEAMS = [
-  ['Meta: Dawn Wings', ['Dawn Wings Necrozma+Ultra Necrozma', 'Arceus', 'Celebi', 'Aegislash Shield Forme+Aegislash Blade Forme', 'Stakataka', 'Tapu Fini'], ['Ultra Burst', 'Hurdle Jump', 'Goal Block', 'Max Revive', 'Double Chance']],
-  ['Meta: Misty Water', ['Tapu Fini', 'Kyogre+Primal Kyogre', 'Manaphy', 'Keldeo Ordinary Form+Keldeo Resolute Form', 'Arceus', 'Celebi'], ['Blue Orb', 'Mystic Water', 'Aqua Sphere', 'Goal Block', 'Hurdle Jump', 'Double Chance']],
-  ['Meta: Steel Wall', ['EX:Steelix+Mega Steelix', 'Stakataka', 'EX:Mawile+Mega Mawile', 'Aegislash Shield Forme+Aegislash Blade Forme', 'Celebi', 'Arceus'], ['Steelixite', 'Mawilite', 'Metal Coat', 'Goal Block', 'Hurdle Jump', 'Max Revive']],
-  ['Meta: Mega Fairies', ['Ralts+Mega Gardevoir', 'Abra+Mega Alakazam', 'Swablu+Mega Altaria', 'Celebi', 'Marshadow', 'Mew'], ['Gardevoirite', 'Alakazite', 'Altarianite', 'Goal Block', 'Hurdle Jump', 'Max Revive']],
-  ['Meta: Rush', ['Celebi', 'Marshadow', 'Kartana', 'Pheromosa', 'Tapu Koko', 'Lucario+Mega Lucario'], ['Lucarionite', 'Hurdle Jump', 'Long Throw', 'Goal Block', 'Double Chance', 'X Attack']],
-  ['Meta: Ultra Beasts', ['Poipole', 'Celesteela', 'Kartana', 'Blacephalon', 'Pheromosa', 'Nihilego'], ['Hurdle Jump', 'Goal Block', 'Max Revive', 'Double Chance', 'X Attack']],
-  ['Meta: Fossils', ['Amaura', 'Tyrunt', 'EX:Aerodactyl', 'Stakataka', 'Celebi', 'Arceus'], ['Restorer', 'Hurdle Jump', 'Goal Block', 'Max Revive', 'Double Chance']],
-  ['Meta: Ice', ['Froslass', 'Snorunt+Mega Glalie', 'Kyurem+White Kyurem+Black Kyurem', 'Amaura', 'Alolan Vulpix', 'Celebi'], ['Never-Melt Ice', 'Frost Sphere', 'Restorer', 'Hurdle Jump', 'Goal Block', 'Double Chance']],
+  ['Meta: Ice', ['Froslass', 'Snorunt+Mega Glalie', 'Kyurem+White Kyurem+Black Kyurem', 'Amaura', 'Alolan Vulpix', 'Celebi'], ['Glalitite', 'Never-Melt Ice', 'Frost Sphere', 'Restorer', 'Hurdle Jump', 'Goal Block']],
 ];
 function starterSlot(spec) {   // one figure of a starter team, or null when this game's data cannot build it
   const [head, ...extra] = spec.split('+'), [, rar, name] = /^(?:(UX|EX|R|UC|C):)?(.+)$/.exec(head), base = BASES.find(f => f.n === name && (!rar || RAR[f.r] === rar));
@@ -844,7 +840,7 @@ function starterTeams() {   // a team with anything missing is left out rather t
   team = keep; return out;
 }
 let savedTeams = null;
-const SEED_KEY = 'pokemonduelweb.teams.seed', SEED = '4';   // raised when the starter decks change; a new seed replaces the saved list with the current meta set
+const SEED_KEY = 'pokemonduelweb.teams.seed', SEED = '5';   // raised when the starter decks change; a new seed replaces the saved list with the current meta set
 function kept(key) {   // a value saved under the previous name is copied across once, then the old entry is removed
   try { const now = localStorage.getItem(key); if (now != null) return now; const oldKey = key.replace('pokemonduelweb.', 'figureduel.'), old = localStorage.getItem(oldKey); if (old == null) return null; localStorage.setItem(key, old); localStorage.removeItem(oldKey); return old; } catch (e) { return null; }
 }
@@ -882,7 +878,7 @@ $('tlist').onclick = e => {
     if (ids.some(id => !(profile.items[id] > 0)) || Object.keys(need).some(id => ((profile.plates || {})[id] || 0) < need[id])) return drawSaved(`"${t.name}" needs figures or plates that are not in your collection.`);
     team = t.team.map(slotFrom);
   } else team = JSON.parse(JSON.stringify(t.team));
-  myPlates = t.plates.slice(); replaceFig = null; try { localStorage.setItem(LAST_KEY, t.name); } catch (e) {} drawTeam(); drawSaved(`Loaded "${t.name}".`);
+  myPlates = t.plates.slice(); syncMegaPlates(); replaceFig = null; try { localStorage.setItem(LAST_KEY, t.name); } catch (e) {} drawTeam(); drawSaved(`Loaded "${t.name}".`);
 };
 
 let pickBodyOpen = true;
@@ -1160,7 +1156,7 @@ $('home').onclick = e => {
   if (act === 'league') { $('game').hidden = true; team = profile.deck.map(slotFrom); myPlates = deckPlates(); return start({ league: true }).catch(x => { showHome(); drawHome.msg = x.message; drawHome(); }); }
   ownedMode = act === 'deck'; listBuilt = plateBuilt = '';
   const free = ownedMode ? null : loadFree();
-  team = ownedMode && profile.deck ? profile.deck.map(slotFrom) : free ? free.team : []; myPlates = ownedMode ? deckPlates() : free ? free.plates : [];
+  team = ownedMode && profile.deck ? profile.deck.map(slotFrom) : free ? free.team : []; myPlates = ownedMode ? deckPlates() : free ? free.plates : []; if (free) syncMegaPlates();
   $('oppPanel').hidden = $('oplLabel').hidden = ownedMode; $('go').disabled = false; $('go').textContent = ownedMode ? 'Save deck' : 'Start duel'; $('setupErr').textContent = '';
   pickBodyOpen = true; syncCollapse.wasBoth = false; $('setup').hidden = false; setPickOpen(false); drawList(); drawTeam();
 };
@@ -2505,7 +2501,7 @@ const figAt = route => { const c = st.pokemon_conditions.find(c => c.index === r
 
 $('mode').onchange = () => { $('room').hidden = $('mode').value !== 'join'; $('go').disabled = false; $('go').textContent = $('mode').value === 'join' ? 'Join duel' : $('mode').value === 'host' ? 'Open room' : 'Start duel'; };
 $('ticker').firstElementChild.textContent = `pokemon duel web ◆ ${D.figures.length} figures · ${D.plates.length} plates · ${Object.keys(D.skills).length} attacks · ${Object.keys(D.abilities).length} abilities ◆ Parity: every legal move, spin, attack effect, ability, plate, evolution and AI decision is computed by the original game's own rule engine, not re-implemented ◆ Deck rules, levels, chain boosts, Rewind, league thresholds and booster odds follow the original client and its master data ◆ Not original: the look, the league opponent (the original AI with a random deck), fixed rating points, the starter set ◆ Missing because their data did not survive: quests, shop, level-up costs ◆ Everything runs in this page: no install, no server ◆ Online: one player opens a room and shares the code, the other joins with it`;
-{ const free = loadFree(); if (free) { team = free.team; myPlates = free.plates; } loadUi(); loadUi.done = true; document.getElementById('setup').addEventListener('change', e => { if (UI_IDS.includes(e.target.id)) storeUi(); }); }
+{ const free = loadFree(); if (free) { team = free.team; myPlates = free.plates; syncMegaPlates(); } loadUi(); loadUi.done = true; document.getElementById('setup').addEventListener('change', e => { if (UI_IDS.includes(e.target.id)) storeUi(); }); }
 $('sideVer').textContent = 'v' + window.APP_VER;
 drawList(); drawTeam(); drawSaved(); { let last = null; try { last = localStorage.getItem(LAST_KEY); } catch (e) {} const i = savedTeams.findIndex(t => t.name === last); if (i >= 0 && !team.length) { $('tlist').querySelector(`.tcard[data-i="${i}"]`).click(); drawSaved(); } } viewHref(); if (/^#g=\d+$/.test(location.hash)) resumeGame().catch(x => { showHome(); drawHome.msg = x.message; drawHome(); }); else showHome();
 </script>
