@@ -171,6 +171,11 @@ async function loopPlate(m, job) {   // UsePlateEffect: the plate's effect on ea
     if (!(await sleep(1600, job))) return;
   }
 }
+// Every attack whose spin the duel shows on the board (MatchMain.IsFieldDeclareSpin, plus spins of figures outside the battle): [skill, who spins]
+const BOARD_SPINS = [[1001, 'many'], [1140, 'many'], [1170, 'many'], [1181, 'many'], [1336, 'many'], [1349, 'many'], [1565, 'many'], [1568, 'many'], [1572, 'many'], [1588, 'one'],
+  [1635, 'many'], [1638, 'many'], [1651, 'many'], [1664, 'many'], [1665, 'many'], [1667, 'many'], [1668, 'many'], [1682, 'many'], [1728, 'many'], [1749, 'self'],
+  [1294, 'self'], [1334, 'one'], [1368, 'one'], [1402, 'one'], [1530, 'one'], [1550, 'one'], [1551, 'one'], [1570, 'many'], [1574, 'many'], [1620, 'one'], [1629, 'one'],
+  [1673, 'one'], [1690, 'many'], [1745, 'one'], [1755, 'many'], [1760, 'many'], [1778, 'many'], [1779, 'many']];
 async function loopFieldSpin(m, job) {   // DeclareSpinInit field spin: each named figure's wheel turns around its stand and stops on a random slice
   while (job === demoJob && window.Board3D && Board3D.fieldSpin) {
     const on = m.toks.filter(t => t._spin);
@@ -341,6 +346,12 @@ const STORIES = {
     'Several at once': ['A spin that names several figures turns all their wheels together.', () => ({ ...row([{ f: D.figures.find(f => f.n === 'Psyduck'), team: 1, _spin: true }, {}, { f: D.figures.find(f => f.n === 'Leafeon'), team: 1, _spin: true }]), demo: 'fieldspin' })],
     'With a shift': ['A displacement after the spin moves the wheel on to the next slice.', () => ({ ...row([{ _spin: true, _displace: 1 }]), demo: 'fieldspin' })],
   },
+  'Spins on the board': Object.fromEntries(BOARD_SPINS.map(([id, who]) => {
+    const sk = D.skills[id] || ['Attack ' + id, ''], users = D.figures.filter(f => (f.w || []).some(x => x[0] === id)), by = users[0] || fig;
+    const foes = ['Psyduck', 'Leafeon', 'Pikachu'].map(n => D.figures.find(f => f.n === n)).filter(Boolean);
+    const list = who === 'self' ? [{ f: by, _spin: true }] : [{ f: by }, ...foes.slice(0, who === 'one' ? 1 : 3).map(f => ({ f, team: 1, _spin: true }))];
+    return [sk[0], [`${sk[1]} Used by ${users.map(f => f.n).join(', ') || '—'}.`, () => ({ ...row(list), demo: 'fieldspin' })]];
+  })),
   Sounds: {
     'Figure sounds': ['Every clip the original game names for something that happens to a figure. The list under the table is the whole set.', () => ({ ...row([{ badge: 'figure sounds' }]), catalog: true })],
   },
