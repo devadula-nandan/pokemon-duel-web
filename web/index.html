@@ -2253,15 +2253,16 @@ const fieldSpinOf = (v, skill) => VIEW3D && window.Board3D && Board3D.fieldSpin 
 async function fieldSpins(v, opt) {
   if (battleView || !$('battle') || !$('battle').hidden) closeSpin();   // BattleEndToField: the battle screen closes before the board's wheels turn
   const list = (v.spins || []).map(sp => { const info = wheelSnap(opt.wheelSt, sp.pokemon, sp), off = probSealed.get(sp.pokemon) || []; info.skills = info.skills.map(x => off.includes(x.id) ? Object.assign({}, x, { sealed: true }) : x); return { sp, info }; }), willSpin = list.some(x => !x.info.frozen);
+  let turning = list.filter(x => !x.info.frozen).length;   // one looping se024 until the last turning wheel stops, then the stop sound, as the battle screen
+  const stopped = () => { if (--turning === 0) { if (window.sfxStop) sfxStop('spin'); sfx('spin_stop'); } };
   if (willSpin) sfx('spin');
   await Promise.all(list.map(async ({ sp, info }) => {
     const segs = info.skills.map(x => { const col = x.sealed ? 0 : (D.skills[x.id] || [0, 0, 0])[2];
       return { range: x.range, col: DISK_COL[col], ink: col === 2 ? '#fff' : '#111', label: col === 2 ? '★'.repeat(Math.min(x.speed_or_damage || 0, 5)) : col === 1 || col === 3 ? String(x.speed_or_damage || 0) : '' }; });
-    const landed = await Board3D.fieldSpin(fieldForm(sp.pokemon), segs, sp.results || [], info.frozen), x = info.skills[landed];
+    const landed = await Board3D.fieldSpin(fieldForm(sp.pokemon), segs, sp.results || [], info.frozen, info.frozen ? null : stopped), x = info.skills[landed];
     log(`Spin · ${nameOf(sp.pokemon)} ${x ? (x.sealed ? 'Miss' : fmt('skill', x.id)) : (sp.results || []).map(r => r.num).join(', ')}`);
   }));
   probSealed.clear();
-  if (willSpin) { if (window.sfxStop) sfxStop('spin'); sfx('spin_stop'); }
 }
 function closeSpin() { if (window.sfxStop) sfxStop('spin'); const ov = $('battle'); if (ov) { ov.hidden = true; ov.innerHTML = ''; } battleView = null; }
 async function showSpin(e, result, notices, opt) {

@@ -178,14 +178,14 @@ const BOARD_SPINS = [[1001, 'many'], [1140, 'many'], [1170, 'many'], [1181, 'man
   [1673, 'one'], [1690, 'many'], [1745, 'one'], [1755, 'many'], [1760, 'many'], [1778, 'many'], [1779, 'many']];
 async function loopFieldSpin(m, job) {   // DeclareSpinInit field spin: each named figure's wheel turns around its stand and stops on a random slice
   while (job === demoJob && window.Board3D && Board3D.fieldSpin) {
-    const on = m.toks.filter(t => t._spin);
+    const on = m.toks.filter(t => t._spin); let turning = on.length;
+    const stopped = () => { if (--turning === 0) { if (window.sfxStop) sfxStop('spin'); sfx('spin_stop'); } };
     sfx('spin');
     await Promise.all(on.map(t => {
       const f = D.figures.find(x => x.n === t.name) || fig, w = skillsOf(f);
       const segs = w.map(x => { const col = (D.skills[x.id] || [0, 0, 0])[2]; return { range: x.range, col: DISK_COL[col], ink: col === 2 ? '#fff' : '#111', label: col === 2 ? '★'.repeat(Math.min(x.speed_or_damage || 0, 5)) : col === 1 || col === 3 ? String(x.speed_or_damage || 0) : '' }; });
-      return Board3D.fieldSpin(t.i, segs, [{ num: Math.floor(Math.random() * 96), displace: t._displace || 0 }]);
+      return Board3D.fieldSpin(t.i, segs, [{ num: Math.floor(Math.random() * 96), displace: t._displace || 0 }], false, stopped);
     }));
-    if (window.sfxStop) sfxStop('spin'); sfx('spin_stop');
     if (!(await sleep(600, job))) return;
   }
 }

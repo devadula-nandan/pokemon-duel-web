@@ -508,8 +508,8 @@ function wallTex(segs, lit) {   // wide, so a join is as thin as on the top face
     for (const col of lit != null && lit !== n && segs.length > 1 ? [sg.col, 'rgba(0,0,0,.5)'] : [sg.col]) { c.fillStyle = col; c.fillRect(x, 0, len, h); if (x + len > w) c.fillRect(x - w, 0, len, h); } });
     a = 0; c.fillStyle = '#111'; for (const sg of segs) { const x = ((.5 - a / 96) % 1 + 1) % 1 * w; a += sg.range; c.fillRect(x - 1.5, 0, 3, h); if (x < 1.5) c.fillRect(x + w - 1.5, 0, 3, h); } });   // black joins, as on the top face
 }
-function fieldSpin(i, segs, results, still) {   // still: a frozen or melted wheel shows its result without turning
-  const g = tokens.get(i); if (!g || !segs.length) return Promise.resolve(0);
+function fieldSpin(i, segs, results, still, onStop) {   // still: a frozen or melted wheel shows its result without turning; onStop: called the moment it stops
+  const g = tokens.get(i); if (!g || !segs.length) { if (onStop) onStop(); return Promise.resolve(0); }
   const geo = new THREE.RingGeometry(SPIN_IN, SPIN_OUT, 96, 1), mat = new THREE.MeshBasicMaterial({ map: wheelTex(segs), transparent: true, opacity: 0, side: THREE.DoubleSide });   // writes depth, so the status words under it stay hidden
   const ring = new THREE.Mesh(geo, mat); ring.rotation.x = -Math.PI / 2;   // renderOrder 0: drawn before the figure's picture (1), so it never covers the figure
   const side = new THREE.Mesh(new THREE.CylinderGeometry(SPIN_OUT, SPIN_OUT, AURA_H + .004, 96, 1, true), new THREE.MeshBasicMaterial({ map: wallTex(segs), transparent: true, opacity: 0 }));
@@ -527,7 +527,7 @@ function fieldSpin(i, segs, results, still) {   // still: a frozen or melted whe
       landed = at(r.num); steps.push({ pos: r.num + .5, turns: still ? 0 : steps.length ? 2 : 3, sec: still ? .01 : steps.length ? 1.1 : 1.6 });
       if (r.displace) { landed = ((landed + r.displace) % segs.length + segs.length * 10) % segs.length; steps.push({ pos: starts[landed] + segs[landed].range / 2, turns: 0, sec: still ? .01 : .35, back: r.displace < 0 }); }
     }
-    fieldSpins.push({ g, host, turnG, ring, side, ptr, geo, mat, segs, steps, rot: 0, from: 0, to: null, t: 0, phase: 'in', landed, done });
+    fieldSpins.push({ g, host, turnG, ring, side, ptr, geo, mat, segs, onStop, steps, rot: 0, from: 0, to: null, t: 0, phase: 'in', landed, done });
   });
 }
 function stepFieldSpins(dt) {
@@ -536,7 +536,7 @@ function stepFieldSpins(dt) {
     if (f.phase === 'in') { const k = Math.min(1, f.t / .25); f.mat.opacity = k; f.side.material.opacity = k; f.ptr.material.opacity = k; if (k >= 1) { f.phase = 'spin'; f.t = 0; f.to = null; } }
     else if (f.phase === 'spin') {
       const st = f.steps[0];
-      if (!st) { f.phase = 'hold'; f.t = 0; f.mat.map.dispose(); f.mat.map = wheelTex(f.segs, f.landed); f.side.material.map.dispose(); f.side.material.map = wallTex(f.segs, f.landed); continue; }   // stopped: the slice under the pointer stays lit
+      if (!st) { f.phase = 'hold'; f.t = 0; if (f.onStop) f.onStop(); f.mat.map.dispose(); f.mat.map = wheelTex(f.segs, f.landed); f.side.material.map.dispose(); f.side.material.map = wallTex(f.segs, f.landed); continue; }   // stopped: the slice under the pointer stays lit
       if (f.to == null) { let to = st.pos / 96 * Math.PI * 2 + Math.PI; if (st.back) { while (to > f.rot) to -= Math.PI * 2; } else { while (to < f.rot + st.turns * Math.PI * 2) to += Math.PI * 2; } f.from = f.rot; f.to = to; f.t = 0; }   // + half a turn: the pointer is at the near side
       const k = Math.min(1, f.t / st.sec), e = 1 - Math.pow(1 - k, 3); f.rot = f.from + (f.to - f.from) * e; f.turnG.rotation.y = f.rot;   // the slice at angle pos ends under the pointer
       if (k >= 1) { f.steps.shift(); f.to = null; }
