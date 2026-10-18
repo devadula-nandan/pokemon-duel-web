@@ -1,12 +1,11 @@
 // Theme for every page: Auto follows the device's light / dark setting; the choice is remembered on this device.
 // Loaded in <head> so the page is drawn in the right theme from the first frame.
 // Buttons with data-theme-btn (or id themeBtn) cycle Auto -> Light -> Dark.
-// data-update-btn appears when a newer GitHub release tag exists than APP_VER; click hard-reloads.
+// data-update-btn appears when the published theme.js carries a newer APP_VER than the one running; click hard-reloads.
 // data-refresh-btn is always there: it fetches the latest published page past every cache, then reloads.
 (() => {
   const KEY = 'pokemonduelweb.theme', sysLight = matchMedia('(prefers-color-scheme: light)'); let mode = 'auto';
-  const REPO = 'devadula-nandan/pokemon-duel-web';
-  // Bump when shipping a build — must match the GitHub release tag (vX.Y.Z).
+  // The app's version, and the only place it is written: bump it when shipping a build. Running copies compare it with the published one.
   window.APP_VER = '0.4.0';
   // Small line icons drawn here (no icon font or image files). icon() is shared with the pages for their own buttons.
   window.icon = body => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
@@ -45,7 +44,7 @@
   sysLight.addEventListener('change', () => { if (mode === 'auto') setTheme('auto'); else label(); });
   addEventListener('DOMContentLoaded', () => label());
 
-  // --- Update check (GitHub Releases) ------------------------------------
+  // --- Update check (the published APP_VER) -------------------------------
   const parts = v => String(v || '').replace(/^v/i, '').split(/[.+-]/).map(x => { const n = parseInt(x, 10); return Number.isFinite(n) ? n : 0; });
   const isNewer = (remote, local) => {
     const a = parts(remote), b = parts(local), n = Math.max(a.length, b.length);
@@ -93,12 +92,9 @@
   }
   async function checkRelease() {
     try {
-      const r = await fetch('https://api.github.com/repos/' + REPO + '/releases/latest', {
-        headers: { Accept: 'application/vnd.github+json' }
-      });
+      const r = await fetch(new URL('theme.js', document.baseURI || location.href), { cache: 'no-store' });
       if (!r.ok) return;
-      const data = await r.json();
-      const tag = (data.tag_name || '').replace(/^v/i, '');
+      const tag = ((await r.text()).match(/APP_VER = '([^']+)'/) || [])[1];
       if (tag && isNewer(tag, window.APP_VER)) paintUpdate(tag);
     } catch (e) {}
   }
