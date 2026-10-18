@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#111111"><meta name="apple-mobile-web-app-title" content="Duel">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#111111"><meta name="apple-mobile-web-app-title" content="Duel">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <title>pokemon duel web</title>
 <link rel="stylesheet" href="theme.css">
@@ -13,7 +13,7 @@
 <style>
   body { position:fixed; inset:0; display:flex; flex-direction:column; box-sizing:border-box; padding:var(--sat) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
   html.app body { bottom:auto; height:var(--app-h, 100%); }   /* home-screen app: iOS gives the page a viewport shorter than the screen, so size it from the screen (theme.js) */
-  body::before { content:''; position:fixed; top:0; left:0; right:0; height:var(--sat); background:var(--bar); z-index:100; pointer-events:none; }   /* home-screen app: the opaque status-bar style keeps the page below the status bar (theme-color paints it); if a device still lays the page under it, the page starts below the inset and this band sits behind the clock. position:fixed + inset:0 is the real screen: 100dvh misses the status bar there, leaving a gap at the bottom and a page that slides up */ input, button, select, textarea, a, label { touch-action:manipulation; }   /* no double-tap zoom on controls */
+  body::before { content:''; position:fixed; top:0; left:0; right:0; height:var(--sat); background:#000; z-index:100; pointer-events:none; }   /* home-screen app: the see-through status-bar style gives the app the whole screen (the opaque one leaves the bottom undrawn on iOS 26); the page starts below the frosted strip and this black band sits behind the white clock. position:fixed + inset:0 is the real screen: 100dvh misses the status bar there, leaving a gap at the bottom and a page that slides up */ input, button, select, textarea, a, label { touch-action:manipulation; }   /* no double-tap zoom on controls */
   .top { display:flex; align-items:center; gap:6px; padding:6px; background:var(--bar); border-bottom:1px solid var(--line); } .top button { margin:0; }   /* one even 6px gap between everything in the bar */ .top .ticker { flex:1; min-width:0; border-bottom:0; -webkit-mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); }   /* the scrolling text fades in and out at both ends instead of being cut off */
   .ticker { overflow:hidden; white-space:nowrap; background:var(--bar); color:var(--accent); font-size:12px; padding:5px 0; border-bottom:1px solid var(--line); }
   .ticker span { display:inline-block; padding-left:100%; animation:tick 70s linear infinite; } .ticker:hover span { animation-play-state:paused; }
