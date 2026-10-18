@@ -61,6 +61,10 @@
   .cap b { font-size:17px; } .cap .val { font-size:40px; font-weight:900; line-height:1; font-variant-numeric:tabular-nums; } .cap .val.up { color:#39d98a; } .cap .why { font-size:11px; color:#fff; opacity:.85; font-weight:600; }
   .verdict { position:absolute; left:50%; top:50%; z-index:6; translate:-50% -50%; max-width:92%; padding:10px 22px; border-radius:8px; background:#000d; color:#fff; text-align:center; font:900 26px/1.2 "Segoe UI",system-ui,sans-serif; font-style:italic; box-shadow:0 8px 30px #000; }
   .verdict:empty { display:none; }
+  #gal { position:absolute; right:12px; top:50%; translate:0 -50%; z-index:5; display:flex; flex-direction:column; align-items:center; gap:8px; }
+  #gal button { width:44px; height:44px; border-radius:50%; border:1px solid var(--line); background:var(--bar); color:inherit; font-size:18px; cursor:pointer; }
+  #gal .lbl { min-width:140px; padding:8px 10px; border-radius:8px; background:var(--bar); border:1px solid var(--line); text-align:center; font:13px/1.35 "Segoe UI",system-ui,sans-serif; color:inherit; }
+  #gal .lbl b { display:block; font-size:18px; } #gal .lbl span { display:block; font-size:11px; opacity:.7; }
   pre { margin:0; padding:10px 16px; border-top:1px solid var(--line); background:var(--bar); color:var(--dim); font:12px/1.45 Consolas,monospace; max-height:34dvh; overflow:auto; white-space:pre-wrap; }
   @media (max-width:700px) { body { grid-template-columns:1fr; grid-template-rows:38dvh 1fr; } #nav { border-right:0; border-bottom:1px solid var(--line); } }
 </style>
@@ -281,6 +285,7 @@ const STORIES = {
     'Selected': ['Gold ring: the figure you picked.', () => row([{ sel: true }])],
     'Attack target': ['Red ring: a figure the selected one can battle.', () => row([{ team: 1, atk: true }])],
     'In the P.C.': ['Faded while it waits in the P.C.', () => row([{ dim: true, mp: '' }])],
+    'Every figure': ['Every figure in the game, one at a time, by its figure number. ▲ / ▼ (or the arrow keys) step through them.', () => ({ ...row([{}]), demo: 'gallery' })],
     'No picture': ['Figures without a picture show their name.', () => row([{ img: '', name: 'Wash Rotom' }])],
     'Interaction states': ['', () => row([{ badge: 'idle' }, { sel: true, badge: 'selected' }, { team: 1, atk: true, badge: 'target' }, { dim: true, mp: '', badge: 'P.C.' }])],
   },
@@ -464,6 +469,18 @@ function show(group, name) {
   (show.timers || []).forEach(clearTimeout); show.timers = [];
   const draw = x => { window.board3dModel = x; if (window.Board3D) Board3D.draw(x); };
   const job = ++demoJob;
+  const oldGal = $('gal'); if (oldGal) oldGal.remove(); document.onkeydown = null;
+  if (m.demo === 'gallery') {   // every figure by its number, stepped with ▲ / ▼
+    const all = [...D.figures].sort((a, b) => a.no - b.no || a.id - b.id);
+    let k = 0; try { k = Math.min(all.length - 1, Math.max(0, +localStorage.getItem('sb.gallery') || 0)); } catch (e) {}
+    const g = document.createElement('div'); g.id = 'gal'; $('board3d').appendChild(g);
+    g.innerHTML = '<button data-d="-1" aria-label="Previous figure">▲</button><div class="lbl"></div><button data-d="1" aria-label="Next figure">▼</button>';
+    const go = d => { k = (k + d + all.length) % all.length; try { localStorage.setItem('sb.gallery', k); } catch (e) {}
+      const f = all[k]; g.querySelector('.lbl').innerHTML = `<b>No. ${f.no}</b> ${f.n}<span>${k + 1} / ${all.length}</span>`; draw({ ...row([{ f }]) }); $('props').textContent = JSON.stringify({ no: f.no, id: f.id, name: f.n, dex: f.dex, mp: f.mp, img: art(f) }, null, 1); };
+    g.onclick = e => { const b = e.target.closest('[data-d]'); if (b) go(+b.dataset.d); };
+    document.onkeydown = e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); go(e.key === 'ArrowUp' ? -1 : 1); } };
+    go(0); return;
+  }
   if (m.demo === 'move') { draw({ ...m, toks: m.toks.map(t => ({ ...t, moveId: null, path: null, x: (t._route || [[t.x, t.z]])[0][0], z: (t._route || [[t.x, t.z]])[0][1] })), snap: true }); loopMove(m, job); return; }
   if (m.demo === 'wheel' || m.demo === 'battle') { draw(m); if (m.demo === 'battle') { sfx('attack'); sfx('select'); } playWheel(m, job); return; }
   if (m.demo === 'ability') { draw(m); loopAbility(m, job); return; }
