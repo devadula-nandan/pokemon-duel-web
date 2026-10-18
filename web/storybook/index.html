@@ -458,6 +458,7 @@ function show(group, name) {
   stopEvo();   // also stops wheel / move demos
   const [note, make] = STORIES[group][name], m = make(); current = m;
   const heard = soundText(m);
+  const pos = decodeURIComponent(location.hash.slice(1)).split('/')[2];   // the story's own position in the address (read before the address is rewritten)
   $('title').textContent = group + ' / ' + name; $('note').textContent = note; location.hash = encodeURIComponent(group + '/' + name);
   const body = m.toks.some(t => t.chain) ? m.toks.filter(t => t.chain).map(t => t.branch ? t.chain[0].n + ' → ' + t.chain.slice(1).map(f => f.n).join(' / ') : t.chain.map(f => f.n).join(' → ')).join('\n')
     : m.demo ? ('demo: ' + m.demo + '\n' + (m.fighters || []).map(x => x.f.n).join(' vs '))
@@ -469,16 +470,18 @@ function show(group, name) {
   (show.timers || []).forEach(clearTimeout); show.timers = [];
   const draw = x => { window.board3dModel = x; if (window.Board3D) Board3D.draw(x); };
   const job = ++demoJob;
-  const oldGal = $('gal'); if (oldGal) oldGal.remove(); document.onkeydown = null;
+  const oldGal = $('gal'); if (oldGal) oldGal.remove(); document.onkeydown = null; window.onhashchange = null;
   if (m.demo === 'gallery') {   // every figure by its number, stepped with ▲ / ▼
     const all = [...D.figures].sort((a, b) => a.no - b.no || a.id - b.id);
-    let k = 0; try { k = Math.min(all.length - 1, Math.max(0, +localStorage.getItem('sb.gallery') || 0)); } catch (e) {}
+    const fromUrl = (p = decodeURIComponent(location.hash.slice(1)).split('/')[2]) => p == null || p === '' ? -1 : all.findIndex(f => f.no === +p);   // #Figure/Every figure/25 opens No. 25
+    let k = fromUrl(pos); if (k < 0) { k = 0; try { k = Math.min(all.length - 1, Math.max(0, +localStorage.getItem('sb.gallery') || 0)); } catch (e) {} }
     const g = document.createElement('div'); g.id = 'gal'; $('board3d').appendChild(g);
     g.innerHTML = '<button data-d="-1" aria-label="Previous figure">▲</button><div class="lbl"></div><button data-d="1" aria-label="Next figure">▼</button>';
     const go = d => { k = (k + d + all.length) % all.length; try { localStorage.setItem('sb.gallery', k); } catch (e) {}
-      const f = all[k]; g.querySelector('.lbl').innerHTML = `<b>No. ${f.no}</b> ${f.n}<span>${k + 1} / ${all.length}</span>`; draw({ ...row([{ f }]) }); $('props').textContent = JSON.stringify({ no: f.no, id: f.id, name: f.n, dex: f.dex, mp: f.mp, img: art(f) }, null, 1); };
+      const f = all[k]; history.replaceState(null, '', location.pathname + location.search + '#' + encodeURIComponent(group + '/' + name) + '/' + f.no); g.querySelector('.lbl').innerHTML = `<b>No. ${f.no}</b> ${f.n}<span>${k + 1} / ${all.length}</span>`; draw({ ...row([{ f }]) }); $('props').textContent = JSON.stringify({ no: f.no, id: f.id, name: f.n, dex: f.dex, mp: f.mp, img: art(f) }, null, 1); };
     g.onclick = e => { const b = e.target.closest('[data-d]'); if (b) go(+b.dataset.d); };
     document.onkeydown = e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); go(e.key === 'ArrowUp' ? -1 : 1); } };
+    window.onhashchange = () => { const i = fromUrl(); if (i >= 0 && i !== k) go(i - k); };
     go(0); return;
   }
   if (m.demo === 'move') { draw({ ...m, toks: m.toks.map(t => ({ ...t, moveId: null, path: null, x: (t._route || [[t.x, t.z]])[0][0], z: (t._route || [[t.x, t.z]])[0][1] })), snap: true }); loopMove(m, job); return; }
@@ -558,7 +561,7 @@ window.boardPick = (fig, pt, act) => {   // click a figure to toggle its selecti
   sfx(on ? 'select' : 'cancel');   // Se028 selects, Se029 cancels
   Board3D.draw(current);
 };
-const [g0, n0] = decodeURIComponent(location.hash.slice(1)).split('/');
+const [g0, n0] = decodeURIComponent(location.hash.slice(1)).split('/');   // a third part is a story's own position (Every figure: the figure number)
 import(new URL('board3d.js?v=leap2', document.baseURI)).then(() => show(...(STORIES[g0] && STORIES[g0][n0] ? [g0, n0] : ['Figure', 'Interaction states'])));
 </script>
 </body>
