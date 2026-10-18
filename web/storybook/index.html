@@ -61,9 +61,10 @@
   .cap b { font-size:17px; } .cap .val { font-size:40px; font-weight:900; line-height:1; font-variant-numeric:tabular-nums; } .cap .val.up { color:#39d98a; } .cap .why { font-size:11px; color:#fff; opacity:.85; font-weight:600; }
   .verdict { position:absolute; left:50%; top:50%; z-index:6; translate:-50% -50%; max-width:92%; padding:10px 22px; background:#000d; color:#fff; text-align:center; font:900 26px/1.2 "Segoe UI",system-ui,sans-serif; font-style:italic; box-shadow:0 8px 30px #000; }
   .verdict:empty { display:none; }
-  #gal { position:absolute; right:12px; top:50%; translate:0 -50%; z-index:5; display:flex; flex-direction:column; align-items:center; gap:8px; }
-  #gal button { width:44px; height:44px; border:1px solid var(--line); background:var(--bar); color:inherit; font-size:18px; cursor:pointer; }
-  #gal .lbl { min-width:140px; padding:8px 10px; background:var(--bar); border:1px solid var(--line); text-align:center; font:13px/1.35 "Segoe UI",system-ui,sans-serif; color:inherit; }
+  #gal { position:absolute; right:0; top:50%; translate:0 -50%; z-index:5; display:flex; flex-direction:column; align-items:stretch; width:150px; gap:1px; background:var(--line); border:1px solid var(--line); border-right:0; }   /* flush to the edge, parts split by 1px lines */
+  #board3d > div > .iconbtn { width:44px; height:44px; border:0; background:var(--bar); }   /* the camera buttons in the table's corner: flush blocks */
+  #gal button { height:44px; border:0; background:var(--bar); display:grid; place-items:center; color:inherit; font-size:18px; cursor:pointer; }
+  #gal .lbl { padding:8px 10px; background:var(--bar); text-align:center; font:13px/1.35 "Segoe UI",system-ui,sans-serif; color:inherit; }
   #gal .lbl b { display:block; font-size:18px; } #gal .lbl span { display:block; font-size:11px; opacity:.7; }
   pre { margin:0; padding:10px 16px; border-top:1px solid var(--line); background:var(--bar); color:var(--dim); font:12px/1.45 Consolas,monospace; max-height:34dvh; overflow:auto; white-space:pre-wrap; }
   @media (max-width:700px) { body { grid-template-columns:1fr; grid-template-rows:38dvh 1fr; } #nav { border-right:0; border-bottom:1px solid var(--line); } }

@@ -277,7 +277,7 @@ if (camBar) {
   const grow = camBar.querySelector('.camGrow');
   if (grow) grow.insertAdjacentHTML('afterend', camHtml);   /* top-bar controls left; camera + fullscreen on the right */
   else camBar.insertAdjacentHTML('beforeend', camHtml);
-} else host.insertAdjacentHTML('beforeend', `<div style="position:absolute;left:8px;bottom:8px;display:flex;gap:6px">${camHtml}</div>`);
+} else host.insertAdjacentHTML('beforeend', `<div style="position:absolute;left:0;bottom:0;display:flex;gap:1px;background:var(--line);border:1px solid var(--line);border-width:1px 1px 0 0">${camHtml}</div>`);
 function paintLock() {   // the button shows the state: a closed, pressed lock while the view is locked, an open one while it is free
   const b = document.getElementById('camLock'), locked = !controls.enabled;
   b.title = locked ? 'View locked (click to unlock)' : 'View unlocked (click to lock)'; b.setAttribute('aria-label', 'Lock view'); b.setAttribute('aria-pressed', String(locked)); b.innerHTML = window.icon(locked ? CAM_LOCK : CAM_OPEN);

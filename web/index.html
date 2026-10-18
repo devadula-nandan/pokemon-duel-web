@@ -24,8 +24,8 @@
   .ticker span { display:inline-block; padding-left:100%; animation:tick 70s linear infinite; } .ticker:hover span { animation-play-state:paused; }
   @keyframes tick { to { transform:translateX(-100%); } }
   @media (prefers-reduced-motion:reduce) { .ticker { white-space:normal; padding:6px 16px; } .ticker span { animation:none; padding-left:0; } }
-  main { display:grid; gap:18px; padding:18px; max-width:1260px; width:100%; margin:0 auto; flex:1; min-height:0; overflow:auto; align-content:start; }
-  #game { --g:12px; height:100%; container-type:size; grid-template-columns:auto minmax(200px,420px); grid-template-rows:minmax(0,1fr); justify-content:center; align-content:stretch; gap:var(--g); padding:var(--g); overflow:hidden; }   /* one gap: around the frame, between the board and the side, and down the side */
+  main { display:grid; gap:1px; padding:0; max-width:1260px; width:100%; margin:0 auto; flex:1; min-height:0; overflow:auto; align-content:start; }
+  #game { --g:0px; height:100%; container-type:size; grid-template-columns:auto minmax(200px,420px); grid-template-rows:minmax(0,1fr); justify-content:center; align-content:stretch; gap:var(--g); padding:var(--g); overflow:hidden; }   /* one gap: around the frame, between the board and the side, and down the side */
   #game .arena { --ar:var(--board-ar, .72); --fit:min(100cqh, calc((100cqw - 200px - var(--g)) / var(--ar))); height:var(--fit); width:calc(var(--fit) * var(--ar)); justify-self:center; align-self:center; }   /* full height of the row; the width is that height times the table's shape, and it shrinks only when the side column would drop under 200px */
   #sideBtn, #sideHome { display:none; } #camBar { margin-bottom:14px; flex-wrap:nowrap; } #camBar:empty { display:none; }
   html:not(.mview) #camBar :is(#camUpdate, #camSound, #camTheme, #camView, #camHome) { display:none !important; }   /* the top bar has these; the duel row repeats them only when the top bar is hidden (narrow screen) */
@@ -43,7 +43,7 @@
   html.mview #game .ibar { display:flex; align-items:center; gap:8px; } html.mview #ibMid { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
   html.mview #sideBtn, html.mview #fsGame { display:inline-flex; align-items:center; justify-content:center; flex:none; width:31px; height:31px; padding:0; line-height:0; } html.mview #sideBtn .m { display:flex; }
   html.mview #sideBtn .c, html.mview:has(.side.open) #sideBtn .m { display:none; } html.mview:has(.side.open) #sideBtn .c { display:flex; }
-  html.mview .side { position:fixed; top:var(--side-top,0); right:0; bottom:var(--side-bottom,0); z-index:3; width:min(88vw,380px); padding:12px; background:var(--bar); border-left:1px solid var(--line); transform:translateX(100%); transition:transform .2s; }
+  html.mview .side { position:fixed; top:var(--side-top,0); right:0; bottom:var(--side-bottom,0); z-index:3; width:min(88vw,380px); padding:0; border-left:1px solid var(--line); transform:translateX(100%); transition:transform .2s; }
   html.mview:has(#game:not([hidden])) body > .top { display:none; }   /* only the chrome bar — not #first .half.top */
   html.mview #game .arena { --fit:100cqh; height:100%; width:100%; aspect-ratio:auto; margin:0; align-self:stretch; justify-self:stretch; }   /* the whole screen, not the table's shape */
   html.mview .arena, html.mview .side, html.mview #board3d button, html.mview .hud .z, html.mview .clock { border:0 !important; outline:0 !important; }
@@ -51,12 +51,11 @@
   html.mview .arena .table { position:relative; } html.mview .arena .table::after { content:''; position:absolute; inset:0; z-index:2; background:color-mix(in srgb, var(--bg) 60%, transparent); opacity:0; transition:opacity .2s; pointer-events:none; }
   html.mview:has(.side.open) .arena .table::after { opacity:1; }   /* the board under the open drawer is tinted in place and fades; a tap there still closes the drawer */
   #fsGame { display:none; } #fsBtn[aria-pressed=true], #fsGame[aria-pressed=true] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
-  .arena { display:flex; flex-direction:column; gap:8px; min-height:0; } .side { min-height:0; overflow:auto; }
-  .panel { background:var(--panel); border:1px solid var(--line); padding:14px; margin-bottom:14px; box-shadow:0 2px 10px rgba(0,0,0,.18); }
+  .arena { display:flex; flex-direction:column; min-height:0; } .side { min-height:0; overflow:auto; }
+  .panel { background:var(--panel); padding:14px; }   /* flush: the container's 1px theme lines separate panels; no own border, gap or shadow */
   .panel h2 { font:800 12px/1 "Segoe UI",system-ui,sans-serif; text-transform:uppercase; letter-spacing:.14em; color:var(--accent); margin:0 0 10px; }
   /* HUD and table are one card */
-  .arena { gap:0 !important; border:1px solid var(--line); overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.18); }   /* the same border and shadow as every panel */
-  .arena .hud, .arena .table { border:0 !important; box-shadow:none !important; }
+  .arena { gap:0; overflow:hidden; border-left:1px solid var(--line); border-right:1px solid var(--line); }
   /* Player HUD, built as the original's BattlerContainer is: your panel left in blue and the opponent's right in red, each with picture, name
      and clock (the clock sits on the inner side); the turns left in a badge where the panels meet; under them one Z gauge each, out of 100,
      reading MAX and glowing when full. The side that is not to act is masked black at 35% over 0.3 s (TurnChangeUi). */
@@ -86,7 +85,7 @@
   #status, #lt { position:absolute; left:0; right:0; bottom:0; height:16px; line-height:16px; padding:0 8px; font-size:10px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #status { color:var(--ink); } #status:empty { display:none; } #lt { background:var(--bar); } #lt[hidden] { display:none; }
   /* the table: red end at the top, blue end at the bottom */
-  .table { flex:1; min-height:0; display:flex; padding:0; border:1px solid var(--line); box-shadow:0 10px 30px rgba(0,0,0,.5), inset 0 0 0 2px color-mix(in srgb, var(--bd-line) 10%, transparent);
+  .table { flex:1; min-height:0; display:flex; padding:0;
     /* a fine grain, a faint weave, then the slate itself */
     background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .28 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), repeating-linear-gradient(45deg, color-mix(in srgb, var(--bd-line) 5%, transparent) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, color-mix(in srgb, var(--bd-line) 5%, transparent) 0 1px, transparent 1px 9px), linear-gradient(180deg,var(--bd2),var(--bd)); }
   #board3d { flex:1; min-width:0; min-height:0; } #board3d canvas { display:block; }
@@ -105,7 +104,7 @@
   .atkrow { display:grid; grid-template-columns:14px 1fr auto; gap:6px; padding:5px 0; border-top:1px solid var(--line); align-items:start; }
   .sw { border-radius:50%; width:12px; height:12px; margin-top:4px; border:1px solid rgba(255,255,255,.4); } .desc { color:var(--dim); font-size:12px; grid-column:2 / 4; }
   #log { height:160px; overflow:auto; font-size:12px; color:var(--dim); } #log > div { padding:3px 8px; background:color-mix(in srgb, var(--dim) 12%, transparent); }   /* neutral lines are grey; the two below tint a player's lines */ #log > .me { background:color-mix(in srgb, var(--p0) 11%, transparent); } #log > .op { background:color-mix(in srgb, var(--p1) 11%, transparent); } #log b, .ink { color:var(--ink); font-weight:700; }
-  #log > div:first-child { border-top-left-radius:8px; border-top-right-radius:8px; } #log > div:last-child { border-bottom-left-radius:8px; border-bottom-right-radius:8px; }
+  #log > div + div { border-top:1px solid var(--line); }   /* flush rows split by 1px lines */
   #list, #plist { height:300px; overflow:auto; } .row { display:flex; gap:8px; padding:6px 8px; cursor:pointer; align-items:center; }
   .row:hover { background:var(--ctl2); } .row .n { flex:1; } .team .row { background:var(--ctl); margin-bottom:4px; border:1px solid var(--line); }
   .chip.rar1 { background:#8a8f98; color:#fff; } .chip.rar2 { background:#2e9e5b; color:#fff; } .chip.rar3 { background:#2f7fe0; color:#fff; } .chip.rar4 { background:#d9a514; color:#111; } .chip.rar5 { background:#c0392b; color:#fff; }   /* rarity: C, UC, R, EX, UX */
@@ -116,10 +115,10 @@
   @media (min-width:861px) { .paths { display:flex; gap:6px; margin:0; } .top .paths a { margin:0; display:inline-flex; align-items:center; height:30px; padding:0 10px; font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap; }
     .top .paths a.on { background:var(--ink); border-color:var(--ink); color:var(--bg); } .top #viewLink { display:none; } }
   /* deck builder: figures, plates and the team as cards */
-  #setup { grid-template-columns:minmax(0,1.7fr) minmax(320px,1fr); }
-  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(116px,1fr)); gap:8px; overflow:auto; padding:2px; align-content:start; }
+  #setup { grid-template-columns:minmax(0,1.7fr) minmax(320px,1fr); background:var(--line); border-left:1px solid var(--line); border-right:1px solid var(--line); }
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(116px,1fr)); gap:1px; overflow:auto; padding:0; align-content:start; background:var(--line); border:1px solid var(--line); }
   #list.cards { height:min(58dvh,560px); } #plist.cards { height:250px; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); }
-  .card { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:8px; padding:34px 8px 8px; margin:0 !important; border:1px solid var(--line); background:var(--ctl); cursor:pointer; text-align:center; transition:transform .1s,background .12s,border-color .12s; }
+  .card { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:8px; padding:34px 8px 8px; margin:0 !important; background:var(--ctl); cursor:pointer; text-align:center; transition:transform .1s,background .12s,border-color .12s; }
   .card:hover { background:var(--ctl2); border-color:var(--dim); transform:translateY(-2px); }
   .card img { width:84px; height:84px; margin:0; } .card .nopic { height:84px; display:grid; place-items:center; color:var(--dim); font-size:12px; }
   .card .chip { position:absolute; top:8px; left:8px; margin:0; height:18px; line-height:18px; padding:0 6px; } .card .chip.r { left:auto; right:8px; min-width:18px; text-align:center; background:var(--ink); color:var(--bg); }
@@ -130,10 +129,10 @@
   #plist .card.plate .note { color:color-mix(in srgb, var(--bg) 72%, var(--ink)); } #plist .card.plate .chip { background:var(--bg); color:var(--ink); }
   #plist .card.plate .info { border-color:color-mix(in srgb, var(--bg) 35%, var(--ink)); color:color-mix(in srgb, var(--bg) 72%, var(--ink)); } #plist .card.plate .info:hover { background:var(--bg); border-color:var(--bg); color:var(--ink); }
   .card.plate { align-items:flex-start; text-align:left; gap:4px; } .card.plate .note { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-  .teamcards.cards { grid-template-columns:repeat(3,minmax(0,1fr)); overflow:visible; margin-bottom:8px; } .teamcards .card { min-height:124px; justify-content:center; }
+  .teamcards.cards { grid-template-columns:repeat(3,minmax(0,1fr)); overflow:visible; margin-bottom:0; } .teamcards .card { min-height:124px; justify-content:center; }
   .teamcards .card img { width:64px; height:64px; } .teamcards .pics { justify-content:center; gap:2px; } .dots { display:flex; gap:4px; justify-content:center; } .dots:empty { display:none; } .card .txt > .dots { position:absolute; left:8px; top:34px; flex-direction:column; overflow:visible; }   /* evolutions and forms: a column down the card's left edge, under the rarity badge */ .dot { border-radius:50%; position:relative; width:10px; height:10px; background:var(--dim); } .dot.form { background:none; border:2px solid var(--dim); } .dot:hover { background:var(--ink); }
   .teamcards .dot img { display:none; position:absolute; left:16px; top:50%; transform:translateY(-50%); max-width:none; width:72px; height:72px; padding:4px; background:var(--panel); border:1px solid var(--dim); box-shadow:0 6px 18px rgba(0,0,0,.4); z-index:3; } .teamcards .dot:hover img { display:block; }
-  .teamcards .card.empty { border-style:dashed; background:none; cursor:pointer; color:var(--dim); font-size:22px; } .teamcards .card.empty:hover { transform:none; border-color:var(--dim); }
+  .teamcards .card.empty { background:var(--panel); cursor:pointer; color:var(--dim); font-size:22px; } .teamcards .card.empty:hover { transform:none; background:var(--ctl); }
   #team .card.fig { cursor:pointer; } #team .card.fig.sel { border-color:var(--ink); box-shadow:0 0 0 2px var(--ink); }   /* selected slot: next list pick replaces it */
   .card .foot > .txt { flex:1; min-width:0; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; } .card .txt > * { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .teamcards .foot > span:last-child { flex-direction:column; }
   .card .foot { display:flex; justify-content:space-between; align-items:flex-end; gap:8px; width:100%; min-height:24px; margin-top:auto; } .card .foot > span { display:flex; align-items:center; gap:4px; } .card .own { font-size:12px; color:var(--dim); }
@@ -163,8 +162,8 @@
   @media (max-width:860px) { .cards { grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); } .card img { width:68px; height:68px; } }
   /* Saved teams: a strip of small cards that scrolls sideways (name, plate count and delete on one line, the six figures under it), so the
      panel is the same height however many teams there are. The name box and Save sit on the heading's line. */
-  #tlist { display:flex; gap:8px; overflow-x:auto; overflow-y:hidden; padding:2px 2px 4px !important; -webkit-mask-image:none !important; mask-image:none !important; scroll-snap-type:x proximity; }
-  .tcard { flex:0 0 196px; min-width:0; scroll-snap-align:start; display:flex; flex-direction:column; gap:4px; padding:6px 8px; border:1px solid var(--line); background:var(--ctl); cursor:pointer; transition:background .12s, border-color .12s; }
+  #tlist { display:flex; gap:0; overflow-x:auto; overflow-y:hidden; border:1px solid var(--line); padding:0 !important; -webkit-mask-image:none !important; mask-image:none !important; scroll-snap-type:x proximity; }
+  .tcard { flex:0 0 196px; min-width:0; scroll-snap-align:start; display:flex; flex-direction:column; gap:4px; padding:6px 8px; background:var(--ctl); border-right:1px solid var(--line); cursor:pointer; transition:background .12s, border-color .12s; }
   .tcard:hover { background:var(--ctl2); border-color:var(--dim); } .tcard .th { display:flex; align-items:center; gap:6px; min-width:0; } .tcard .th b { flex:1; min-width:0; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .tcard .th .chip { margin:0; flex:none; } .tcard .x { flex:none; width:22px; height:22px; padding:0; display:grid; place-items:center; border:1px solid transparent; background:none; color:var(--dim); } .tcard .x svg { width:13px; height:13px; }
   .tcard .x:hover { background:var(--danger); border-color:var(--danger); color:#fff; }
@@ -175,35 +174,35 @@
   .big { font:900 46px/1 "Segoe UI",system-ui,sans-serif; letter-spacing:-.01em; } .big small { font-size:13px; font-weight:600; color:var(--dim); letter-spacing:0; margin-left:8px; }
   .meter { height:8px; background:var(--ctl2); overflow:hidden; margin:10px 0 4px; } .meter i { display:block; height:100%; background:var(--ink); }
   .ends { display:flex; justify-content:space-between; color:var(--dim); font-size:11px; }
-  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:14px 0; } .stat { background:var(--ctl); border:1px solid var(--line); padding:10px 8px; text-align:center; } .stat b { display:block; font-size:20px; line-height:1.2; } .stat span { color:var(--dim); font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; margin:14px 0; background:var(--line); border:1px solid var(--line); } .stat { background:var(--ctl); padding:10px 8px; text-align:center; } .stat b { display:block; font-size:20px; line-height:1.2; } .stat span { color:var(--dim); font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
   .pips { display:flex; gap:4px; margin:6px 0 4px; } .pips i { flex:1; height:8px; background:var(--ctl2); } .pips i.on { background:var(--gold); }
-  .teamcards.cards.six { gap:8px; margin:0 0 8px; }   /* the deck on Home: three to a row, like the team in the builder, so names have room */
-  .boosters { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; } .booster { border:1px solid var(--line); background:var(--ctl); padding:12px 8px; text-align:center; min-height:86px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; } .booster.empty { border-style:dashed; background:none; color:var(--dim); font-size:12px; }
+  .teamcards.cards.six { margin:0; }   /* the deck on Home: three to a row, like the team in the builder, so names have room */
+  .boosters { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); } .booster { background:var(--ctl); padding:12px 8px; text-align:center; min-height:86px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; } .booster.empty { background:var(--panel); color:var(--dim); font-size:12px; }
   #home .cards { max-height:min(62dvh,560px); } #home .card { cursor:default; } #home .card:hover { transform:none; background:var(--ctl); border-color:var(--line); } #home [data-act] .card { cursor:pointer; }
   #card:empty { display:none; }
   /* Home is laid out as the original's league lobby is (RatingMatchPrefab, a 750-wide portrait screen): rating at the top, the deck (here a
      plain row of six cards, not the original's fan round a lead figure), the row of time boosters under it, and the League match button at the bottom, flanked by
      two smaller ones. One centred column, nothing stretched. */
-  #home { grid-template-columns:minmax(0,600px); justify-content:center; padding:12px; } #home .hlobby { display:grid; gap:10px; min-width:0; } #home .panel { margin-bottom:0; padding:12px 14px; } #home .panel h2 { margin-bottom:8px; }
+  #home { grid-template-columns:minmax(0,600px); justify-content:center; padding:0; } #home .hlobby > p.note { margin:0; padding:6px 14px; background:var(--panel); } #home .hlobby { display:grid; gap:1px; min-width:0; background:var(--line); border-left:1px solid var(--line); border-right:1px solid var(--line); } #home .panel { padding:12px 14px; } #home .panel h2 { margin-bottom:8px; }
   .hlg { display:grid; grid-template-columns:auto 1fr; gap:4px 18px; align-items:center; } .hlg .big { font-size:40px; } .hlg .stats { margin:0; } .hlg .stat { padding:6px 8px; } .hlg .stat b { font-size:16px; } .hlg .wide { grid-column:1 / -1; }
   .hhead { display:flex; align-items:center; gap:6px; margin-bottom:8px; flex-wrap:nowrap; min-width:0; min-height:var(--ctl-h, 30px); } .hhead h2, #home .hhead h2 { margin:0; flex:none; white-space:nowrap; } .hhead .hbtns { display:flex; gap:6px; flex:none; align-items:center; } .hhead label.note { display:inline-flex; align-items:center; gap:4px; margin:0 0 0 auto; font-weight:400; text-transform:none; letter-spacing:0; white-space:nowrap; min-width:0; font-size:11px; } #clr { color:var(--err); border-color:var(--danger); } #clr:hover:not(:disabled) { background:var(--danger); border-color:var(--danger); color:#fff; }   /* the theme's red, as on Resign */
   #pickBtn, #rnd, #clr { padding:0; } #rnd svg, #clr svg { width:22px; height:22px; } #pickBtn svg { width:18px; height:18px; }   /* pencil reads larger than the dice / trash glyphs at the same box size */
-  .hfig { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; cursor:pointer; }   /* the deck: one row of six figure cards */
-  .hfig > div { position:relative; display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0; padding:22px 4px 8px; border:1px solid var(--line); background:var(--ctl); text-align:center; } .hfig > div:hover { border-color:var(--dim); }
+  .hfig { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); cursor:pointer; }   /* the deck: one row of six figure cards */
+  .hfig > div { position:relative; display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0; padding:22px 4px 8px; background:var(--ctl); text-align:center; } .hfig > div:hover { border-color:var(--dim); }
   .hfig img { width:100%; max-width:72px; aspect-ratio:1; object-fit:contain; } .hfig .chip { position:absolute; left:6px; top:6px; margin:0; font-size:10px; padding:0 5px; } .hfig .chip.r { left:auto; right:6px; background:var(--ink); color:var(--bg); }
   .hfig b, .hfig .note { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .hfig b { font-size:12px; } .hfig .note { font-size:10px; }
   @media (max-width:520px) { .hfig { grid-template-columns:repeat(3,minmax(0,1fr)); } .hlg { grid-template-columns:1fr; } }
-  .hpl { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin-top:6px; cursor:pointer; }   /* the deck's plates in full: rarity, cost, name, text */
-  .hpl > div, #myplates .mpl { position:relative; display:flex; flex-direction:column; gap:4px; min-width:0; padding:8px 10px; border:1px solid var(--ink); background:var(--ink); color:var(--bg); } .hpl > div:hover, #myplates .mpl:hover { opacity:.9; }   /* inverted, like the primary button, so the plates stand apart from the figures */
+  .hpl { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:1px; margin-top:-1px; background:var(--line); border:1px solid var(--line); cursor:pointer; }   /* sits flush under the figures */   /* the deck's plates in full: rarity, cost, name, text */
+  .hpl > div, #myplates .mpl { position:relative; display:flex; flex-direction:column; gap:4px; min-width:0; padding:8px 10px; background:var(--ink); color:var(--bg); } .hpl > div:hover, #myplates .mpl:hover { opacity:.9; }   /* inverted, like the primary button, so the plates stand apart from the figures */
   .hpl .note, #myplates .mpl .note { color:color-mix(in srgb, var(--bg) 72%, var(--ink)); } .hpl .ct i, #myplates .mpl .ct i { border-radius:50%; box-shadow:0 0 0 1px rgba(0,0,0,.35); }
   .hpl .chip, #myplates .mpl .chip { align-self:flex-start; margin:0; } .hpl .ct { position:absolute; right:10px; top:11px; display:flex; gap:3px; } .hpl .ct i, #myplates .mpl .ct i { width:8px; height:8px; background:var(--gold); box-shadow:0 0 0 1px rgba(0,0,0,.35); }
   .hpl b, #myplates .mpl b { font-size:13px; line-height:1.2; } .hpl .note, #myplates .mpl .note { font-size:11px; line-height:1.35; }
   .hpl .note { display:block; }   /* Home: full plate text; deck strip fades overflow in #myplates .mpl > .note */
-  #home .boosters { grid-template-columns:repeat(3,1fr); gap:8px; } #home .booster { aspect-ratio:1; min-height:0; padding:6px; }   /* square slots, as the original's booster boxes are */
-  .hrow { display:grid; grid-template-columns:2fr 1fr; gap:10px; }   /* boosters in two thirds, the three buttons stacked in the last third */
-  .hgo { display:flex; flex-direction:column; gap:8px; } .hgo button { flex:1; text-align:center; padding:8px 10px; } .hgo .primary { flex:2; font-size:16px; font-weight:800; }
+  #home .boosters { grid-template-columns:repeat(3,1fr); } #home .booster { aspect-ratio:1; min-height:0; padding:6px; }   /* square slots, as the original's booster boxes are */
+  .hrow { display:grid; grid-template-columns:2fr 1fr; gap:1px; background:var(--line); }   /* boosters in two thirds, the three buttons stacked in the last third */
+  .hgo { display:flex; flex-direction:column; gap:1px; background:var(--line); } .hgo button { flex:1; text-align:center; padding:8px 10px; border:0; } .hgo .primary { flex:2; font-size:16px; font-weight:800; }
   /* chosen plates: same 3-across grid as #team figures (6 slots → two rows) */
-  #myplates { position:relative; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; overflow:visible; padding:4px; margin:0 0 8px; }   /* inset so :focus-visible rings are not clipped */
+  #myplates { position:relative; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; overflow:visible; padding:0; margin:0; background:var(--line); border:1px solid var(--line); }   /* inset so :focus-visible rings are not clipped */
   #myplates .mpl { min-width:0; height:var(--slot-h, 146px); box-sizing:border-box; }   /* same height as #team cards */
   #myplates .mpl .mhd { display:flex; align-items:center; gap:6px; flex:none; min-height:24px; }   /* rarity · spacer · i · x */
   #myplates .mpl .mhd .chip { position:static; margin-right:auto; }
@@ -213,7 +212,7 @@
   #myplates .mpl .info:hover { background:var(--bg); border-color:var(--bg); color:var(--ink); } #myplates .mpl .x:hover { background:var(--danger); border-color:var(--danger); color:#fff; }
   #myplates .mpl > b { flex:none; min-width:0; } #myplates .mpl > .note { flex:1 1 0; min-height:0; min-width:0; display:block; -webkit-line-clamp:unset; overflow:hidden; -webkit-mask-image:linear-gradient(to bottom, #000 55%, transparent); mask-image:linear-gradient(to bottom, #000 55%, transparent); }   /* soft fade instead of a hard clamp */
   #pcost .pc { color:var(--gold); font-weight:700; } #pcost .auto { display:block; margin-top:2px; text-transform:none; letter-spacing:0; font-weight:600; }   /* Mega Stones: outside the six slots */   /* same gold as the cost dots on .mpl */
-  #myplates .mpl.empty { border:1px dashed color-mix(in srgb, var(--bg) 55%, var(--ink)); background:var(--ink); color:var(--bg); font-size:22px; font-weight:700; align-items:center; justify-content:center; cursor:pointer; opacity:1; padding:8px 10px; }
+  #myplates .mpl.empty { background:var(--ink); color:var(--bg); font-size:22px; font-weight:700; align-items:center; justify-content:center; cursor:pointer; opacity:1; padding:8px 10px; }
   #myplates .mpl.empty:hover { opacity:.88; border-color:var(--bg); }
   /* Deck builder layout. Wide screen: saved teams, then tabbed figures/plates on the left; team + Start on the right.
      Narrow screen: team + saved + Start; figures & plates open from a side drawer (#pickSide) with the same tabs. */
@@ -244,58 +243,56 @@
   #setup > section:last-child > .panel:last-child { padding:10px 12px; } #setup > section:last-child > .panel:last-child p.note { display:none; }
   @media (min-width:861px) {
     #setup { grid-template-rows:minmax(0,1fr); align-content:stretch; overflow:hidden; }
-    #setup > section { display:flex; flex-direction:column; gap:14px; min-width:0; min-height:0; overflow:auto; } #setup > section > .panel { margin-bottom:0; flex:none; }
+    #setup > section { display:flex; flex-direction:column; gap:0; min-width:0; min-height:0; overflow:auto; background:var(--bg); } #setup > section > .panel { flex:none; } #setup > section > * { border-bottom:1px solid var(--line); }   /* a 1px line under each panel; space left below stays page-coloured */
     #pickBtn { display:none !important; }   /* desktop: saved teams on top; tabbed pickSide grows under it */
     #pickSide { display:flex; flex-direction:column; gap:10px; flex:1 1 0; min-height:0; overflow:hidden; padding:4px; }   /* room for :focus-visible on #pickExp / tabs */
     #pickSide[data-tab=fig] #figPanel, #pickSide[data-tab=plt] #pltPanel { min-height:280px; } #savedPanel { flex:none; }
     #list.cards, #plist.cards { height:auto; flex:1 1 0; min-height:0; padding-top:14px; padding-bottom:14px; -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%); mask-image:linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%); }   /* lists scroll inside the panel; fade at both ends like the log */
-    #setup > section { padding-top:14px; padding-bottom:14px; -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%); mask-image:linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%); }
-    #setup { padding-top:4px; padding-bottom:4px; }
     /* the right column is kept short enough to fit the window (compact team cards); it scrolls only when the window is too short */
     #setup > section:last-child > .panel:first-child { flex:1 0 auto; } #tmsg { min-height:18px; }   /* the team panel takes the height that is left; the message line under the saved teams is always there for the same reason */
     #setup { --slot-h:146px; } #team .card { height:var(--slot-h); min-height:0; padding-top:28px; gap:4px; } #team .card img { width:52px; height:52px; }   /* one fixed height, empty or filled, so loading a team does not move the page; plates share --slot-h */
-    #setup > section { padding-left:12px; padding-right:12px; margin-left:-12px; margin-right:-12px; }   /* room inside each scrolling column for the panels' shadows, which its edges would otherwise cut off */ #setup > section:last-child > .panel:last-child { position:sticky; bottom:0; z-index:2; box-shadow:0 2px 10px rgba(0,0,0,.18), 0 8px 0 6px var(--bg);   /* the panels' own shadow, over a band of page colour beside and below the pinned panel that hides whatever scrolls behind it; it stops at the panel's top edge so the shadow of the panel above still shows */ }
+    #setup > section:last-child > .panel:last-child { position:sticky; bottom:0; z-index:2; border-top:1px solid var(--line); }   /* the duel button panel stays pinned at the column's foot */
   }
   @media (max-width:860px) {
     /* Home: one non-scrolling column — compact league, deck fills the middle, boosters + actions pinned at the bottom */
-    #home { display:flex; flex-direction:column; gap:0; padding:6px; min-height:0; }
-    #home > .hlobby { display:flex; flex-direction:column; gap:6px; flex:1 1 0; min-height:0; overflow:hidden; width:100%; max-width:none; }
-    #home .panel { margin:0; padding:8px; min-width:0; }
+    #home { display:flex; flex-direction:column; gap:0; padding:0; min-height:0; }
+    #home > .hlobby { display:flex; flex-direction:column; gap:1px; border:0; flex:1 1 0; min-height:0; overflow:hidden; width:100%; max-width:none; }
+    #home .panel { padding:8px; min-width:0; }
     #home .hlg { flex:none; gap:4px 10px; grid-template-columns:auto 1fr; } #home .hlg h2 { margin-bottom:2px; font-size:11px; }
     #home .hlg .big { font-size:28px; } #home .hlg .big small { font-size:11px; margin-left:4px; }
     #home .hlg .stat { padding:4px 6px; } #home .hlg .stat b { font-size:14px; } #home .hlg .stat span { font-size:9px; }
     #home .meter { height:6px; margin:4px 0 2px; } #home .ends { font-size:10px; } #home .pips { margin:2px 0 0; gap:3px; } #home .pips i { height:6px; }
     #home .hlobby > .panel:has(.hfig) { flex:1 1 0; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
     #home .hhead { margin-bottom:4px; flex:none; min-height:26px; } #home .hhead button { height:26px; padding:0 10px; font-size:11px; }
-    #home .hfig { flex:1 1 0; min-height:0; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:1fr 1fr; gap:4px; }   /* figures and plates split the deck panel */
+    #home .hfig { flex:1 1 0; min-height:0; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:1fr 1fr; }   /* figures and plates split the deck panel */
     #home .hfig > div { min-height:0; padding:14px 2px 3px; gap:0; overflow:hidden; justify-content:center; } #home .hfig img { width:min(44px, 50%); height:auto; aspect-ratio:1; } #home .hfig b { font-size:11px; } #home .hfig .note { font-size:9px; } #home .hfig .chip { font-size:9px; padding:0 4px; left:4px; top:4px; } #home .hfig .chip.r { right:4px; left:auto; }
-    #home .hpl { flex:1 1 0; min-height:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:1fr; gap:4px; margin-top:4px; overflow:hidden; }   /* 2-col fills 4 or 6 plates with no empty cells */
+    #home .hpl { flex:1 1 0; min-height:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:1fr; margin-top:-1px; overflow:hidden; }   /* 2-col fills 4 or 6 plates with no empty cells */
     #home .hpl > div { height:100%; padding:6px 8px; gap:2px; min-height:0; overflow:hidden; } #home .hpl b { font-size:11px; } #home .hpl .note { flex:1 1 0; min-height:0; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4; overflow:hidden; font-size:10px; line-height:1.3; } #home .hpl .ct { top:6px; right:6px; }
-    #home .hrow { flex:none; display:grid; grid-template-columns:1fr minmax(7.5em, 30%); gap:6px; align-items:stretch; }
+    #home .hrow { flex:none; display:grid; grid-template-columns:1fr minmax(7.5em, 30%); gap:1px; align-items:stretch; }
     #home .hrow > .panel { display:flex; flex-direction:column; gap:4px; min-width:0; } #home .hrow > .panel > h2 { margin-bottom:0; font-size:11px; } #home .hrow > .panel > p.note, #home #homeMsg:empty { display:none; }
-    #home .boosters { gap:4px; flex:1; } #home .booster { aspect-ratio:auto; height:100%; min-height:52px; max-height:72px; padding:4px; gap:2px; font-size:10px; } #home .booster .chip { font-size:9px; padding:0 4px; } #home .booster .primary { height:26px; padding:0 8px; font-size:11px; }
-    #home .hgo { position:static; gap:6px; padding:0; background:none; box-shadow:none; } #home .hgo button { padding:0 8px; min-height:36px; font-size:12px; } #home .hgo .primary { font-size:14px; min-height:0; flex:2; }
+    #home .boosters { flex:1; } #home .booster { aspect-ratio:auto; height:100%; min-height:52px; max-height:72px; padding:4px; gap:2px; font-size:10px; } #home .booster .chip { font-size:9px; padding:0 4px; } #home .booster .primary { height:26px; padding:0 8px; font-size:11px; }
+    #home .hgo { position:static; gap:1px; padding:0; } #home .hgo button { padding:0 8px; min-height:36px; font-size:12px; } #home .hgo .primary { font-size:14px; min-height:0; flex:2; }
     #home .hlobby > p.note { display:none; }   /* footer blurb — room goes to the deck */
     /* Setup mobile: team + plates share the same 3×2 grid and inset (no scroll fade on resting tiles) */
-    #setup { --edge:4px; --fade:14px; --gap:6px; --plt-h:72px; display:flex; flex-direction:column; gap:var(--gap); padding:var(--gap); min-height:0; overflow:hidden; }
+    #setup { --edge:4px; --fade:14px; --gap:6px; --plt-h:72px; display:flex; flex-direction:column; gap:1px; padding:0; min-height:0; overflow:hidden; background:var(--line); border:0; }
     #setup > section { display:contents; } #setup .panel { margin-bottom:0; min-width:0; padding:var(--gap); }
     #setup > section:last-child > .panel:nth-child(1) { order:1; flex:1 1 0; min-height:0; display:flex; flex-direction:column; overflow:hidden; gap:0; }
-    #savedPanel { order:2; flex:none; } #setup > section:last-child > .panel:nth-child(2) { order:3; flex:none; position:relative; z-index:2; box-shadow:0 2px 10px rgba(0,0,0,.18); }
+    #savedPanel { order:2; flex:none; } #setup > section:last-child > .panel:nth-child(2) { order:3; flex:none; position:relative; z-index:2; }
     #setup .hhead { margin-bottom:var(--edge); flex:none; min-height:26px; }
     #setup .hhead label.note { font-size:10px; } #setup #oplLabel { display:none; }
-    #setup .teamcards.cards { flex:1 1 0; min-height:0; margin:0 0 var(--gap); gap:var(--gap); padding:0; height:auto; overflow:hidden; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:1fr 1fr; }
+    #setup .teamcards.cards { flex:1 1 0; min-height:0; margin:0; padding:0; height:auto; overflow:hidden; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:1fr 1fr; }
     #team .card { height:100%; min-height:0 !important; padding:18px 4px 4px; gap:2px; box-sizing:border-box; }
     #team .card img { width:min(52px, 46%); height:auto; aspect-ratio:1; max-height:52px; object-fit:contain; }
     #team .card .nm { font-size:11px; } #team .card .note { font-size:9px; }
-    #setup #myplates { flex:none; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:repeat(2,var(--plt-h)); gap:var(--gap); margin:0; padding:0; height:auto; min-width:0; box-sizing:border-box; overflow:hidden; -webkit-mask-image:none; mask-image:none; }
+    #setup #myplates { flex:none; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:repeat(2,var(--plt-h)); margin:0; padding:0; height:auto; min-width:0; box-sizing:border-box; overflow:hidden; -webkit-mask-image:none; mask-image:none; }
     #setup #myplates .mpl { width:auto; height:100%; min-height:0 !important; padding:6px 8px; gap:2px; box-sizing:border-box; overflow:hidden; }
     #setup #myplates .mpl > .note { display:none; }
     #setup #myplates .mpl .mhd { min-height:22px; margin:0; }
     #setup #myplates .mpl > b { flex:1 1 auto; min-height:0; font-size:11px; line-height:1.2; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; white-space:normal; }
     #setup #myplates .mpl .ct { margin-top:auto; }
-    #setup #myplates .mpl.empty { background:none; color:var(--dim); border:1px dashed color-mix(in srgb, var(--dim) 70%, transparent); font-size:22px; font-weight:700; }
+    #setup #myplates .mpl.empty { background:var(--panel); color:var(--dim); font-size:22px; font-weight:700; }
     #setup #myplates .mpl.empty:hover { opacity:1; border-color:var(--dim); }
-    #setup #tmsg { display:none; } #savedPanel #tlist { margin:0; padding:var(--edge) var(--fade); -webkit-mask-image:linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%); mask-image:linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%); scroll-padding-inline:var(--fade); } #savedPanel .tcard { flex:0 0 160px; padding:4px 6px; gap:2px; scroll-snap-align:start; }
+    #setup #tmsg { display:none; } #savedPanel #tlist { margin:0; padding:0; -webkit-mask-image:linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%); mask-image:linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%); scroll-padding-inline:var(--fade); } #savedPanel .tcard { flex:0 0 160px; padding:4px 6px; gap:2px; scroll-snap-align:start; }
     #pickBtn { display:inline-flex !important; } #pickClose { display:inline-flex; } #pickExp { display:none !important; }
     #pickScrim { display:block; position:fixed; inset:0; z-index:5; background:color-mix(in srgb, var(--bg) 55%, transparent); opacity:0; pointer-events:none; transition:opacity .2s; } #setup.pick-open #pickScrim:not([hidden]) { opacity:1; pointer-events:auto; } #pickScrim[hidden] { display:none !important; }
     #pickSide { position:fixed; inset:0; z-index:6; width:auto; display:flex; flex-direction:column; gap:10px; padding:12px; padding-top:max(12px, env(safe-area-inset-top)); padding-bottom:max(12px, env(safe-area-inset-bottom)); background:var(--bar); border:0; box-shadow:none; transform:translateX(100%); visibility:hidden; transition:transform .22s ease, visibility 0s linear .22s; overflow:hidden; pointer-events:none; }
@@ -307,14 +304,14 @@
     #list.cards { height:52dvh; } #plist.cards { height:40dvh; grid-template-columns:1fr; }
     #setup .bar select, #setup .bar input:not([type=checkbox]) { min-width:0; max-width:100%; } #mode { width:100%; }
   }
-  #acts { display:grid; gap:6px; max-height:34dvh; overflow:auto; align-content:start; } #acts button { width:100%; padding:10px 14px; background:var(--ink); border:2px solid var(--bg); color:var(--bg); }
-  #acts button:hover:not(:disabled) { background:var(--ink); border-color:var(--bg); opacity:1; } #acts button .ink { color:inherit; }
-  #game .side > .panel:has(#acts) { background:var(--ink); color:var(--bg); border-color:var(--bg); } #game .side > .panel:has(#acts) h2 { color:var(--bg); }
+  #acts { display:grid; gap:1px; background:var(--line); max-height:34dvh; overflow:auto; align-content:start; } #acts button { width:100%; padding:10px 14px; background:var(--ink); border:0; color:var(--bg); }
+  #acts button:hover:not(:disabled) { background:var(--ink); opacity:.85; } #acts button .ink { color:inherit; }
+  #game .side > .panel:has(#acts) { background:var(--ink); color:var(--bg); } #game .side > .panel:has(#acts) h2 { color:var(--bg); }
   #acts button:first-child { } #acts button:last-child { } #acts button:only-child { }
   #acts:empty:before { content:"Nothing to choose right now."; color:var(--bg); font-size:12px; }
   /* the fade sits in the padding, so the first and last rows are fully there and only the overflow softens */
   #log { padding:14px 0; -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%); mask-image:linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%); }
-  #game .side { display:flex; flex-direction:column; gap:var(--g); overflow:hidden; } #game .side > .panel, #game #camBar, #game #sideHome { margin:0; } #game #camBar { gap:var(--g); } #game .side > .panel:has(#log), #game .side > .panel:has(#acts) { flex:1 1 0; min-height:0; display:flex; flex-direction:column; } #game .side > #card { flex:0 1 auto; max-height:40%; min-height:0; overflow:auto; }
+  #game .side { display:flex; flex-direction:column; gap:1px; background:var(--line); border-right:1px solid var(--line); overflow:hidden; } #game .side > .panel, #game #camBar, #game #sideHome { margin:0; } #game #camBar { gap:1px; background:var(--line); } #game #camBar .iconbtn, #game #camBar a.iconbtn { width:44px; height:44px; border:0; background:var(--bar); } #game #camBar .camGrow { align-self:stretch; background:var(--bar); } #game .side > .panel:has(#log), #game .side > .panel:has(#acts) { flex:1 1 0; min-height:0; display:flex; flex-direction:column; } #game .side > #card { flex:0 1 auto; max-height:40%; min-height:0; overflow:auto; }
   #game .side > .panel:has(#log) #log, #game .side > .panel:has(#acts) #acts { flex:1 1 0; height:auto; max-height:none; min-height:0; }
   #modal { position:fixed; inset:0; background:color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter:blur(3px); display:grid; place-items:center; padding:16px; z-index:5; }
   /* the team slot editor */
