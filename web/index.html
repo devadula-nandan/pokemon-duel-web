@@ -3,7 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#111111"><meta name="apple-mobile-web-app-title" content="Duel">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <title>pokemon duel web</title>
 <link rel="stylesheet" href="theme.css">
@@ -11,9 +10,7 @@
 <script src="assets.js"></script>
 <script src="sound.js"></script>
 <style>
-  body { position:fixed; inset:0; display:flex; flex-direction:column; box-sizing:border-box; padding:var(--sat) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
-  html.app body { bottom:auto; height:var(--app-h, 100%); }   /* home-screen app: iOS gives the page a viewport shorter than the screen, so size it from the screen (theme.js) */
-  body::before { content:''; position:fixed; top:0; left:0; right:0; height:var(--sat); background:#000; z-index:100; pointer-events:none; }   /* home-screen app: the see-through status-bar style gives the app the whole screen (the opaque one leaves the bottom undrawn on iOS 26); the page starts below the frosted strip and this black band sits behind the white clock. position:fixed + inset:0 is the real screen: 100dvh misses the status bar there, leaving a gap at the bottom and a page that slides up */ input, button, select, textarea, a, label { touch-action:manipulation; }   /* no double-tap zoom on controls */
+  body { height:100dvh; display:flex; flex-direction:column; } input, button, select, textarea, a, label { touch-action:manipulation; }   /* no double-tap zoom on controls */
   .top { display:flex; align-items:center; gap:6px; padding:6px; background:var(--bar); border-bottom:1px solid var(--line); } .top button { margin:0; }   /* one even 6px gap between everything in the bar */ .top .ticker { flex:1; min-width:0; border-bottom:0; -webkit-mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); }   /* the scrolling text fades in and out at both ends instead of being cut off */
   .ticker { overflow:hidden; white-space:nowrap; background:var(--bar); color:var(--accent); font-size:12px; padding:5px 0; border-bottom:1px solid var(--line); }
   .ticker span { display:inline-block; padding-left:100%; animation:tick 70s linear infinite; } .ticker:hover span { animation-play-state:paused; }
@@ -25,7 +22,7 @@
   #sideBtn, #sideHome { display:none; } #camBar { margin-bottom:14px; flex-wrap:nowrap; } #camBar:empty { display:none; }
   #camBar .camGrow { flex:1 1 auto; min-width:4px; } #camBar a.iconbtn { margin:0; border:1px solid var(--line); border-radius:4px; background:var(--ctl); display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; text-decoration:none; color:inherit; } #camBar a.iconbtn:hover { background:var(--ctl2); border-color:var(--dim); }
   @media (max-width:860px) {
-    html, body { overflow:hidden; }   /* home / setup / game fill the screen; no document scroll */
+    html, body { height:100dvh; max-height:100dvh; overflow:hidden; }   /* home / setup / game fill the screen; no document scroll */
     #setup, #home { grid-template-columns:1fr !important; flex:1 1 0; min-height:0; max-width:none; width:100%; overflow-x:hidden; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; align-content:start; }
     #home, #setup { overflow:hidden; }   /* both lobbies fit the screen — no page scrollbar */
     #fsBtn, #fsGame { display:none !important; }
@@ -278,7 +275,7 @@
     #setup #tmsg { display:none; } #savedPanel #tlist { margin:0; padding:var(--edge) var(--fade); -webkit-mask-image:linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%); mask-image:linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%); scroll-padding-inline:var(--fade); } #savedPanel .tcard { flex:0 0 160px; padding:4px 6px; gap:2px; scroll-snap-align:start; }
     #pickBtn { display:inline-flex !important; } #pickClose { display:inline-flex; } #pickExp { display:none !important; }
     #pickScrim { display:block; position:fixed; inset:0; z-index:5; background:color-mix(in srgb, var(--bg) 55%, transparent); opacity:0; pointer-events:none; transition:opacity .2s; } #setup.pick-open #pickScrim:not([hidden]) { opacity:1; pointer-events:auto; } #pickScrim[hidden] { display:none !important; }
-    #pickSide { position:fixed; inset:0; z-index:6; width:auto; display:flex; flex-direction:column; gap:10px; padding:12px; padding-top:max(12px, var(--sat)); padding-bottom:max(12px, env(safe-area-inset-bottom)); background:var(--bar); border:0; box-shadow:none; transform:translateX(100%); visibility:hidden; transition:transform .22s ease, visibility 0s linear .22s; overflow:hidden; pointer-events:none; }
+    #pickSide { position:fixed; inset:0; z-index:6; width:auto; display:flex; flex-direction:column; gap:10px; padding:12px; padding-top:max(12px, env(safe-area-inset-top)); padding-bottom:max(12px, env(safe-area-inset-bottom)); background:var(--bar); border:0; box-shadow:none; transform:translateX(100%); visibility:hidden; transition:transform .22s ease, visibility 0s linear .22s; overflow:hidden; pointer-events:none; }
     #setup.pick-open #pickSide { transform:none; visibility:visible; transition:transform .22s ease, visibility 0s; pointer-events:auto; }
     #pickSide #figPanel, #pickSide #pltPanel { background:none; border:0; border-radius:0; box-shadow:none; padding:0; }
     #pickSide #figPanel > .pbody, #pickSide #pltPanel > .pbody { gap:6px; padding:0; }

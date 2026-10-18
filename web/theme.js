@@ -18,15 +18,6 @@
     (document.body || document.documentElement).appendChild(el);
   };
   if (document.body) mountVer(); else addEventListener('DOMContentLoaded', mountVer);
-  // Opened from the home screen: iOS lays the page out in a viewport shorter than the screen (a gap at the bottom), so the page is
-  // sized from the screen itself, in the current orientation.
-  if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) {
-    const root = document.documentElement; root.classList.add('app');
-    const fit = () => { const land = matchMedia('(orientation: landscape)').matches, lo = Math.min(screen.width, screen.height), hi = Math.max(screen.width, screen.height);
-      const full = Math.abs(innerWidth - (land ? hi : lo)) < 3;   // an iPad window narrower than the screen keeps its own height
-      root.style.setProperty('--app-h', (full ? Math.max(innerHeight, land ? lo : hi) : innerHeight) + 'px'); };
-    fit(); addEventListener('resize', fit); addEventListener('orientationchange', () => setTimeout(fit, 300));
-  }
   const ICONS = { auto: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>',
     light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
     dark: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>' };
@@ -41,7 +32,6 @@
   const label = () => {
     const look = mode === 'auto' ? (sysLight.matches ? 'light' : 'dark') : mode;
     const [bg, ink, line] = LOOK[look];
-    const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.content = bg;   // the iOS home-screen status bar takes this colour
     const title = 'Theme: ' + mode + (mode === 'auto' ? ' (follows device)' : '') + ' — click for ' + NEXT[mode];
     for (const b of themeBtns()) {
       b.innerHTML = icon(ICONS[mode]); b.title = title; b.setAttribute('aria-label', title); b.classList.add('iconbtn');
