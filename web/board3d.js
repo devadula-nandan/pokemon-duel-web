@@ -489,7 +489,7 @@ function stepPlates(dt) {
 // A field spin (MatchMain field declare spin): when an effect makes figures that are not in a battle spin (Ice Shard, Powder Snow, Origin
 // Pulse, ...), each one's wheel appears flat around its stand on the board, spins and stops on the engine's result, then fades. segs:
 // [{ range (of 96), col (css colour), label }]; results: [{ num, displace }]. Resolves with the index of the slice it stopped on.
-const fieldSpins = [], SPIN_IN = BASE_R + .06, SPIN_OUT = BASE_R + .62;
+const fieldSpins = [], SPIN_IN = BASE_R + .06, SPIN_OUT = SPIN_IN + AURA_W;   // the status ring's width, a little further out
 function wheelTex(segs) {
   return tex(512, 512, (g, w, h) => {
     const c = w / 2, R = w / 2 - 2, rIn = R * SPIN_IN / SPIN_OUT; let a = 0;
@@ -497,7 +497,7 @@ function wheelTex(segs) {
       const a0 = a / 96 * Math.PI * 2 - Math.PI / 2, a1 = (a + sg.range) / 96 * Math.PI * 2 - Math.PI / 2; a += sg.range;
       g.beginPath(); g.moveTo(c, c); g.arc(c, c, R, a0, a1); g.closePath(); g.fillStyle = sg.col; g.fill(); g.strokeStyle = '#111'; g.lineWidth = 3; g.stroke();
       if (sg.label && sg.range >= 8) { const mid = (a0 + a1) / 2, rr = (R + rIn) / 2; g.save(); g.translate(c + Math.cos(mid) * rr, c + Math.sin(mid) * rr); g.rotate(mid + Math.PI / 2);
-        g.fillStyle = sg.ink || '#111'; g.font = '900 34px Segoe UI, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(sg.label, 0, 0); g.restore(); }
+        g.fillStyle = sg.ink || '#111'; g.font = '900 28px Segoe UI, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(sg.label, 0, 0); g.restore(); }
     }
     g.beginPath(); g.arc(c, c, R, 0, Math.PI * 2); g.strokeStyle = '#0b0b0c'; g.lineWidth = 6; g.stroke();
   });
@@ -506,7 +506,7 @@ function fieldSpin(i, segs, results, still) {   // still: a frozen or melted whe
   const g = tokens.get(i); if (!g || !segs.length) return Promise.resolve(0);
   const geo = new THREE.RingGeometry(SPIN_IN, SPIN_OUT, 96, 1), mat = new THREE.MeshBasicMaterial({ map: wheelTex(segs), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
   const ring = new THREE.Mesh(geo, mat); ring.rotation.x = -Math.PI / 2; ring.renderOrder = 55;
-  const turnG = new THREE.Group(); turnG.add(ring); turnG.position.y = .02;
+  const turnG = new THREE.Group(); turnG.add(ring); turnG.position.y = AURA_H + .004;   // level with the top of the status ring
   const ptr = new THREE.Mesh(new THREE.ConeGeometry(.09, .2, 3), new THREE.MeshBasicMaterial({ color: css('--gold', '') || '#ffd23f', transparent: true, opacity: 0, depthWrite: false }));
   ptr.rotation.x = Math.PI / 2; ptr.position.set(0, .05, -(SPIN_OUT + .08)); ptr.renderOrder = 56;   // fixed at the far side (12 o'clock on the wheel), pointing in
   const host = new THREE.Group(); host.add(turnG, ptr); host.position.copy(g.position); g.parent.add(host);
