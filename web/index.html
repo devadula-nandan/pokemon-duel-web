@@ -15,7 +15,10 @@
      those 16px, so the smear has nothing to show, and the page starts below it. (The fix from hunterirving/events, linked in r/PWA.) */
   #sbTint { display:none; }
   html.ios-app #sbTint { display:block; position:fixed; top:0; left:0; right:0; height:16px; z-index:2000; pointer-events:none; background:var(--bar); }
-  html.ios-app body { box-sizing:border-box; padding-top:16px; } html.ios-app body > .top { padding-top:0; }   /* the strip is the bar's top padding */ input, button, select, textarea, a, label { touch-action:manipulation; }   /* no double-tap zoom on controls */
+  html.ios-app body { box-sizing:border-box; padding-top:16px; } html.ios-app body > .top { padding-top:0; }   /* the strip is the bar's top padding */
+  /* in a duel the top bar is hidden: no strip there, the player bars reach 16px higher instead, so the smear falls on flat colour */
+  html.ios-app.mview:has(#game:not([hidden])) body { padding-top:0; } html.ios-app.mview:has(#game:not([hidden])) #sbTint { display:none; }
+  html.ios-app.mview .hud .pl { height:60px; padding-top:16px; } html.ios-app.mview .hud .turns { top:38px; } input, button, select, textarea, a, label { touch-action:manipulation; }   /* no double-tap zoom on controls */
   .top { display:flex; align-items:center; gap:6px; padding:6px; background:var(--bar); border-bottom:1px solid var(--line); } .top button { margin:0; }   /* one even 6px gap between everything in the bar */ .top .ticker { flex:1; min-width:0; border-bottom:0; -webkit-mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); }   /* the scrolling text fades in and out at both ends instead of being cut off */
   .ticker { overflow:hidden; white-space:nowrap; background:var(--bar); color:var(--accent); font-size:12px; padding:5px 0; border-bottom:1px solid var(--line); }
   .ticker span { display:inline-block; padding-left:100%; animation:tick 70s linear infinite; } .ticker:hover span { animation-play-state:paused; }
