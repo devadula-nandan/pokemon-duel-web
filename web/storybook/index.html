@@ -171,6 +171,19 @@ async function loopPlate(m, job) {   // UsePlateEffect: the plate's effect on ea
     if (!(await sleep(1600, job))) return;
   }
 }
+async function loopFieldSpin(m, job) {   // DeclareSpinInit field spin: each named figure's wheel turns around its stand and stops on a random slice
+  while (job === demoJob && window.Board3D && Board3D.fieldSpin) {
+    const on = m.toks.filter(t => t._spin);
+    sfx('spin');
+    await Promise.all(on.map(t => {
+      const f = D.figures.find(x => x.n === t.name) || fig, w = skillsOf(f);
+      const segs = w.map(x => { const col = (D.skills[x.id] || [0, 0, 0])[2]; return { range: x.range, col: DISK_COL[col], ink: col === 2 ? '#fff' : '#111', label: col === 2 ? '★'.repeat(Math.min(x.speed_or_damage || 0, 5)) : col === 1 || col === 3 ? String(x.speed_or_damage || 0) : '' }; });
+      return Board3D.fieldSpin(t.i, segs, [{ num: Math.floor(Math.random() * 96), displace: t._displace || 0 }]);
+    }));
+    if (window.sfxStop) sfxStop('spin'); sfx('spin_stop');
+    if (!(await sleep(600, job))) return;
+  }
+}
 async function loopMove(m, job) {
   while (job === demoJob && window.Board3D) {
     for (const t of m.toks) if (t._route) { t.x = t._route[0][0]; t.z = t._route[0][1]; t.moveId = null; t.path = null; t.segs = null; }
@@ -323,6 +336,11 @@ const STORIES = {
     'On two figures': ['A swap names two figures; the effect plays on both at once.', () => ({ ...row([{ _plate: true }, {}, { _plate: true }]), demo: 'plate', plate: 'Pokémon Switch', out: true })],
     'No figure': ['A plate whose action names no figure (Recycle) plays its effect over the table.', () => ({ ...row([{}, { team: 1 }]), demo: 'plate', plate: 'Recycle' })],
   },
+  'Field spins': {
+    'One figure': ['A spin outside a battle (Ice Shard, Powder Snow, Origin Pulse, ...): the figure\'s wheel lies around its stand, turns and stops on a slice, then fades. Loops.', () => ({ ...row([{ f: D.figures.find(f => f.n === 'Psyduck'), _spin: true }]), demo: 'fieldspin' })],
+    'Several at once': ['A spin that names several figures turns all their wheels together.', () => ({ ...row([{ f: D.figures.find(f => f.n === 'Psyduck'), team: 1, _spin: true }, {}, { f: D.figures.find(f => f.n === 'Leafeon'), team: 1, _spin: true }]), demo: 'fieldspin' })],
+    'With a shift': ['A displacement after the spin moves the wheel on to the next slice.', () => ({ ...row([{ _spin: true, _displace: 1 }]), demo: 'fieldspin' })],
+  },
   Sounds: {
     'Figure sounds': ['Every clip the original game names for something that happens to a figure. The list under the table is the whole set.', () => ({ ...row([{ badge: 'figure sounds' }]), catalog: true })],
   },
@@ -438,6 +456,7 @@ function show(group, name) {
   if (m.demo === 'wheel' || m.demo === 'battle') { draw(m); if (m.demo === 'battle') { sfx('attack'); sfx('select'); } playWheel(m, job); return; }
   if (m.demo === 'ability') { draw(m); loopAbility(m, job); return; }
   if (m.demo === 'plate') { draw(m); loopPlate(m, job); return; }
+  if (m.demo === 'fieldspin') { draw(m); loopFieldSpin(m, job); return; }
   // what arrives after the story opens, in order: each status condition, then each figure's MP change
   const playStatus = kind => { const row = COND_SOUND[kind]; if (row) sfx(row[2]); else statusSfx(kind); };
   const arrivals = [...new Set(m.toks.map(t => t.status).filter(Boolean))].map(kind => ({ hits: t => t.status === kind, sound: () => playStatus(kind) }))

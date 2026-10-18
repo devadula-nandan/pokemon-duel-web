@@ -2241,6 +2241,21 @@ function wheelSnap(src, battler, spin) {   // the disk is drawn from the figure 
   const marker = ((s && (s.pokemon_conditions || []).find(c => c.pokemon_index === figId) || {}).marker) || {};
   return { skills, frozen: marker.circle === 'freeze' || marker.circle === 'melt', marker };
 }
+// MatchMain.DeclareSpinInit: a spin stays on the battle screen only when every figure it spins is in the battle; any other spin (Ice
+// Shard, Powder Snow, Origin Pulse, ...) is a field spin, its roulette turning around the figure's stand on the board.
+const fieldSpinOf = v => VIEW3D && window.Board3D && Board3D.fieldSpin && !(v.spins || []).some(s => (s.results || []).some(r => r.type === 'battle'))
+  && !(battleView && (v.spins || []).every(s => battleView.ids.includes(s.pokemon)));
+async function fieldSpins(v, opt) {
+  const list = (v.spins || []).map(sp => ({ sp, info: wheelSnap(opt.wheelSt, sp.pokemon, sp) })), willSpin = list.some(x => !x.info.frozen);
+  if (willSpin) sfx('spin');
+  await Promise.all(list.map(async ({ sp, info }) => {
+    const segs = info.skills.map(x => { const col = x.sealed ? 0 : (D.skills[x.id] || [0, 0, 0])[2];
+      return { range: x.range, col: DISK_COL[col], ink: col === 2 ? '#fff' : '#111', label: col === 2 ? '★'.repeat(Math.min(x.speed_or_damage || 0, 5)) : col === 1 || col === 3 ? String(x.speed_or_damage || 0) : '' }; });
+    const landed = await Board3D.fieldSpin(fieldForm(sp.pokemon), segs, sp.results || [], info.frozen), x = info.skills[landed];
+    log(`Spin · ${nameOf(sp.pokemon)} ${x ? (x.sealed ? 'Miss' : fmt('skill', x.id)) : (sp.results || []).map(r => r.num).join(', ')}`);
+  }));
+  if (willSpin) { if (window.sfxStop) sfxStop('spin'); sfx('spin_stop'); }
+}
 function closeSpin() { if (window.sfxStop) sfxStop('spin'); const ov = $('battle'); if (ov) { ov.hidden = true; ov.innerHTML = ''; } battleView = null; }
 async function showSpin(e, result, notices, opt) {
   opt = opt || {};
@@ -2365,6 +2380,7 @@ async function playEffects(list, opt) {
     else if (t === 'spin') {
       const after = list.slice(k + 1), ri = after.findIndex(x => x.value.type === 'battle_result'), result = ri < 0 ? null : after[ri];
       const typed = (v.spins || []).some(s => (s.results || []).some(r => r.type === 'battle'));
+      if (fieldSpinOf(v)) { await fieldSpins(v, opt); continue; }
       await showSpin(e, typed ? result : null, (ri < 0 ? after : after.slice(0, ri)).filter(x => /damage_notice$/.test(x.value.type)), opt);
       if (!result) log('Spin · ' + (v.spins || []).map(s => `${nameOf(s.pokemon)} ${(s.results || []).map(r => r.num).join(', ')}`).join(' · '));
     } else if (t === 'battle_result') {

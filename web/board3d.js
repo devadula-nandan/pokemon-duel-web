@@ -355,6 +355,7 @@ renderer.setAnimationLoop(() => {
   stepBlasts(dt);
   stepAbilities(dt);
   stepPlates(dt);
+  stepFieldSpins(dt);
   // Each figure is drawn whole, from the farthest to the nearest: its base, then its picture (which ignores depth, so its own base cannot
   // cut it off), then its MP badge. A nearer figure's base and picture therefore cover whatever stands behind them. The bases are marked
   // transparent only so that they take part in this ordering; they are fully opaque.
@@ -485,6 +486,56 @@ function stepPlates(dt) {
     if (f.t >= 1) { f.host.removeFromParent(); f.card.material.dispose(); f.ringGeo.dispose(); f.ringMat.dispose(); plateFx.splice(n, 1); }
   }
 }
+// A field spin (MatchMain field declare spin): when an effect makes figures that are not in a battle spin (Ice Shard, Powder Snow, Origin
+// Pulse, ...), each one's wheel appears flat around its stand on the board, spins and stops on the engine's result, then fades. segs:
+// [{ range (of 96), col (css colour), label }]; results: [{ num, displace }]. Resolves with the index of the slice it stopped on.
+const fieldSpins = [], SPIN_IN = BASE_R + .06, SPIN_OUT = BASE_R + .62;
+function wheelTex(segs) {
+  return tex(512, 512, (g, w, h) => {
+    const c = w / 2, R = w / 2 - 2, rIn = R * SPIN_IN / SPIN_OUT; let a = 0;
+    for (const sg of segs) {   // clockwise from 12 o'clock, as the battle wheel
+      const a0 = a / 96 * Math.PI * 2 - Math.PI / 2, a1 = (a + sg.range) / 96 * Math.PI * 2 - Math.PI / 2; a += sg.range;
+      g.beginPath(); g.moveTo(c, c); g.arc(c, c, R, a0, a1); g.closePath(); g.fillStyle = sg.col; g.fill(); g.strokeStyle = '#111'; g.lineWidth = 3; g.stroke();
+      if (sg.label && sg.range >= 8) { const mid = (a0 + a1) / 2, rr = (R + rIn) / 2; g.save(); g.translate(c + Math.cos(mid) * rr, c + Math.sin(mid) * rr); g.rotate(mid + Math.PI / 2);
+        g.fillStyle = sg.ink || '#111'; g.font = '900 34px Segoe UI, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(sg.label, 0, 0); g.restore(); }
+    }
+    g.beginPath(); g.arc(c, c, R, 0, Math.PI * 2); g.strokeStyle = '#0b0b0c'; g.lineWidth = 6; g.stroke();
+  });
+}
+function fieldSpin(i, segs, results, still) {   // still: a frozen or melted wheel shows its result without turning
+  const g = tokens.get(i); if (!g || !segs.length) return Promise.resolve(0);
+  const geo = new THREE.RingGeometry(SPIN_IN, SPIN_OUT, 96, 1), mat = new THREE.MeshBasicMaterial({ map: wheelTex(segs), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
+  const ring = new THREE.Mesh(geo, mat); ring.rotation.x = -Math.PI / 2; ring.renderOrder = 55;
+  const turnG = new THREE.Group(); turnG.add(ring); turnG.position.y = .02;
+  const ptr = new THREE.Mesh(new THREE.ConeGeometry(.09, .2, 3), new THREE.MeshBasicMaterial({ color: css('--gold', '') || '#ffd23f', transparent: true, opacity: 0, depthWrite: false }));
+  ptr.rotation.x = Math.PI / 2; ptr.position.set(0, .05, -(SPIN_OUT + .08)); ptr.renderOrder = 56;   // fixed at the far side (12 o'clock on the wheel), pointing in
+  const host = new THREE.Group(); host.add(turnG, ptr); host.position.copy(g.position); g.parent.add(host);
+  const starts = []; let a = 0; for (const sg of segs) { starts.push(a); a += sg.range; }
+  const at = num => Math.max(0, segs.findIndex((sg, n) => num >= starts[n] && num < starts[n] + sg.range));
+  return new Promise(done => {
+    const steps = []; let landed = 0;
+    for (const r of results) {   // each result is a full spin; a displace then shifts it to the neighbouring slice
+      landed = at(r.num); steps.push({ pos: r.num + .5, turns: still ? 0 : steps.length ? 2 : 3, sec: still ? .01 : steps.length ? 1.1 : 1.6 });
+      if (r.displace) { landed = ((landed + r.displace) % segs.length + segs.length * 10) % segs.length; steps.push({ pos: starts[landed] + segs[landed].range / 2, turns: 0, sec: still ? .01 : .35, back: r.displace < 0 }); }
+    }
+    fieldSpins.push({ g, host, turnG, ring, ptr, geo, mat, steps, rot: 0, from: 0, to: null, t: 0, phase: 'in', landed, done });
+  });
+}
+function stepFieldSpins(dt) {
+  for (let n = fieldSpins.length - 1; n >= 0; n--) {
+    const f = fieldSpins[n]; f.t += dt; f.host.position.copy(f.g.position);
+    if (f.phase === 'in') { const k = Math.min(1, f.t / .25); f.mat.opacity = k; f.ptr.material.opacity = k; if (k >= 1) { f.phase = 'spin'; f.t = 0; f.to = null; } }
+    else if (f.phase === 'spin') {
+      const st = f.steps[0];
+      if (!st) { f.phase = 'hold'; f.t = 0; continue; }
+      if (f.to == null) { let to = st.pos / 96 * Math.PI * 2; if (st.back) { while (to > f.rot) to -= Math.PI * 2; } else { while (to < f.rot + st.turns * Math.PI * 2) to += Math.PI * 2; } f.from = f.rot; f.to = to; f.t = 0; }
+      const k = Math.min(1, f.t / st.sec), e = 1 - Math.pow(1 - k, 3); f.rot = f.from + (f.to - f.from) * e; f.turnG.rotation.y = f.rot;   // the slice at angle pos ends under the pointer
+      if (k >= 1) { f.steps.shift(); f.to = null; }
+    } else if (f.phase === 'hold') { if (f.t >= 1) { f.phase = 'out'; f.t = 0; } }
+    else { const k = Math.min(1, f.t / .3); f.mat.opacity = 1 - k; f.ptr.material.opacity = 1 - k;
+      if (k >= 1) { f.host.removeFromParent(); f.geo.dispose(); f.mat.map.dispose(); f.mat.dispose(); f.ptr.geometry.dispose(); f.ptr.material.dispose(); fieldSpins.splice(n, 1); f.done(f.landed); } }
+  }
+}
 function clearAbilities() { for (const a of abilityRings) endAbility(a); abilityRings.length = 0; }
 
 function project(i) {   // where a figure sits on the arena, so the evolution flash can land on it
@@ -493,5 +544,5 @@ function project(i) {   // where a figure sits on the arena, so the evolution fl
   const rect = renderer.domElement.getBoundingClientRect(), host = (document.querySelector('.arena') || renderer.domElement.parentElement).getBoundingClientRect();
   return { x: (v.x * .5 + .5) * rect.width + rect.left - host.left, y: (-v.y * .5 + .5) * rect.height + rect.top - host.top };
 }
-window.Board3D = { draw, controls, tokens, project, blast, clearBlasts, ability, clearAbilities, plate, info: () => ({ ...renderer.info.memory, objects: (() => { let n = 0; scene.traverse(() => n++); return n; })() }) };   // controls and tokens are exposed for inspection
+window.Board3D = { draw, controls, tokens, project, blast, clearBlasts, ability, clearAbilities, plate, fieldSpin, info: () => ({ ...renderer.info.memory, objects: (() => { let n = 0; scene.traverse(() => n++); return n; })() }) };   // controls and tokens are exposed for inspection
 if (window.board3dModel) draw(window.board3dModel);
