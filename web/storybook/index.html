@@ -171,14 +171,6 @@ async function loopPlate(m, job) {   // UsePlateEffect: the plate's effect on ea
     if (!(await sleep(1600, job))) return;
   }
 }
-async function loopTurnBoost(m, job) {   // only figures that currently hold a passive boost (MP / damage / …), like the original at turn start
-  while (job === demoJob && window.Board3D && Board3D.ability) {
-    const boosted = m.toks.filter(t => t.mpd || t._boost);
-    for (const t of (boosted.length ? boosted : m.toks)) Board3D.ability(t.i);
-    sfx('ability');
-    if (!(await sleep(1600, job))) return;
-  }
-}
 async function loopMove(m, job) {
   while (job === demoJob && window.Board3D) {
     for (const t of m.toks) if (t._route) { t.x = t._route[0][0]; t.z = t._route[0][1]; t.moveId = null; t.path = null; t.segs = null; }
@@ -323,17 +315,6 @@ const STORIES = {
   },
   Abilities: {
     'Ability cue': ['A ring draws around the stand, rises and fades — the same cue for every poké-power. Loops.', () => ({ ...row([{}]), demo: 'ability' })],
-    'Start-of-turn boost': ['Any figure with an active ability boost (MP, damage, charge, …) gets the rising ring once at turn start — same cue as a poké-power.', () => {
-      const a = named('Regigigas') || fig, rock = named('Regirock') || named('Regice') || named('Registeel'), b = named('Fraxure') || named('Haxorus') || fig;
-      const plus = named('Pikachu') || fig;
-      const m = table([], [
-        { f: a, at: 14, mpd: 1, mp: String((a.mp || 0) + 1), badge: 'MP +1' },
-        ...(rock ? [{ f: rock, at: 18, team: 0, mp: String(rock.mp) }] : []),
-        { f: b, at: 28, mpd: 1, mp: String((b.mp || 0) + 1), badge: 'MP +1' },
-        { f: plus, at: 32, team: 1, _boost: true, status: 'plus_20', badge: '+20 dmg' },
-      ]);
-      return { ...m, demo: 'turnboost', cam: { pos: [0, 6.2, 5.5], at: [0, .3, .8], width: 8 } };
-    }],
     'Several at once': ['Same cue on a few figures (any Pokémon).', () => ({ ...row([{}, { team: 1 }, {}]), demo: 'ability' })],
   },
   Plates: {
@@ -456,7 +437,6 @@ function show(group, name) {
   if (m.demo === 'move') { draw({ ...m, toks: m.toks.map(t => ({ ...t, moveId: null, path: null, x: (t._route || [[t.x, t.z]])[0][0], z: (t._route || [[t.x, t.z]])[0][1] })), snap: true }); loopMove(m, job); return; }
   if (m.demo === 'wheel' || m.demo === 'battle') { draw(m); if (m.demo === 'battle') { sfx('attack'); sfx('select'); } playWheel(m, job); return; }
   if (m.demo === 'ability') { draw(m); loopAbility(m, job); return; }
-  if (m.demo === 'turnboost') { draw(m); loopTurnBoost(m, job); return; }
   if (m.demo === 'plate') { draw(m); loopPlate(m, job); return; }
   // what arrives after the story opens, in order: each status condition, then each figure's MP change
   const playStatus = kind => { const row = COND_SOUND[kind]; if (row) sfx(row[2]); else statusSfx(kind); };

@@ -1305,7 +1305,7 @@ async function joinRoom(code) {
   const conn = peer.connect(roomId(code), { reliable: true });
   await new Promise((ok, bad) => { conn.on('open', ok); peer.on('error', e => bad(new Error('online: ' + e.type))); setTimeout(() => bad(new Error('No room with that code answered.')), 15000); });
   net = { host: false, conn, peer };
-  me = 'white'; flip = true; ctrl = { black: 'remote', white: 'human' }; ai = null; rec = null; st = null; legal = []; over = null; leagueGame = null; sel = null; logLines = []; clock = { black: 300, white: 300 }; turnBoostKey = '';
+  me = 'white'; flip = true; ctrl = { black: 'remote', white: 'human' }; ai = null; rec = null; st = null; legal = []; over = null; leagueGame = null; sel = null; logLines = []; clock = { black: 300, white: 300 };
   clearInterval(homeTick); gameId++; startClock();
   $('setupErr').textContent = ''; $('setup').hidden = $('home').hidden = true; $('game').hidden = false; $('log').innerHTML = '';
   log('Connected.');
@@ -1322,7 +1322,7 @@ async function joinRoom(code) {
       arrive(d.st, d.legal, d.played && !boardSt); clock = d.clock; busy = true; if (!boardSt) render();
       if (hop && moveAnim) await sleep(moveAnim.dur);
       await playEffects(fx, { hold: !!d.hold, wheelSt: boardSt, move: d.mv }); logSide = null; if (d.over) over = d.over;
-      if (d.hold) busy = true; else { releaseBoard(); if (d.bot) turnBoostCues(); } settle();
+      if (d.hold) busy = true; else releaseBoard(); settle();
     });
   });
   conn.on('close', () => { if (!over) log('<b>The host disconnected.</b>'); });
@@ -1351,7 +1351,7 @@ async function start(opts) {
   rec.client_ai_name = (await api('name')).name; rec.ai_protocol_version = (await api('protocol_version')).protocol_version;   // as Engine.GameStart does
   const check = await api('check_record');
   if (check.errors && check.errors.length) throw new Error('The engine rejected this setup: ' + check.errors.join(', '));
-  leagueGame = lgMode ? { done: false } : null; sealed.clear(); zMoves.clear(); boardSt = null; battleView = null; deferredSfx = null; turnBoostKey = ''; const btl = $('battle'); if (btl) { btl.hidden = true; btl.innerHTML = ''; } $('home').hidden = true; states = []; rewinds = 0;
+  leagueGame = lgMode ? { done: false } : null; sealed.clear(); zMoves.clear(); boardSt = null; battleView = null; deferredSfx = null; const btl = $('battle'); if (btl) { btl.hidden = true; btl.innerHTML = ''; } $('home').hidden = true; states = []; rewinds = 0;
   sel = null; busy = false; over = null; logLines = []; clock = { black: 300, white: 300 }; gameId++;
   $('setupErr').textContent = ''; $('setup').hidden = true; $('game').hidden = false; $('log').innerHTML = '';
   sfx('duel_start');
@@ -1473,47 +1473,13 @@ const label = c => ctrl[c] === 'remote' ? 'Opponent' : ctrl.black === 'human' &&
 
 let boardSt = null, battleView = null, deferredSfx = null;   // boardSt: the table kept on screen while a spin chain plays; the engine status underneath is already the outcome
 const BOOST_MARK = /^(plus_|mp_|charge|flame_charge|ice_charge|thunder_charge|gliding)/;   // markers the original treats as ability / power-up cues
-function hasPassiveBoost(c) {   // turn-start pulse: ability MP (Slow Start, Territoriality, …) or a charge-style marker — not evolution / deck damage_plus
-  if (!c || c.index >= 40) return false;   // field only (bench / P.C. / exclusion stay quiet)
-  const e = c.effect || {}, m = c.marker || {};
-  if ((+e.mp || 0) > 0) return true;
-  if (m.triangle && m.triangle !== 'empty' && BOOST_MARK.test(m.triangle)) return true;
-  if (m.circle && m.circle !== 'normal' && BOOST_MARK.test(m.circle)) return true;
-  return false;
-}
-function cueAbilityBoosts(ids) {   // after the table has painted, so tokens exist (same rising ring for every figure)
-  if (!ids || !ids.length) return;
-  queueMicrotask(() => { if (!(window.Board3D && Board3D.ability)) return; for (const i of new Set(ids)) Board3D.ability(i); });
-}
-function arriveSfx(before, mpBefore, dmgBefore, markBefore) {
+// MatchMain.SetStatus only redraws a figure's MP number (Figure.SetMP); an MP or damage change between statuses plays no ring and no
+// sound in the original. Rings (Character_Good / Bad, Se121 / Se122) come from ability notices, Buff / Debuff (Se123 / Se124) from
+// their own effect handlers. What remains here is the condition sound when a special condition arrives.
+function arriveSfx(before) {
   if (!st) return;
   for (const kind of new Set(st.pokemon_conditions.filter(c => { const now = (c.marker || {}).circle; return now && now !== 'normal' && now !== before.get(c.pokemon_index); }).map(c => c.marker.circle)))
     statusSfx(kind);
-  const mpDirs = new Set(), boost = [];
-  for (const c of st.pokemon_conditions) {
-    const mp = +(c.effect && c.effect.mp) || 0, dmg = +(c.effect && c.effect.damage_plus) || 0, tri = (c.marker && c.marker.triangle) || '';
-    const dMp = mp - (mpBefore.get(c.pokemon_index) || 0), dDmg = dmg - (dmgBefore.get(c.pokemon_index) || 0);
-    if (dMp) mpDirs.add(Math.sign(dMp));
-    // ring when MP rises or a charge marker lands; damage_plus only if it just increased (plate / ability), never the static evo bonus
-    if (dMp > 0 || dDmg > 0) boost.push(c.pokemon_index);
-    else if (tri && tri !== 'empty' && BOOST_MARK.test(tri) && markBefore.get(c.pokemon_index) !== tri) boost.push(c.pokemon_index);
-  }
-  for (const dir of mpDirs) mpSfx(dir);
-  cueAbilityBoosts(boost);
-}
-let turnBoostKey = '';
-function turnBoostCues() {   // once per start-of-turn: every figure that currently holds a passive ability boost (original's power-up flash)
-  if (!(window.Board3D && Board3D.ability) || !st) return;
-  const key = (rec ? rec.all_moves.length : (st.turn || 0)) + ':' + st.selective_side;
-  if (turnBoostKey === key) return;
-  turnBoostKey = key;
-  const on = st.pokemon_conditions.filter(hasPassiveBoost);
-  for (const c of on) {   // the cue plays on the board; say in the log what it was
-    const e = c.effect || {}, m = c.marker || {}, ab = D.abilities[(pk(c.pokemon_index) || {}).pokepower];
-    const what = [(+e.mp || 0) > 0 ? 'MP +' + e.mp : '', ...[m.triangle, m.circle].filter(x => x && BOOST_MARK.test(x)).map(condName)].filter(Boolean).join(', ');
-    log(`${nameOf(c.pokemon_index)} is powered up${ab ? ' by ' + esc(ab[0]) : ''}${what ? ` (${esc(what)})` : ''}`);
-  }
-  cueAbilityBoosts(on.map(c => c.pokemon_index));
 }
 function snapBoost(prev) {
   return {
@@ -1612,7 +1578,6 @@ async function sync(played) {
     const again = respinMove(); if (again) return play(again);
     if (chainHold) return;
     busy = false; render();
-    if (ss.beginning_of_turn) turnBoostCues();   // once per turn start: every figure with an active ability boost (MP / damage / charge / …)
     if (ctrl[side] === 'ai') { busy = true; render(); /* sfx('ai_on'); too loud */ const g = await api('go', ai); /* sfx('ai_off'); */ if (id === gameId) return play(g.move); }
     remoteMove();
   } catch (e) { boardSt = null; battleView = null; deferredSfx = null; busy = false; const ov = $('battle'); if (ov) { ov.hidden = true; ov.innerHTML = ''; } $('status').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
