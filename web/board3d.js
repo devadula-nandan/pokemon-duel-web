@@ -102,7 +102,33 @@ function build(m) {   // routes, spots and slots never move during a duel (the f
 }
 
 const images = new Map(), loader = new THREE.TextureLoader().setCrossOrigin('anonymous');
-const picture = url => images.get(url) || images.set(url, loader.load(url, t => { t.colorSpace = THREE.SRGBColorSpace; })).get(url);
+const still = url => loader.load(url, t => { t.colorSpace = THREE.SRGBColorSpace; });
+const picture = url => images.get(url) || images.set(url, /\.webp$/.test(url) && 'ImageDecoder' in window ? animated(url) : still(url)).get(url);
+// An animated sprite (the Scarlet / Violet .webp): WebGL only ever uploads an animated image's first frame, so its frames are decoded
+// once with ImageDecoder, scaled down to FRAME px (about 7 MB for a 34-frame sprite), and played on a canvas texture at their own pace.
+// The empty margin round the model is cropped by the same 1.3 the cards use. Without ImageDecoder (or if decoding fails) it stays still.
+const FRAME = 256, playing = [];
+function animated(url) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = FRAME;
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace;
+  (async () => {
+    const buf = await (await fetch(url)).arrayBuffer(), dec = new ImageDecoder({ data: buf, type: 'image/webp' });
+    await dec.tracks.ready; const n = dec.tracks.selectedTrack.frameCount, frames = [];
+    for (let k = 0; k < n; k++) {
+      const { image } = await dec.decode({ frameIndex: k }), w = image.displayWidth, h = image.displayHeight, cw = w / 1.3, ch = h / 1.3;
+      frames.push({ bmp: await createImageBitmap(image, (w - cw) / 2, h - ch - (h - ch) * .35, cw, ch, { resizeWidth: FRAME, resizeHeight: FRAME }), ms: Math.max(20, (image.duration || 50000) / 1000) });
+      image.close();
+    }
+    dec.close();
+    const p = { cv, t, frames, k: -1, due: 0 }; playing.push(p); step(p, performance.now());
+  })().catch(() => { const s = still(url); s.image && (t.image = s.image); images.set(url, s); });
+  return t;
+}
+function step(p, now) {   // show the next frame once the current one has had its time
+  if (p.k >= 0 && now < p.due) return;
+  p.k = (p.k + 1) % p.frames.length; const g = p.cv.getContext('2d'); g.clearRect(0, 0, FRAME, FRAME); g.drawImage(p.frames[p.k].bmp, 0, 0);
+  p.t.needsUpdate = true; p.due = now + p.frames[p.k].ms; p.t.userData.ink = null;   // a new frame: the hit test re-reads its opaque pixels
+}
 const TAG_S = 1;
 function mpColors(mpd) {
   const light = new THREE.Color(css('--bd', '#0c0d10')).getHSL({}).l > .5;
@@ -335,7 +361,8 @@ window.addEventListener('pointerup', e => {
 
 const clock = new THREE.Clock(), TILT = .3, STEP = .17;   // TILT: how far (radians) the camera must rise from the lowest side view before figures are fully centred on their bases   // seconds per hop, the same pace as the flat board
 renderer.setAnimationLoop(() => {
-  const dt = Math.min(clock.getDelta(), .05), pulse = .6 + .4 * Math.sin(clock.elapsedTime * 5);
+  const dt = Math.min(clock.getDelta(), .05), pulse = .6 + .4 * Math.sin(clock.elapsedTime * 5), now = performance.now();
+  for (const p of playing) step(p, now);
   // Seen from the side a figure stands on its base; seen from above a standing picture would hang off the far edge of the base, so as the
   // camera rises from the lowest side view the picture slides down, and after a slight tilt it sits centred on the base like a token.
   // It is lifted clear of the base as it centres, or the base would hide it.
