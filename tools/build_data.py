@@ -63,7 +63,7 @@ for key in sorted(masters, key=int):
     figures.append({"id": int(key), "rule": fm["RulePokeId"], "n": loc.get("ItemMaster.ItemNameFull.%s" % key) or loc.get("ItemMaster.ItemName.%s" % key) or "Figure " + key,
                     "no": fm["FigureNo"], "dex": fm.get("PokeNo") or 0, "mp": fm["Mp"], "r": fm["Rarity"], "t": [t for t in (fm["Type0"], fm["Type1"]) if t is not None], "ab": ab,
                     "w": rows, "g": fm["EvoGroupId"], "fr": fm.get("FromEvoGroupIds") or [], "to": fm.get("ToEvoGroupIds") or [], "fmx": fm.get("FormMax") or 0,
-                    "rm": fm.get("RarityModel") or 0, "n3": 1 if fm.get("IsNot3Limit") else 0})
+                    "rm": fm.get("RarityModel") or 0, "n3": 1 if fm.get("IsNot3Limit") else 0, **({} if fm.get("IsPokepowerGood", True) else {"bad": 1})})   # bad: IsPokepowerGood false (Se122 / Character_Bad on its ability notice)
 
 # Figures of the original's final roster that the league-only FigureMaster dump lacks, and five rows it holds as pre-release drafts.
 # Ids, wheels, MP and abilities are the rows the original client was served (kept by a fan server); types come from the original engine's

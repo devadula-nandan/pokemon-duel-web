@@ -61,6 +61,7 @@
   .zg span { position:absolute; inset:0 8px; font-size:10px; font-weight:700; line-height:16px; color:#fff; text-shadow:0 0 3px #000, 0 0 3px #000; } .zg.right span { text-align:right; }
   .zg.max i { background:#67ff0c; animation:zmax 1.2s ease-in-out infinite alternate; } @keyframes zmax { from { filter:brightness(.8); } to { filter:brightness(1.2); } } .zg.max span { color:#06240a; text-shadow:none; }   /* full: its z_light glow, #67ff0c, pulsing */
   .zi { text-align:center; font-weight:900; font-style:italic; font-size:12px; line-height:16px; color:#00ee27; } :root[data-theme=light] .zi { color:#009900; }
+  #lt { position:absolute; left:0; right:0; bottom:0; height:16px; line-height:16px; font-size:10px; padding:0 8px; text-align:left; background:#000; font-weight:700; white-space:nowrap; overflow:hidden; } #lt[hidden] { display:none; }   /* MatchLiveTicker: black BoxBase strip, text typed in from the left */
   .banner { grid-column:1 / -1; text-align:center; color:var(--dim); font-size:10px; font-weight:700; line-height:16px; height:16px; padding:0 8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:var(--bar); }   /* as thick as the Z gauge above it */ .banner b { color:var(--ink); }
   /* the table: red end at the top, blue end at the bottom */
   .table { flex:1; min-height:0; display:flex; padding:0; border-radius:8px; border:1px solid var(--line); box-shadow:0 10px 30px rgba(0,0,0,.5), inset 0 0 0 2px color-mix(in srgb, var(--bd-line) 10%, transparent);
@@ -507,7 +508,7 @@
       <div class="pl right" id="hudTop"><span class="clock" id="c1"></span><span class="who" id="n1"></span><span class="av" id="d1"></span></div>
       <div class="turns" title="Turns left" id="turns"></div>
       <div class="zrow"><div class="zg" id="zg0"><i></i><span id="z0"></span></div><b class="zi" title="Z gauge">Z</b><div class="zg right" id="zg1"><i></i><span id="z1"></span></div></div>
-      <div id="status" class="banner"></div>
+      <div id="status" class="banner"></div><div id="lt" hidden></div>
     </div>
     <div class="table"><svg id="board" viewBox="0 -32 420 764" preserveAspectRatio="xMidYMid meet"></svg><div id="board3d" hidden></div><div id="tbl"></div></div>
     <div class="ibar"><div id="ibar" style="display:contents"></div><button id="fsGame" class="iconbtn" title="Fullscreen" aria-label="Fullscreen" aria-pressed="false"></button><button id="sideBtn" title="Menu" aria-label="Menu" onclick="toggleSide()"></button></div>
@@ -1458,7 +1459,13 @@ function turnBoostCues() {   // once per start-of-turn: every figure that curren
   const key = (rec ? rec.all_moves.length : (st.turn || 0)) + ':' + st.selective_side;
   if (turnBoostKey === key) return;
   turnBoostKey = key;
-  cueAbilityBoosts(st.pokemon_conditions.filter(hasPassiveBoost).map(c => c.pokemon_index));
+  const on = st.pokemon_conditions.filter(hasPassiveBoost);
+  for (const c of on) {   // the cue plays on the board; say in the log what it was
+    const e = c.effect || {}, m = c.marker || {}, ab = D.abilities[(pk(c.pokemon_index) || {}).pokepower];
+    const what = [(+e.mp || 0) > 0 ? 'MP +' + e.mp : '', ...[m.triangle, m.circle].filter(x => x && BOOST_MARK.test(x)).map(condName)].filter(Boolean).join(', ');
+    log(`${nameOf(c.pokemon_index)} is powered up${ab ? ' by ' + esc(ab[0]) : ''}${what ? ` (${esc(what)})` : ''}`);
+  }
+  cueAbilityBoosts(on.map(c => c.pokemon_index));
 }
 function snapBoost(prev) {
   return {
@@ -1558,7 +1565,7 @@ async function sync(played) {
     if (chainHold) return;
     busy = false; render();
     if (ss.beginning_of_turn) turnBoostCues();   // once per turn start: every figure with an active ability boost (MP / damage / charge / …)
-    if (ctrl[side] === 'ai') { busy = true; render(); sfx('ai_on'); const g = await api('go', ai); sfx('ai_off'); if (id === gameId) return play(g.move); }
+    if (ctrl[side] === 'ai') { busy = true; render(); /* sfx('ai_on'); too loud */ const g = await api('go', ai); /* sfx('ai_off'); */ if (id === gameId) return play(g.move); }
     remoteMove();
   } catch (e) { boardSt = null; battleView = null; deferredSfx = null; busy = false; const ov = $('battle'); if (ov) { ov.hidden = true; ov.innerHTML = ''; } $('status').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
 }
@@ -1646,7 +1653,11 @@ function describe(v) {
   }).filter(Boolean);
   return `<span class="ink">${TITLES[v.type] || esc(String(v.type || '').replace(/_/g, ' '))}</span>${parts.length ? ' · ' + parts.join(' · ') : ''}`;
 }
-const QUIET = new Set(['add_z_gauge', 'battled_after_field_in', 'battle_info', 'declare_spin', 'base_damage_notice', 'skill_damage_notice', 'pokepower_damage_notice', 'plate_damage_notice', 'condition_damage_notice', 'overwrite_notice', 'declare_battle', 'mp_move', 'spin', 'battle_result', 'add_faint_num', 'techno_charge_kai']);   // counters and flags the knockout or attack line already covers
+const BUFFS = new Set(['add_katakunaru_kai', 'techno_charge', 'techno_charge_kai', 'cotton_guard', 'garyoutensei', 'add_kougousei', 'add_nine_evol_boost', 'add_haradaiko', 'add_comet_punch', 'add_genshi_no_chikara']), DEBUFFS = new Set(['energy_ball', 'acid_bomb', 'shadow_beam', 'night_burst']);
+const NO_ACTION = ['increase_nandemo_taberu_num', 'meremere_no_inori', 'ulaula_no_inori', 'cosmo_power', 'balloon_flight', 'add_soul_heart', 'gear_change', 'select_index', 'disable_plate_for_one_pokemon', 'add_mega_remain', 'declare_ultra_space',
+  'declare_eizan_no_koukaku', 'declare_houzan_no_gankaku', 'declare_guardian', 'declare_disable_sphere', 'declare_disable_skill', 'enable_used_plate_for_turn', 'remove_used_plate_for_turn', 'put_continuous_effect_with_skills', 'add_hanpatsu_gomu', 'add_wait',
+  'set_chousyuha_shindou', 'uchiotosu', 'set_punisher'];   // MatchGameManager maps these to ExecPlayerAction_NoAction: the original shows nothing for them
+const QUIET = new Set([...NO_ACTION, 'opponents_turn', 'battled_after_field_in', 'battle_info', 'declare_spin', 'base_damage_notice', 'skill_damage_notice', 'pokepower_damage_notice', 'plate_damage_notice', 'condition_damage_notice', 'overwrite_notice', 'declare_battle', 'mp_move', 'spin', 'battle_result', 'add_faint_num', 'techno_charge_kai']);   // counters and flags the knockout or attack line already covers
 
 // ---------- sound ----------
 // (the sound effects live in sound.js, shared with the storybook)
@@ -1895,7 +1906,7 @@ function evolveInto(m) {   // the figure it becomes: a named target on the move,
   if (named != null) return figOf(named);
   const e = pk(v.pokemon); return e && e.evolution >= 0 && pk(e.evolution) ? figOf(e.evolution) : figOf(v.pokemon);
 }
-let evoUi = null;
+let evoUi = null, evoShown = false;   // evoShown: the confirmed evolution already flashes around play(), so its effect list does not flash it again
 function closeEvolve() { evoUi = null; const el = $('evolve'); if (el) { el.hidden = true; el.innerHTML = ''; } }
 function openEvolve(i) {
   const ms = evolveMoves().filter(m => evoFig(m) === i); if (!ms.length || busy) return;
@@ -1935,8 +1946,9 @@ async function confirmEvolve() {
   if (!evoUi || busy) return;
   const m = evoUi.ms[evoUi.at], i = evoUi.i;
   closeEvolve(); busy = true; render();
+  evoShown = true;
   try { await showEvolveAnim(i, () => play(m)); }
-  finally { const el = $('evoanim'); if (el) { el.hidden = true; el.innerHTML = ''; } }
+  finally { evoShown = false; const el = $('evoanim'); if (el) { el.hidden = true; el.innerHTML = ''; } }
 }
 function declineEvolve() {
   const ev = evolveMoves(), rest = legal.filter(m => !ev.includes(m));
@@ -2160,6 +2172,22 @@ $('acts').onclick = $('tbl').onclick = e => {
 // Each line is tinted with the colour of the player whose turn it happened in (logSide, set while a move's effects are played back): blue for
 // the player at the bottom, red for the other; lines that belong to nobody (the start, a rewind) stay plain.
 let logSide = null;
+// MatchLiveTicker: one line over the table. Each message types in at 30 ms a letter, holds about a second, then the next one; blue for the side at
+// the bottom of the screen (the original's player 0), pink for the other. The same events the original announces there go to the log as well.
+const tickQ = [];
+const plain = i => figOf(fieldForm(i)).n;
+function ticker(side, text) { tickQ.push({ side, text, game: gameId }); if (tickQ.length === 1) tickNext(); }
+const tickFig = (i, text) => ticker(colorOf(fieldForm(i)), text);
+async function tickNext() {
+  const t = tickQ[0]; if (!t) return;
+  const el = $('lt');
+  if (t.game === gameId) {
+    el.hidden = false; el.style.color = t.side === (flip ? 'white' : 'black') ? 'rgb(0,150,255)' : 'rgb(250,102,189)';
+    for (let n = 1; n <= t.text.length && t.game === gameId; n++) { el.textContent = t.text.slice(0, n); await sleep(30); }
+    await sleep(1000);
+  }
+  el.hidden = true; el.textContent = ''; tickQ.shift(); tickNext();
+}
 function log(html) { const cls = P_COL[logSide] ? (logSide === (flip ? 'white' : 'black') ? 'me' : 'op') : ''; logLines.push(`<div class="${cls}">${html}</div>`); $('log').innerHTML = logLines.slice(-120).join(''); $('log').scrollTop = 1e6; }
 function modal(html) { $('box').innerHTML = html; $('modal').hidden = false; return new Promise(res => { $('box').onclick = e => { const b = e.target.closest('[data-v]'); if (b) { $('modal').hidden = true; res(b.dataset.v); } }; }); }
 // The battle screen. It covers the whole arena (HUD and board), with no dialog around it, and is laid out as the original lays it out: two large disks on a dark stage, the opponent's above and to the right and
@@ -2285,7 +2313,7 @@ function abilityFig(v) {   // figure index on a poké-power move or notice (evol
 }
 async function playEffects(list, opt) {
   opt = opt || {};
-  const seenAbility = new Set();
+  const seenAbility = new Set(), badAb = i => i != null && !!figOf(fieldForm(i)).bad;   // FigureMaster.IsPokepowerGood: Se121 + Character_Good, else Se122 + Character_Bad
   const abilityCue = async (i, bad, hold) => {   // ring around the stand; hold so Time Travel &c. do not snap the board away mid-cue
     if (i == null || seenAbility.has(i)) return;
     seenAbility.add(i);
@@ -2296,7 +2324,7 @@ async function playEffects(list, opt) {
   // Activated abilities (Celebi Time Travel, …) often emit only a bare pokepower_notice; cue from the move that produced these effects.
   const mv = opt.move && opt.move.value;
   if (mv && (mv.type === 'use_pokepower' || mv.type === 'declare_pokepower') && !isEvolve(opt.move)) {
-    await abilityCue(abilityFig(mv), /bad|neg|curse|disable|seal/i.test(describe(mv)), true);
+    await abilityCue(abilityFig(mv), badAb(abilityFig(mv)), true);
   }
   for (let k = 0; k < list.length; k++) {
     const e = list[k], v = e.value, t = v.type;
@@ -2312,36 +2340,72 @@ async function playEffects(list, opt) {
     } else if (t === 'battle_result') {
       const side = x => `${nameOf(x.pokemon)} ${fmt('skill', x.skill)} ${x.speed_or_damage || ''} (${esc(String(x.result).replace(/_/g, ' '))})`;
       log(`Battle · ${side(v.attack)} vs ${side(v.defence)}`);
-    } else if (t === 'disable_skill') { sealed.set(v.pokemon, [].concat(v.skill_id || [])); if (sealed.get(v.pokemon).length) log(`${nameOf(v.pokemon)}: ${sealed.get(v.pokemon).map(id => fmt('skill', id)).join(', ')} sealed`); }
+    } else if (t === 'disable_skill') { sealed.set(v.pokemon, [].concat(v.skill_id || [])); if (sealed.get(v.pokemon).length) log(`${nameOf(v.pokemon)}: ${sealed.get(v.pokemon).map(id => fmt('skill', id)).join(', ')} sealed`); for (const id of sealed.get(v.pokemon)) tickFig(v.pokemon, `${plain(v.pokemon)}: ${(D.skills[id] || ['an attack'])[0]} became a Miss.`); }   // DisableSkill: Burn_miss per attack
     else if (t === 'remove_debuff') { for (const i of v.pokemons || []) sealed.delete(i); sfx('cured'); log(describe(v)); }
     else if (t === 'mp_move') { if (ctrl[st && st.selective_side] === 'ai') sfx('ai_step'); log(`${nameOf(figAt(v.route))} moves ${v.route.map(place).join(' → ')}`); }
     else if (t === 'declare_battle') { sfx('attack'); sfx('attack_phase'); log(`${nameOf(v.from_pokemon)} attacks ${nameOf(v.to_pokemon)}`); }
     else if (t === 'turn_end') { sfx('end_turn'); log('<span class="note">— turn ends —</span>'); if (P_COL[logSide]) logSide = other(logSide); }   // what follows in the same list already belongs to the next player
     else if (t === 'game_set') { over = { winner: v.win, reason: v.reason }; log(`<b>${P_COL[v.win] ? wins(v.win) : 'Draw'}</b> (${esc(String(v.reason).replace(/_/g, ' '))})`); }
-    else if (t === 'add_wait') { sfx('wait'); }
-    else if (t === 'swap') { sfx('swap'); }
+    else if (t === 'add_z_gauge') { for (const c of ['black', 'white']) if (v[c] > 0) log(`Z-Move gauge · <b style="color:${P_COL[c]}">${esc(label(c))}</b> +${v[c]} (${Math.min(100, v[c + '_result'])}/100)`); }
+    else if (/^(evolve|mega_evolve|double_evolve)$/.test(t) || (/^declare_(plate|pokepower)$/.test(t) && v.value && /^(evolve|mega_evolve)$/.test(v.value.type))) {   // EvolveCommonCalc: every evolution flashes, the computer's and a Mega stone's too
+      const ev = v.value && v.value.pokemon != null ? v.value : v; log(describe(v)); if (t === 'declare_plate') plateUsed(v);
+      if (!evoShown && ev.pokemon != null) await showEvolveAnim(fieldForm(ev.pokemon));
+    }
+    else if (t === 'knockedout_move') { const i = figAt([v.to]); sfx('ko'); log(`${nameOf(i)} fainted · ${place(v.from)} → ${place(v.to)}`); tickFig(i, `${plain(i)} fainted.`); }   // KnockedOutMove: Se038, Faint
+    else if (/^remove_pokemon/.test(t)) { sfx('exclusion'); for (const i of v.pokemons || []) { log(`${nameOf(i)} is removed from the duel${v.duration > 0 ? ` for ${v.duration} turns` : ''}`); tickFig(i, `${plain(i)} was removed from the duel.`); } }   // RemovePokemonText: Exclusion
+    else if (t === 'move_to_ultra_space' || t === 'move_to_ultra_space_with_duration' || t === 'ultra_portation') { for (const i of (v.pokemons || [v.pokemon])) { log(`${nameOf(i)} moves to Ultra Space`); tickFig(i, `${plain(i)} moved to Ultra Space.`); } }   // MoveToUltraSpaceText
+    else if (t === 'move_from_ultra_space' || t === 'move_from_remove') { sfx('se034'); log(`${nameOf(v.pokemon)} returns to ${place(v.index)}`); }   // MoveFromUltraSpace: Se034
+    else if (t === 'skill_notice') { log(describe(v)); if (!battleView) tickFig(v.pokemon, `${plain(v.pokemon)} used ${(D.skills[v.skill] || ['an attack'])[0]}.`); }   // StartUseSkillCutIn: Skill, only outside the battle screen
+    else if (t === 'touch') { log(describe(v)); tickFig(v.from_pokemon, `${plain(v.from_pokemon)} tagged ${plain(v.to_pokemon)}.`); }   // StartTouchCutIn: "{0} tagged {1}."
+    else if (t === 'put_circle' || t === 'put_circle_auto') {
+      if (v.condition === 'faint') continue;   // the knockout line says it
+      for (const i of v.pokemons || []) { log(v.condition === 'normal' ? `${nameOf(i)} recovers` : `${nameOf(i)} · ${esc(condName(v.condition))}`); tickFig(i, v.condition === 'normal' ? `${plain(i)} recovered.` : `${plain(i)}: ${condName(v.condition)}`); }   // PutCircle: Release / Special
+    }
+    else if (t === 'put_triangle' || t === 'put_triangle_with_duration') {
+      const good = BOOST_MARK.test(v.marker || '');
+      for (const i of v.pokemons || []) { log(`${nameOf(i)} · ${esc(condName(v.marker))}`); tickFig(i, `${plain(i)}: ${condName(v.marker)}`); await abilityCue(i, !good, false); }   // PutTriangle: Special, Buff / Debuff oneshot
+    }
+    else if (t === 'add_poke_type' || t === 'add_poke_type_with_duration') { const ty = D.types[v.pokemon_type != null ? v.pokemon_type : v.poke_type] || 'a new'; for (const i of v.pokemons || []) { log(`${nameOf(i)} gains the ${esc(ty)} type`); tickFig(i, `${plain(i)} gained the ${ty} type.`); } }   // AddPokeType: Add_type
+    else if (t === 'enable_plate' || t === 'disable_plate_by_effect') {
+      for (const c of ['black', 'white']) for (const id of v[c] || []) { const n = plateById.has(id) ? plateById.get(id).n : 'plate ' + id; log(`${esc(n)} ${t === 'enable_plate' ? 'can be used again' : 'can no longer be used'}`); ticker(c, `${n} ${t === 'enable_plate' ? 'can be used again.' : 'can no longer be used.'}`); }   // EnablePlate / DisablePlateByEffect
+    }
+    else if (t === 'declare_plate') { log(describe(v)); plateUsed(v); }
+    else if (t === 'plate_notice') { sfx('plate_energy'); const n = (plateById.get(v.plate) || { n: 'A plate' }).n; log(`<b>${esc(n)}</b> takes effect`); if (v.pokemon >= 0) tickFig(v.pokemon, n); }   // StartUsePlateCutIn: Plate, Se129
+    else if (t === 'marker_notice') { log(describe(v)); if (v.marker === 'curse') tickFig(v.pokemon, `${plain(v.pokemon)}: ${condName('curse')}`); }   // MarkerNotice: only a curse has a cut-in
+    else if (t === 'route_move_and_wait') { const i = figAt(v.route); sfx('wait'); log(`${nameOf(i)} moves ${v.route.map(place).join(' → ')} and must wait`); await abilityCue(i, true, false); }   // MoveFigure then PutAnother: Debuff oneshot
+    else if (t === 'wait') { sfx('wait'); log(describe(v)); for (const i of v.pokemons || []) await abilityCue(i, true, false); }   // PutAnother: Debuff oneshot
+    else if (/^swap_move/.test(t) || t === 'asym_swap_move') { sfx('swap'); log(describe(v)); }   // SwapMove: Se048
+    else if (BUFFS.has(t)) { log(describe(v)); for (const i of v.pokemons || [v.pokemon]) await abilityCue(i, false, false); }   // AddBuff / TechnoCharge: Buff oneshot
+    else if (DEBUFFS.has(t)) { log(describe(v)); for (const i of v.pokemons || [v.pokemon]) await abilityCue(i, true, false); }   // AddDebuff: Debuff oneshot
     else if (/shield|protect|counter/i.test(t)) { sfx('shield'); }
     else if (/damage_notice$/.test(t) && v.value && v.value.multiplier != null && v.value.multiplier !== 1) { sfx('multiplier'); }
+    else if (/damage_notice$/.test(t)) continue;   // every *_damage_notice is a number on the wheel (showSpin), not a line of its own
     else if (t === 'spot_move' && v.from >= 40 && v.from < 44 && v.to >= 40 && v.to < 44) continue;   // the P.C. slides a figure between its two spots; the knockout line already said it went there
     else if (t === 'sandwich' && !(v.pokemons || []).length) continue;
-    else if (t === 'sandwich') { sfx('surround'); log(describe(v)); }
+    else if (t === 'sandwich') { sfx('surround'); log(describe(v)); for (const i of v.pokemons) tickFig(i, `${plain(i)} was surrounded.`); }   // StartSandwichCutIn: Siege, Se035
     else if (t === 'use_pokepower' || (t === 'declare_pokepower' && !isEvolve({ value: v }))) {
       log(describe(v));
-      await abilityCue(abilityFig(v), /bad|neg|curse|disable|seal/i.test(describe(v)), true);
+      await abilityCue(abilityFig(v), badAb(abilityFig(v)), true);
     }
     else if (t === 'pokepower_notice' && Object.keys(v).every(k => k === 'type' || k === 'pokemon' || k === 'pokepower')) {
       // Bare notice = ability applying (Slow Start MP, Territoriality, Soar Charge, …) — the original's start-of-turn / boost cue.
-      await abilityCue(abilityFig(v), false, false);
+      tickFig(v.pokemon, `${plain(v.pokemon)} activated ${(D.abilities[v.pokepower] || ['its ability'])[0]}.`);   // UiMaster.LiveTicker.PokePower (StartPokePowerCutIn)
+      await abilityCue(abilityFig(v), badAb(v.pokemon), false);
       await sleep(320);
     }
     else if (t === 'pokepower_notice') {
-      const bad = /bad|neg|curse|disable|seal/i.test(describe(v));
-      log(describe(v));
+      const bad = badAb(v.pokemon);
+      log(describe(v)); if (v.pokepower != null) tickFig(v.pokemon, `${plain(v.pokemon)} activated ${(D.abilities[v.pokepower] || ['its ability'])[0]}.`);
       await abilityCue(abilityFig(v), bad, false);   // ring for effect notices; no hold (battle chain already times itself)
     }
-    else if (t === 'disable_plate') { const names = ['black', 'white'].flatMap(c => (v[c] || []).map(id => plateById.has(id) ? plateById.get(id).n : 'plate ' + id)); if (names.length) { sfx('plate'); log('Plate spent · ' + names.map(n => '<b>' + esc(n) + '</b>').join(', ')); } }
+    else if (t === 'disable_plate') { const names = ['black', 'white'].flatMap(c => (v[c] || []).map(id => plateById.has(id) ? plateById.get(id).n : 'plate ' + id)); if (names.length) { log('Plate spent · ' + names.map(n => '<b>' + esc(n) + '</b>').join(', ')); } }
     else if (!QUIET.has(t)) log(describe(v));
   }
+}
+function plateUsed(v) {   // UsePlateEffect: "Used {0}." in the ticker, Se114 (Plate_In) or Se130 (Plate_Out) when it lands on the other side's figure
+  const side = logSide || st.selective_side, target = v.value && typeof v.value.pokemon === 'number' ? v.value.pokemon : null;
+  sfx(target != null && colorOf(target) !== side ? 'plate_action' : 'plate');
+  ticker(side, `Used ${(plateById.get(v.plate_id) || { n: 'a plate' }).n}.`);
 }
 const figAt = route => { const c = st.pokemon_conditions.find(c => c.index === route[route.length - 1]); return c ? c.pokemon_index : -1; };
 
