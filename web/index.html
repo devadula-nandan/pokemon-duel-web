@@ -57,10 +57,10 @@
      and clock (the clock sits on the inner side); the turns left in a badge where the panels meet; under them one Z gauge each, out of 100,
      reading MAX and glowing when full. The side that is not to act is masked black at 35% over 0.3 s (TurnChangeUi). */
   .hud { position:relative; display:grid; grid-template-columns:1fr 1fr; background:var(--bar); }
-  .hud .pl { position:relative; display:flex; align-items:center; gap:8px; min-width:0; height:44px; padding:0 34px 0 8px; color:#fff; background:linear-gradient(90deg, var(--p0d), var(--p0)); }
-  .hud .pl.right { justify-content:flex-end; padding:0 8px 0 34px; background:linear-gradient(90deg, var(--p1), var(--p1d)); }
+  .hud .pl { position:relative; display:flex; align-items:center; gap:8px; min-width:0; height:44px; padding:0 34px 0 0; color:#fff; background:linear-gradient(90deg, var(--p0d), var(--p0)); }
+  .hud .pl.right { justify-content:flex-end; padding:0 0 0 34px; background:linear-gradient(90deg, var(--p1), var(--p1d)); }
   .hud .pl::after { content:""; position:absolute; inset:0; background:#000; opacity:.35; transition:opacity .3s; pointer-events:none; } .hud .pl.turn::after { opacity:0; }
-  .hud .av { flex:none; width:30px; height:30px; border-radius:4px; display:grid; place-items:center; font-weight:800; font-size:14px; line-height:1; color:#fff; border:2px solid rgba(255,255,255,.75); box-shadow:0 1px 4px rgba(0,0,0,.4); }
+  .hud .av { flex:none; align-self:stretch; width:44px; display:grid; place-items:center; font-weight:800; font-size:16px; line-height:1; color:#fff; border-right:1px solid rgba(255,255,255,.75); } .hud .pl.right .av { border-right:0; border-left:1px solid rgba(255,255,255,.75); }   /* flush with the bar's outer edge, its full height; one 1px divider on the inner side */
   .hud .who { min-width:0; font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 2px rgba(0,0,0,.4); }
   .clock { margin-left:auto; font-variant-numeric:tabular-nums; font-weight:800; font-size:15px; color:#fff; opacity:.75; } .hud .pl.right .clock { margin:0 auto 0 0; } .clock.on { opacity:1; color:var(--gold); }
   .hud .turns { position:absolute; left:50%; top:calc(var(--lt-h, 25px) + 22px); transform:translate(-50%,-50%); z-index:1; min-width:50px; height:30px; padding:0 10px; border-radius:15px; display:grid; place-items:center; background:var(--bar); border:1px solid var(--line); color:var(--gold); font-weight:800; font-size:15px; font-variant-numeric:tabular-nums; box-shadow:0 2px 8px rgba(0,0,0,.35); }
