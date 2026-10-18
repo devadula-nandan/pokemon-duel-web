@@ -29,7 +29,9 @@
 
     // ---- ELF loading
     const phoff = iv.getUint32(28, true), phentsize = iv.getUint16(42, true), phnum = iv.getUint16(44, true), segs = []; let dyn = null, exidx = [0, 0];
+    let rwSeg = null;
     for (let i = 0; i < phnum; i++) { const o = phoff + i * phentsize, t = iv.getUint32(o, true), off = iv.getUint32(o + 4, true), va = iv.getUint32(o + 8, true), fsz = iv.getUint32(o + 16, true), msz = iv.getUint32(o + 20, true);
+      if (t === 1 && iv.getUint32(o + 24, true) & 2) rwSeg = [BASE + va, (msz + 3) & ~3];
       if (t === 1) segs.push([off, va, fsz, msz]); else if (t === 2) dyn = [va, fsz]; else if (t === 0x70000001) exidx = [BASE + va, fsz >>> 3]; }
     const top = Math.max(...segs.map(s => s[1] + s[3])), image = new Uint8Array((top + 0xFFFF) & ~0xFFFF);
     for (const [off, va, fsz] of segs) image.set(img.subarray(off, off + fsz), va);
@@ -136,8 +138,62 @@
     }
     for (const fn of inits) call(fn, 0);
     call(sym.ai_init);
+    const run = text => { const data = enc.encode(text); if (data.length + 1 > CMDBUF_SIZE) throw new Error('command too long'); mwrite(CMDBUF, data); mwrite(CMDBUF + data.length, [0]); call(sym.ai_cmd, CMDBUF); return str(call(sym.get_g_ss)); };
+
+    // ---- Resuming the replay. The engine is stateless: every command replays record.all_moves from the start, so each call
+    // costs ~100k ARM instructions more per move already played. ai_cmd parses the record, sets the game up (SETUP..), then
+    // replays in the loop at LOOP_CMP..LOOP_EXIT (r4 walks the json11 vector of moves at [r7+0xa68, r7+0xa6c); each step calls
+    // 0x102b89a4(game 0x103b00b0, state STATE, move)). The game lives in the engine's globals plus heap blocks they point to.
+    // Everything allocated from SETUP to LOOP_EXIT goes to a second heap arena (B); at LOOP_EXIT the globals (minus the
+    // parsed command at [r7, STATE)) and arena B are saved. A later command whose record extends the saved one is sent with
+    // only its new moves, the saved game is put back at LOOP_CMP, and the loop replays just those. Replies are byte-identical
+    // to a full replay (checked against tools/tfg.py over many records).
+    const SETUP = 0x100866e8, LOOP_CMP = 0x1008671c, LOOP_EXIT = 0x1008681c, STATE = 0x10a75410, TABLE = 392, B_START = HEAP + HEAP_SIZE, B_SIZE = 0x00800000;
+    // The engine's own memory pool (one 16 MB block from ai_init at POOL) holds the game objects and the move history (Celebi's Time
+    // Travel reads it); POOL_CURSOR points near its high-water mark. LOOP_WORDS are the two spots in the parsed-command area the loop writes.
+    const POOL = 0x30001000, POOL_CURSOR = 0x103b3568, POOL_MARGIN = 0x10000, SMALL = [0x31001000, 0x80], LOOP_WORDS = [[0x10a7486c, 4], [0x10a74d34, 0x14]];
+    uc.mem_map(B_START, B_SIZE, U.PROT_ALL);
+    const handle = () => U.getValue(uc.handle_ptr, '*');
+    const readFast = (a, n) => { const p = U._malloc(n); U.ccall('uc_mem_read', 'number', ['pointer', 'number', 'pointer', 'number'], [handle(), BigInt(a), p, BigInt(n)]); const out = U.HEAPU8.slice(p, p + n); U._free(p); return out; };
+    const tables = { A: null, B: Uint8Array.from(words([B_START, ...new Array(TABLE / 4 - 1).fill(0)])) };
+    let arena = 'A', snap = null, job = null;   // snap: { key, moves, data, heapB, table }; job: this command { key, moves, resume }
+    const toArena = to => { if (arena === to) return; tables[arena] = readFast(ALLOC, TABLE); uc.mem_write(ALLOC, tables[to]); arena = to; };
+    uc.hook_add(U.HOOK_CODE, () => toArena('B'), null, SETUP, SETUP);
+    uc.hook_add(U.HOOK_CODE, () => {
+      if (!(job && job.resume)) return;
+      const r7 = R(7), [rwStart] = rwSeg;
+      uc.mem_write(rwStart, snap.data.subarray(0, r7 - rwStart)); uc.mem_write(STATE, snap.data.subarray(STATE - rwStart));
+      for (const [a, n] of LOOP_WORDS) uc.mem_write(a, snap.data.subarray(a - rwStart, a - rwStart + n));
+      uc.mem_write(B_START, snap.heapB); uc.mem_write(ALLOC, snap.table); uc.mem_write(POOL, snap.pool); uc.mem_write(SMALL[0], snap.small);
+    }, null, LOOP_CMP, LOOP_CMP);
+    uc.hook_add(U.HOOK_CODE, () => {
+      if (job) { const bump = u32(ALLOC); snap = { key: job.key, moves: job.moves, data: readFast(rwSeg[0], rwSeg[1]), heapB: readFast(B_START, bump - B_START), table: readFast(ALLOC, TABLE), pool: readFast(POOL, u32(POOL_CURSOR) + POOL_MARGIN - POOL), small: readFast(SMALL[0], SMALL[1]) }; }
+      toArena('A');
+    }, null, LOOP_EXIT, LOOP_EXIT);
+    uc.hook_add(U.HOOK_CODE, () => {   // a block freed while the other arena is live goes back to the arena it came from
+      const p = R(0); if (!p) return;
+      const owner = p >= B_START ? 'B' : 'A'; if (owner === arena) return;
+      const blk = p - 8, sz = u32(blk), off = sz <= 1024 ? sz >>> 2 : 260 + 4 * (32 - Math.clz32(sz - 1)), t = new DataView(tables[owner].buffer, tables[owner].byteOffset);
+      w32(blk + 8, t.getUint32(off, true)); t.setUint32(off, blk, true); rw(U.ARM_REG_PC, rr(U.ARM_REG_LR));
+    }, null, NATIVE + NATIVE_AT.free, NATIVE + NATIVE_AT.free);
+
     return {
-      cmd(text) { const data = enc.encode(text); if (data.length + 1 > CMDBUF_SIZE) throw new Error('command too long'); mwrite(CMDBUF, data); mwrite(CMDBUF + data.length, [0]); call(sym.ai_cmd, CMDBUF); return str(call(sym.get_g_ss)); },
+      cmd(text) {
+        job = null;
+        try {
+          const o = JSON.parse(text), r = o.record;
+          if (r && Array.isArray(r.all_moves)) {
+            const rest = Object.assign({}, r); delete rest.all_moves; delete rest.seeds;
+            const seeds = r.seeds || [], key = JSON.stringify(rest), moves = r.all_moves.map((m, i) => JSON.stringify(m) + '|' + JSON.stringify(seeds[i] === undefined ? null : seeds[i]));
+            const resume = !!snap && snap.key === key && snap.moves.length <= moves.length && snap.moves.every((m, i) => m === moves[i]);
+            if (resume) { const n = snap.moves.length; o.record = Object.assign({}, r, { all_moves: r.all_moves.slice(n), seeds: seeds.slice(n) }); text = JSON.stringify(o); }
+            job = { key, moves, resume };
+          }
+        } catch (e) { job = null; }
+        try { return run(text); }
+        catch (e) { snap = null; throw e; }
+        finally { toArena('A'); }
+      },
     };
   };
 });
