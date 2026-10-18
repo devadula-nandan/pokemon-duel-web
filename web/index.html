@@ -1337,7 +1337,7 @@ async function joinRoom(code) {
 }
 
 // ---------- engine access ----------
-let me = 'black', flip = false, states = [], rewinds = 0, rec, st, legal = [], sel = null, routeChoice = null, busy = false, over = null, ctrl = {}, ai = null, clock = {}, timer = 0, logLines = [], gameId = 0;
+let hudSide = null, me = 'black', flip = false, states = [], rewinds = 0, rec, st, legal = [], sel = null, routeChoice = null, busy = false, over = null, ctrl = {}, ai = null, clock = {}, timer = 0, logLines = [], gameId = 0;
 async function api(cmd, extra) {
   const j = JSON.parse(await engineCmd(JSON.stringify(Object.assign({ cmd, record: rec }, extra))));
   if (j.error) throw new Error('engine: ' + j.error);
@@ -1800,11 +1800,12 @@ function render() {
       h += `<polygon class="arrowmark" points="${at(23.3 + stem, -7.2)} ${at(23.3 + stem, 7.2)} ${at(30.5 + stem, 0)}"/>`;
     } }
   const low = flip ? 'white' : 'black', high = other(low);
+  if (P_COL[st.selective_side]) hudSide = st.selective_side;   // a system move (a spin: 'both') keeps the player whose turn it is lit, so the bars only ever swap
   for (const [c, k] of [[low, 0], [high, 1]]) {   // HUD bars: who, Z gauge, clock; the side to act is outlined
     const zv = Math.min(100, ((st.z_gauge_conditions || []).find(x => x.color === c) || {}).z_gauge || 0);   // SetZWazaBar: capped at 100, "MAX" when full
     $('n' + k).textContent = label(c); $('d' + k).style.background = P_COL[c]; $('d' + k).textContent = label(c)[0]; $('z' + k).textContent = zv >= 100 ? 'MAX' : zv + '/100';
     $('zg' + k).style.setProperty('--v', zv + '%'); $('zg' + k).classList.toggle('max', zv >= 100);
-    $(k ? 'hudTop' : 'hudBottom').classList.toggle('turn', !over && st.selective_side === c);
+    $(k ? 'hudTop' : 'hudBottom').classList.toggle('turn', !over && hudSide === c);
   }
   const away = { [low]: 378, [high]: 42 }, toks = [];   // the next free place in each side's row of excluded figures (bottom row fills from the right, top row from the left)
   for (const c of st.pokemon_conditions) {
