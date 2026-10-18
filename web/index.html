@@ -48,8 +48,8 @@
   html.mview #game .arena { --fit:100cqh; height:100%; width:100%; aspect-ratio:auto; margin:0; align-self:stretch; justify-self:stretch; }   /* the whole screen, not the table's shape */
   html.mview .arena, html.mview .side, html.mview #board3d button, html.mview .hud .z, html.mview .clock { border:0 !important; border-radius:0 !important; outline:0 !important; }
   html.mview .side.open { transform:none; } html.mview .side .panel { box-shadow:none; } html.mview .side { border-left:1px solid var(--line) !important; }   /* flat drawer: the HUD's 1px theme line on its left edge, no shadows */
-  html.mview .side::before { content:''; position:fixed; top:var(--side-top,0); bottom:var(--side-bottom,0); left:0; right:min(88vw,380px); background:color-mix(in srgb, var(--bg) 60%, transparent); opacity:0; transition:opacity .2s; pointer-events:none; }
-  html.mview .side.open::before { opacity:1; }   /* the board beside the open drawer is tinted (a tap there still closes it) */
+  html.mview .arena .table { position:relative; } html.mview .arena .table::after { content:''; position:absolute; inset:0; z-index:2; background:color-mix(in srgb, var(--bg) 60%, transparent); opacity:0; transition:opacity .2s; pointer-events:none; }
+  html.mview:has(.side.open) .arena .table::after { opacity:1; }   /* the board under the open drawer is tinted in place and fades; a tap there still closes the drawer */
   #fsGame { display:none; } #fsBtn[aria-pressed=true], #fsGame[aria-pressed=true] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
   .arena { display:flex; flex-direction:column; gap:8px; min-height:0; } .side { min-height:0; overflow:auto; }
   .panel { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:14px; box-shadow:0 2px 10px rgba(0,0,0,.18); }
