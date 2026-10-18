@@ -18,7 +18,7 @@
   html.ios-app body { box-sizing:border-box; padding-top:16px; } html.ios-app body > .top { padding-top:0; }   /* the strip is the bar's top padding */
   /* in a duel the top bar is hidden: no strip there, the player bars reach 16px higher instead, so the smear falls on flat colour */
   html.ios-app.mview:has(#game:not([hidden])) body { padding-top:0; } html.ios-app.mview:has(#game:not([hidden])) #sbTint { display:none; }
-  html.ios-app.mview .hud { --lt-h:41px; } input, button, select, textarea, a, label { touch-action:manipulation; }   /* no double-tap zoom on controls */
+  html.ios-app.mview .hud { --lt-h:32px; } input, button, select, textarea, a, label { touch-action:manipulation; }   /* no double-tap zoom on controls */
   .top { display:flex; align-items:center; gap:6px; padding:6px; background:var(--bar); border-bottom:1px solid var(--line); } .top button { margin:0; }   /* one even 6px gap between everything in the bar */ .top .ticker { flex:1; min-width:0; border-bottom:0; -webkit-mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); }   /* the scrolling text fades in and out at both ends instead of being cut off */
   .ticker { overflow:hidden; white-space:nowrap; background:var(--bar); color:var(--accent); font-size:12px; padding:5px 0; border-bottom:1px solid var(--line); }
   .ticker span { display:inline-block; padding-left:100%; animation:tick 70s linear infinite; } .ticker:hover span { animation-play-state:paused; }
@@ -63,7 +63,7 @@
   .hud .av { flex:none; align-self:stretch; width:44px; display:grid; place-items:center; font-weight:800; font-size:16px; line-height:1; color:#fff; border-right:1px solid var(--line); } .hud .pl.right .av { border-right:0; border-left:1px solid var(--line); }   /* flush with the bar's outer edge, its full height; one 1px divider on the inner side */
   .hud .who { min-width:0; font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 2px rgba(0,0,0,.4); }
   .clock { margin-left:auto; font-variant-numeric:tabular-nums; font-weight:800; font-size:15px; color:#fff; opacity:.75; } .hud .pl.right .clock { margin:0 auto 0 0; } .clock.on { opacity:1; color:var(--gold); }
-  .hud .turns { position:absolute; left:50%; top:calc(var(--lt-h, 25px) + 23px); transform:translate(-50%,-50%); z-index:1; min-width:50px; height:30px; padding:0 10px; border-radius:15px; display:grid; place-items:center; background:var(--bar); border:1px solid var(--line); color:var(--gold); font-weight:800; font-size:15px; font-variant-numeric:tabular-nums; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+  .hud .turns { position:absolute; left:50%; top:calc(var(--lt-h, 16px) + 23px); transform:translate(-50%,-50%); z-index:1; min-width:50px; height:30px; padding:0 10px; border-radius:15px; display:grid; place-items:center; background:var(--bar); border:1px solid var(--line); color:var(--gold); font-weight:800; font-size:15px; font-variant-numeric:tabular-nums; box-shadow:0 2px 8px rgba(0,0,0,.35); }
   :root[data-theme=light] .hud .turns { color:var(--ink); }
   .zrow { grid-column:1 / -1; display:grid; grid-template-columns:1fr 26px 1fr; align-items:stretch; height:16px; background:var(--bar); box-sizing:content-box; border-bottom:1px solid var(--line); }
   .hud .pl { box-sizing:content-box; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }   /* theme-coloured lines above the player bars, between them and the Z bar, and under it */
@@ -74,9 +74,9 @@
   /* MatchLiveTicker, 1:1 in place and proportion: a black BoxBase strip across the top of the HUD (47 of 1334, above the 82-high player
      bars), text typed in from the left at 24/82 of a bar's height. It is empty until something is announced; the original has no
      "to act" line (the turn shows on the player bars). Errors and how the duel ended use the same strip. */
-  .ltbar { grid-column:1 / -1; position:relative; height:var(--lt-h, 25px); background:#000; overflow:hidden; }
-  #status, #lt { position:absolute; left:0; right:0; bottom:0; height:25px; line-height:25px; padding:0 10px; font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  #status { color:#fff; } #status:empty { display:none; } #lt { background:#000; } #lt[hidden] { display:none; }
+  .ltbar { grid-column:1 / -1; position:relative; height:var(--lt-h, 16px); background:var(--bar); overflow:hidden; }   /* theme bar colour, as tall as the Z bar */
+  #status, #lt { position:absolute; left:0; right:0; bottom:0; height:16px; line-height:16px; padding:0 8px; font-size:10px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #status { color:var(--ink); } #status:empty { display:none; } #lt { background:var(--bar); } #lt[hidden] { display:none; }
   /* the table: red end at the top, blue end at the bottom */
   .table { flex:1; min-height:0; display:flex; padding:0; border-radius:8px; border:1px solid var(--line); box-shadow:0 10px 30px rgba(0,0,0,.5), inset 0 0 0 2px color-mix(in srgb, var(--bd-line) 10%, transparent);
     /* a fine grain, a faint weave, then the slate itself */
