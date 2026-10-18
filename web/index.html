@@ -430,7 +430,14 @@
   .ibar button { padding:5px 14px; font-size:13px; text-align:center; white-space:nowrap; }
   #ibGive { justify-self:start; color:var(--err); border-color:var(--danger); } #ibGive:hover:not(:disabled) { background:var(--danger); border-color:var(--danger); color:#fff; }   /* the theme's red, as on the remove buttons */ #ibWait { grid-column:3; justify-self:end; display:inline-flex; align-items:center; gap:8px; color:var(--dim); }
   #ibMid { grid-column:2; min-width:140px; background:var(--ink); border-color:var(--ink); color:var(--bg); } #ibMid:hover:not(:disabled) { opacity:.85; } #ibMid:disabled { background:var(--ctl); border-color:var(--line); color:var(--dim); }
-  @media (max-width:860px) { #ibMid { min-width:0; overflow:hidden; text-overflow:ellipsis; } }   /* the centre label gives up width so the menu button keeps the bar's right inset */
+  @media (max-width:860px) { #ibMid { min-width:0; overflow:hidden; text-overflow:ellipsis; } }
+  /* flush, like the HUD above the board: full-height square segments split by 1px theme lines, no gaps or rounding */
+  .ibar { padding:0; gap:0; align-items:stretch; min-height:44px; }
+  .ibar button, .ibar #ibWait { height:44px; border-radius:0; border-width:0; }
+  #ibGive { border-right:1px solid var(--line); padding:0 18px; } #ibGive:hover:not(:disabled) { border-color:var(--line); }
+  #ibMid, #ibMid:disabled { border-left:1px solid var(--line); border-right:1px solid var(--line); padding:0 24px; }
+  html.mview #game .ibar { gap:0; align-items:stretch; }
+  html.mview #sideBtn, html.mview #fsGame { width:44px; height:44px; border-radius:0; border-width:0 0 0 1px; border-color:var(--line); }   /* the centre label gives up width so the menu button keeps the bar's right inset */
   #ibWait i { min-width:18px; height:18px; padding:0 5px; border-radius:4px; background:var(--ink); color:var(--bg); font:700 11px/18px "Segoe UI",system-ui,sans-serif; }
   /* the plate list (PlateChoices): a band 468 high across the bottom, plates 178 apart that snap to the centre, a frame round the centre
      one, that plate large above, Use under the band's middle and Close at its right. Dimmed and blurred behind, like the site's dialogs. */
