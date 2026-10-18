@@ -783,7 +783,23 @@ if (matchMedia('(hover: hover)').matches) {
 const slotText = slot => slot.st.map((id, k) => id == null ? null : figText(id, slot.mod[k])).filter(Boolean).join(' → ') + slot.forms.map((id, k) => id == null ? '' : ' ⇄ ' + figText(id, slot.fmod[k])).join('');
 // ---------- saved teams ----------
 // Six figures (with their attachments, levels and boosts) and the plates, kept on this device under a name. The list starts with meta synergy decks.
-const TEAMS_KEY = 'pokemonduelweb.teams.v1', LAST_KEY = 'pokemonduelweb.teams.last';   // the saved team last loaded or saved, preselected on the next visit
+const TEAMS_KEY = 'pokemonduelweb.teams.v1', LAST_KEY = 'pokemonduelweb.teams.last';
+// Everything picked in the free-duel builder survives a reload or a trip home: the team (with its attachments, levels and boosts), the
+// plates, and the setup controls (opponent, auto evo, opponent plates, list filters, Figures / Plates tab).
+const FREE_KEY = 'pokemonduelweb.free.current', UI_KEY = 'pokemonduelweb.setup.ui', UI_IDS = ['mode', 'evo', 'oplates', 'rar', 'typ', 'mpf', 'colf', 'kind', 'prar', 'pcostf', 'pkind'];
+function storeFree() { if (ownedMode) return; try { localStorage.setItem(FREE_KEY, JSON.stringify({ team, plates: myPlates })); } catch (e) {} }
+function loadFree() {   // a team or plate this version does not know is dropped rather than loaded broken
+  let v = null; try { v = JSON.parse(localStorage.getItem(FREE_KEY)); } catch (e) {}
+  const ok = v && Array.isArray(v.team) && v.team.every(sl => sl && Array.isArray(sl.st) && sl.st.concat(sl.forms || []).every(id => id == null || byId.has(id)));
+  return ok ? { team: v.team, plates: (v.plates || []).filter(id => plateById.has(id)) } : null;
+}
+function storeUi() { const ui = { tab: $('pickSide').dataset.tab || 'fig' }; for (const id of UI_IDS) { const el = $(id); if (el) ui[id] = el.type === 'checkbox' ? el.checked : el.value; } try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) {} }
+function loadUi() {
+  let ui = null; try { ui = JSON.parse(localStorage.getItem(UI_KEY)); } catch (e) {} if (!ui) return;
+  for (const id of UI_IDS) { const el = $(id); if (!el || ui[id] == null) continue; if (el.type === 'checkbox') el.checked = !!ui[id]; else if ([...el.options].some(o => o.value === ui[id])) el.value = ui[id]; }
+  if (ui.tab) setPickTab(ui.tab);
+  if ($('mode').onchange) $('mode').onchange();
+}   // the saved team last loaded or saved, preselected on the next visit
 // Meta decks from late Pokémon Duel ladder play (Dawn Wings era). A figure is "Name", optionally "RARITY:Name" when two figures share
 // a name, and "+Name" for each attachment beyond automatic evolutions (Mega, form, or a skipped stage).
 const STARTER_TEAMS = [
@@ -870,7 +886,7 @@ function syncCollapse() {
   if (both && !narrow) { $('pickExp').textContent = pickBodyOpen ? 'Collapse' : 'Expand'; $('pickExp').setAttribute('aria-expanded', pickBodyOpen ? 'true' : 'false'); }
 }
 function drawTeam() {
-  markSaved();
+  markSaved(); storeFree();
   if (replaceFig != null && (replaceFig < 0 || replaceFig >= team.length)) replaceFig = null;
   $('team').innerHTML = team.map((slot, i) => slotCard(slot, 'team:' + i, { cls: 'row' + (replaceFig === i ? ' sel' : ''), attrs: `data-i="${i}"${replaceFig === i ? ' aria-selected="true"' : ''}`, right: `<button class="x" data-x="${i}" title="Remove" aria-label="Remove">${X_ICON}</button>` })).join('') + '<div class="card empty" data-pick="fig" role="button" tabindex="0" title="Add a figure" aria-label="Add a figure">+</div>'.repeat(6 - team.length);
   $('myplates').innerHTML = myPlates.map((id, i) => { const pl = plateById.get(id); return `<div class="mpl" data-i="${i}" data-plate="${id}"><div class="mhd"><span class="chip rar${pl.r}">${RAR[pl.r] || ''}</span><button class="info" aria-label="Details of ${esc(pl.n)}">${icon('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>')}</button><button class="x" data-x="${i}" title="Remove" aria-label="Remove ${esc(pl.n)}">${X_ICON}</button></div><b>${esc(pl.n)}</b><span class="ct" title="Cost ${pl.c}">${'<i></i>'.repeat(pl.c || 0)}</span><span class="note">${esc(pl.d)}</span></div>`; }).join('') + '<div class="mpl empty" data-pick="plt" role="button" tabindex="0" title="Add a plate" aria-label="Add a plate">+</div>'.repeat(PLATE_MAX - myPlates.length);
@@ -977,6 +993,7 @@ const setPickTab = tab => {
   $('pickSide').dataset.tab = t;
   $('pickTabFig').setAttribute('aria-selected', t === 'fig' ? 'true' : 'false');
   $('pickTabPlt').setAttribute('aria-selected', t === 'plt' ? 'true' : 'false');
+  if (loadUi.done) storeUi();
 };
 const setPickOpen = (on, focus) => {
   $('setup').classList.toggle('pick-open', !!on); $('pickScrim').hidden = !on;
@@ -1132,7 +1149,8 @@ $('home').onclick = e => {
   clearInterval(homeTick); $('home').hidden = true;
   if (act === 'league') { $('game').hidden = true; team = profile.deck.map(slotFrom); myPlates = deckPlates(); return start({ league: true }).catch(x => { showHome(); drawHome.msg = x.message; drawHome(); }); }
   ownedMode = act === 'deck'; listBuilt = plateBuilt = '';
-  team = ownedMode && profile.deck ? profile.deck.map(slotFrom) : []; myPlates = ownedMode ? deckPlates() : [];
+  const free = ownedMode ? null : loadFree();
+  team = ownedMode && profile.deck ? profile.deck.map(slotFrom) : free ? free.team : []; myPlates = ownedMode ? deckPlates() : free ? free.plates : [];
   $('oppPanel').hidden = $('oplLabel').hidden = ownedMode; $('go').disabled = false; $('go').textContent = ownedMode ? 'Save deck' : 'Start duel'; $('setupErr').textContent = '';
   pickBodyOpen = true; syncCollapse.wasBoth = false; $('setup').hidden = false; setPickOpen(false); drawList(); drawTeam();
 };
@@ -2484,6 +2502,7 @@ const figAt = route => { const c = st.pokemon_conditions.find(c => c.index === r
 
 $('mode').onchange = () => { $('room').hidden = $('mode').value !== 'join'; $('go').disabled = false; $('go').textContent = $('mode').value === 'join' ? 'Join duel' : $('mode').value === 'host' ? 'Open room' : 'Start duel'; };
 $('ticker').firstElementChild.textContent = `pokemon duel web ◆ ${D.figures.length} figures · ${D.plates.length} plates · ${Object.keys(D.skills).length} attacks · ${Object.keys(D.abilities).length} abilities ◆ Parity: every legal move, spin, attack effect, ability, plate, evolution and AI decision is computed by the original game's own rule engine, not re-implemented ◆ Deck rules, levels, chain boosts, Rewind, league thresholds and booster odds follow the original client and its master data ◆ Not original: the look, the league opponent (the original AI with a random deck), fixed rating points, the starter set ◆ Missing because their data did not survive: quests, shop, level-up costs ◆ Everything runs in this page: no install, no server ◆ Online: one player opens a room and shares the code, the other joins with it`;
+{ const free = loadFree(); if (free) { team = free.team; myPlates = free.plates; } loadUi(); loadUi.done = true; document.getElementById('setup').addEventListener('change', e => { if (UI_IDS.includes(e.target.id)) storeUi(); }); }
 drawList(); drawTeam(); drawSaved(); { let last = null; try { last = localStorage.getItem(LAST_KEY); } catch (e) {} const i = savedTeams.findIndex(t => t.name === last); if (i >= 0 && !team.length) { $('tlist').querySelector(`.tcard[data-i="${i}"]`).click(); drawSaved(); } } viewHref(); if (/^#g=\d+$/.test(location.hash)) resumeGame().catch(x => { showHome(); drawHome.msg = x.message; drawHome(); }); else showHome();
 </script>
 </body>
