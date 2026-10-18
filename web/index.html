@@ -379,8 +379,11 @@
      from the 750 x 1334 "UI Root" of its match scene, so lengths are in --u, one of that screen's units (it fits both width and height).
      The dumps are in tools/original-ui. Where things are and how big is the original's; how they look is this site's theme. */
   .arena { container-type:size; --u:min(calc(100cqw / 750), calc(100cqh / 1334)); }
-  .table { position:relative; } #tbl { position:absolute; left:0; right:0; top:8px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; justify-content:center; pointer-events:none; font-size:12px; } #tbl > * { pointer-events:auto; }
-  #tbl button { padding:5px 10px; } #tbl b, #tbl span { padding:2px 8px; border-radius:4px; background:var(--bar); color:var(--ink); }
+  /* the choices without a place on the board: one scrollable row attached to the bottom of the table, just above the action bar */
+  .table { position:relative; } #tbl { position:absolute; left:0; right:0; bottom:0; z-index:1; display:flex; flex-wrap:nowrap; gap:6px; align-items:center; justify-content:safe center; overflow-x:auto; overscroll-behavior-x:contain; padding:6px 8px; background:var(--bar); border-top:1px solid var(--line); font-size:12px; scrollbar-width:thin; } #tbl:empty { display:none; }
+  #tbl > * { flex:none; white-space:nowrap; } #tbl b, #tbl span { padding:2px 8px; border-radius:4px; background:var(--bar); color:var(--ink); }
+  #tbl button { padding:6px 12px; font-weight:700; background:var(--ink); color:var(--bar); border-color:var(--ink); }   /* high contrast: inverted like the primary buttons */
+  #tbl button b, #tbl button span { padding:0; background:none; color:inherit; } #tbl button b[style] { filter:saturate(1.2); }
   /* on the table: drawn like the board itself (slate cards and a pill outlined in the route colour, filled when it can be pressed) */
   .pcardT { cursor:pointer; } .pcardT rect { fill:var(--bd-pt); stroke:var(--bd-line); stroke-width:1; } .pcardT rect.sh { fill:#000; stroke:none; opacity:.35; } .pcardT rect.re { stroke:none; } .pcardT rect.fr { fill:none; stroke-width:.6; opacity:.5; } .pcardT .co { fill:var(--gold); } .pcardT:hover rect:not(.sh):not(.re) { stroke:var(--gold); } .pcardT text { fill:var(--bd-line); font-weight:700; text-anchor:middle; pointer-events:none; }
   .pmark { fill:none; stroke:var(--gold); stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
