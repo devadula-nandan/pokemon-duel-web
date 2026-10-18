@@ -510,13 +510,14 @@ function wallTex(segs, lit) {   // wide, so a join is as thin as on the top face
 }
 function fieldSpin(i, segs, results, still) {   // still: a frozen or melted wheel shows its result without turning
   const g = tokens.get(i); if (!g || !segs.length) return Promise.resolve(0);
-  const geo = new THREE.RingGeometry(SPIN_IN, SPIN_OUT, 96, 1), mat = new THREE.MeshBasicMaterial({ map: wheelTex(segs), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
-  const ring = new THREE.Mesh(geo, mat); ring.rotation.x = -Math.PI / 2; ring.renderOrder = 55;
+  const geo = new THREE.RingGeometry(SPIN_IN, SPIN_OUT, 96, 1), mat = new THREE.MeshBasicMaterial({ map: wheelTex(segs), transparent: true, opacity: 0, side: THREE.DoubleSide });   // writes depth, so the status words under it stay hidden
+  const ring = new THREE.Mesh(geo, mat); ring.rotation.x = -Math.PI / 2;   // renderOrder 0: drawn before the figure's picture (1), so it never covers the figure
   const side = new THREE.Mesh(new THREE.CylinderGeometry(SPIN_OUT, SPIN_OUT, AURA_H + .004, 96, 1, true), new THREE.MeshBasicMaterial({ map: wallTex(segs), transparent: true, opacity: 0 }));
   side.position.y = (AURA_H + .004) / 2; ring.position.y = AURA_H + .006;   // a solid band over the status ring, the wheel on its top face
   const turnG = new THREE.Group(); turnG.add(side, ring);
-  const ptr = new THREE.Mesh(new THREE.ConeGeometry(.09, .2, 3), new THREE.MeshBasicMaterial({ color: css('--gold', '') || '#ffd23f', transparent: true, opacity: 0, depthWrite: false }));
-  ptr.rotation.x = -Math.PI / 2; ptr.position.set(0, .05, SPIN_OUT + .08); ptr.renderOrder = 56;   // fixed at the near side, pointing in, so the lit slice is not hidden behind the figure
+  const tri = new THREE.Shape([new THREE.Vector2(-.09, 0), new THREE.Vector2(.09, 0), new THREE.Vector2(0, .15)]);   // a solid triangle as tall as the wheel
+  const ptr = new THREE.Mesh(new THREE.ExtrudeGeometry(tri, { depth: AURA_H + .006, bevelEnabled: false }), new THREE.MeshStandardMaterial({ color: css('--gold', '') || '#ffd23f', roughness: .5, transparent: true, opacity: 0 }));
+  ptr.rotation.x = -Math.PI / 2; ptr.position.set(0, 0, SPIN_OUT + .17); ptr.castShadow = true;   // fixed at the near side, tip touching the rim, so the lit slice is not hidden behind the figure
   const host = new THREE.Group(); host.add(turnG, ptr); host.position.copy(g.position); g.parent.add(host);
   const starts = []; let a = 0; for (const sg of segs) { starts.push(a); a += sg.range; }
   const at = num => Math.max(0, segs.findIndex((sg, n) => num >= starts[n] && num < starts[n] + sg.range));
