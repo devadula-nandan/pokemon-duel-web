@@ -2,6 +2,7 @@
 // Loaded in <head> so the page is drawn in the right theme from the first frame.
 // Buttons with data-theme-btn (or id themeBtn) cycle Auto -> Light -> Dark.
 // data-update-btn appears when a newer GitHub release tag exists than APP_VER; click hard-reloads.
+// data-refresh-btn is always there: it fetches the latest published page past every cache, then reloads.
 (() => {
   const KEY = 'pokemonduelweb.theme', sysLight = matchMedia('(prefers-color-scheme: light)'); let mode = 'auto';
   const REPO = 'devadula-nandan/pokemon-duel-web';
@@ -51,6 +52,22 @@
     for (let i = 0; i < n; i++) { const d = (a[i] || 0) - (b[i] || 0); if (d) return d > 0; }
     return false;
   };
+  // Two caches can hold an old build: the browser's HTTP cache (GitHub Pages lets it keep files for 10 minutes) and the asset gate's
+  // Cache Storage, which the service worker serves first for ever (engine worker, tfg.js, emulator). Every same-origin page / script /
+  // style / data file this page has loaded is fetched again with cache: 'reload', which also rewrites the HTTP cache entry, and code
+  // the gate stored is replaced. Sound, music and the engine binary stay cached.
+  const CODE = /\.(html?|js|mjs|css|json)$|\/$/i;
+  async function refetchCode() {
+    const base = document.baseURI || location.href, urls = new Set([location.href.split('#')[0], new URL('index.html', base).href]);
+    for (const el of document.querySelectorAll('script[src], link[rel="stylesheet"][href]')) urls.add(el.src || el.href);
+    for (const e of performance.getEntriesByType('resource')) urls.add(e.name);
+    for (const f of ['engine-worker.js', 'tfg.js', 'vendor/unicorn_arm.js', 'sw.js']) urls.add(new URL(f, base).href);
+    const cache = 'caches' in window ? await caches.open('pdw-assets-v1').catch(() => null) : null;
+    await Promise.all([...urls].filter(u => { try { const x = new URL(u); return x.origin === location.origin && CODE.test(x.pathname); } catch (e) { return false; } }).map(async u => {
+      const r = await fetch(u, { cache: 'reload' }).catch(() => null);
+      if (r && r.ok && cache && await cache.match(u, { ignoreSearch: true })) await cache.put(u, r.clone()).catch(() => {});
+    }));
+  }
   async function hardReload() {
     try {
       if ('serviceWorker' in navigator) {
@@ -58,6 +75,7 @@
         await Promise.all(regs.map(r => r.unregister()));
       }
     } catch (e) {}
+    try { await refetchCode(); } catch (e) {}
     const u = new URL(location.href);
     u.searchParams.set('_', String(Date.now()));
     location.replace(u.href);
@@ -84,6 +102,16 @@
       if (tag && isNewer(tag, window.APP_VER)) paintUpdate(tag);
     } catch (e) {}
   }
-  if (document.body) checkRelease();
-  else addEventListener('DOMContentLoaded', checkRelease);
+  const REFRESH_ICON = '<path d="M20 11a8 8 0 0 0-14.9-3.9"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.9 3.9"/><path d="M20 20v-4h-4"/>';
+  function paintRefresh() {
+    for (const b of document.querySelectorAll('[data-refresh-btn]')) {
+      if (b._refreshBound) continue; b._refreshBound = 1;
+      b.classList.add('iconbtn'); b.innerHTML = icon(REFRESH_ICON); b.title = 'Load the latest version (v' + window.APP_VER + ' now)'; b.setAttribute('aria-label', 'Load the latest version');
+      b.onclick = () => { b.disabled = true; b.classList.add('busy'); hardReload(); };
+    }
+  }
+  const boot = () => { paintRefresh(); checkRelease(); };
+  try { const u = new URL(location.href); if (u.searchParams.has('_')) { u.searchParams.delete('_'); history.replaceState(history.state, '', u.href); } } catch (e) {}   // the cache-busting mark has done its job once the page is here
+  if (document.body) boot();
+  else addEventListener('DOMContentLoaded', boot);
 })();
