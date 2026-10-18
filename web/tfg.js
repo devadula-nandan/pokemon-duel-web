@@ -185,7 +185,8 @@
           if (r && Array.isArray(r.all_moves)) {
             const rest = Object.assign({}, r); delete rest.all_moves; delete rest.seeds;
             const seeds = r.seeds || [], key = JSON.stringify(rest), moves = r.all_moves.map((m, i) => JSON.stringify(m) + '|' + JSON.stringify(seeds[i] === undefined ? null : seeds[i]));
-            const resume = !!snap && snap.key === key && snap.moves.length <= moves.length && snap.moves.every((m, i) => m === moves[i]);
+            // not for the AI (go): its search does not give the same move from a resumed game, so it always replays in full
+            const resume = o.cmd !== 'go' && !!snap && snap.key === key && snap.moves.length <= moves.length && snap.moves.every((m, i) => m === moves[i]);
             if (resume) { const n = snap.moves.length; o.record = Object.assign({}, r, { all_moves: r.all_moves.slice(n), seeds: seeds.slice(n) }); text = JSON.stringify(o); }
             job = { key, moves, resume };
           }
