@@ -32,6 +32,7 @@
   const label = () => {
     const look = mode === 'auto' ? (sysLight.matches ? 'light' : 'dark') : mode;
     const [bg, ink, line] = LOOK[look];
+    const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.content = bg;   // the iOS home-screen status bar takes this colour
     const title = 'Theme: ' + mode + (mode === 'auto' ? ' (follows device)' : '') + ' — click for ' + NEXT[mode];
     for (const b of themeBtns()) {
       b.innerHTML = icon(ICONS[mode]); b.title = title; b.setAttribute('aria-label', title); b.classList.add('iconbtn');

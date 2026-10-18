@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Duel">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#111111"><meta name="apple-mobile-web-app-title" content="Duel">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <title>pokemon duel web</title>
 <link rel="stylesheet" href="theme.css">
@@ -11,8 +11,8 @@
 <script src="assets.js"></script>
 <script src="sound.js"></script>
 <style>
-  body { height:100dvh; display:flex; flex-direction:column; box-sizing:border-box; padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
-  body::before { content:''; position:fixed; top:0; left:0; right:0; height:env(safe-area-inset-top); background:#000; z-index:100; pointer-events:none; }   /* home-screen app: the page starts below the status bar, whose white text sits on this band instead of a blurred page */ input, button, select, textarea, a, label { touch-action:manipulation; }   /* no double-tap zoom on controls */
+  body { position:fixed; inset:0; display:flex; flex-direction:column; box-sizing:border-box; padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
+  body::before { content:''; position:fixed; top:0; left:0; right:0; height:env(safe-area-inset-top); background:#000; z-index:100; pointer-events:none; }   /* home-screen app: the opaque status-bar style keeps the page below the status bar (theme-color paints it); if a device still lays the page under it, the page starts below the inset and this band sits behind the clock. position:fixed + inset:0 is the real screen: 100dvh misses the status bar there, leaving a gap at the bottom and a page that slides up */ input, button, select, textarea, a, label { touch-action:manipulation; }   /* no double-tap zoom on controls */
   .top { display:flex; align-items:center; gap:6px; padding:6px; background:var(--bar); border-bottom:1px solid var(--line); } .top button { margin:0; }   /* one even 6px gap between everything in the bar */ .top .ticker { flex:1; min-width:0; border-bottom:0; -webkit-mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); }   /* the scrolling text fades in and out at both ends instead of being cut off */
   .ticker { overflow:hidden; white-space:nowrap; background:var(--bar); color:var(--accent); font-size:12px; padding:5px 0; border-bottom:1px solid var(--line); }
   .ticker span { display:inline-block; padding-left:100%; animation:tick 70s linear infinite; } .ticker:hover span { animation-play-state:paused; }
@@ -24,7 +24,7 @@
   #sideBtn, #sideHome { display:none; } #camBar { margin-bottom:14px; flex-wrap:nowrap; } #camBar:empty { display:none; }
   #camBar .camGrow { flex:1 1 auto; min-width:4px; } #camBar a.iconbtn { margin:0; border:1px solid var(--line); border-radius:4px; background:var(--ctl); display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; text-decoration:none; color:inherit; } #camBar a.iconbtn:hover { background:var(--ctl2); border-color:var(--dim); }
   @media (max-width:860px) {
-    html, body { height:100dvh; max-height:100dvh; overflow:hidden; }   /* home / setup / game fill the screen; no document scroll */
+    html, body { overflow:hidden; }   /* home / setup / game fill the screen; no document scroll */
     #setup, #home { grid-template-columns:1fr !important; flex:1 1 0; min-height:0; max-width:none; width:100%; overflow-x:hidden; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; align-content:start; }
     #home, #setup { overflow:hidden; }   /* both lobbies fit the screen — no page scrollbar */
     #fsBtn, #fsGame { display:none !important; }
