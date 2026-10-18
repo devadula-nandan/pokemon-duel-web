@@ -506,8 +506,10 @@ function fieldSpin(i, segs, results, still) {   // still: a frozen or melted whe
   const g = tokens.get(i); if (!g || !segs.length) return Promise.resolve(0);
   const geo = new THREE.RingGeometry(SPIN_IN, SPIN_OUT, 96, 1), mat = new THREE.MeshBasicMaterial({ map: wheelTex(segs), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
   const ring = new THREE.Mesh(geo, mat); ring.rotation.x = -Math.PI / 2; ring.renderOrder = 55;
-  const side = new THREE.Mesh(band((SPIN_IN + SPIN_OUT) / 2, SPIN_OUT - SPIN_IN, AURA_H + .004), new THREE.MeshBasicMaterial({ color: 0x101216, transparent: true, opacity: 0 }));
-  side.rotation.x = Math.PI / 2; side.position.y = (AURA_H + .004) / 2; ring.position.y = AURA_H + .006;   // a solid band over the status ring, the wheel on its top face
+  const sideTex = tex(512, 8, (c, w, h) => { let a = 0; for (const sg of segs) {   // the outer wall in the slices' colours: CylinderGeometry u = 0.5 - t/96 lines up with the top face
+    const x = ((.5 - (a + sg.range) / 96) % 1 + 1) % 1 * w, len = sg.range / 96 * w; a += sg.range; c.fillStyle = sg.col; c.fillRect(x, 0, len, h); if (x + len > w) c.fillRect(x - w, 0, len, h); } });
+  const side = new THREE.Mesh(new THREE.CylinderGeometry(SPIN_OUT, SPIN_OUT, AURA_H + .004, 96, 1, true), new THREE.MeshBasicMaterial({ map: sideTex, transparent: true, opacity: 0 }));
+  side.position.y = (AURA_H + .004) / 2; ring.position.y = AURA_H + .006;   // a solid band over the status ring, the wheel on its top face
   const turnG = new THREE.Group(); turnG.add(side, ring);
   const ptr = new THREE.Mesh(new THREE.ConeGeometry(.09, .2, 3), new THREE.MeshBasicMaterial({ color: css('--gold', '') || '#ffd23f', transparent: true, opacity: 0, depthWrite: false }));
   ptr.rotation.x = Math.PI / 2; ptr.position.set(0, .05, -(SPIN_OUT + .08)); ptr.renderOrder = 56;   // fixed at the far side (12 o'clock on the wheel), pointing in
@@ -535,7 +537,7 @@ function stepFieldSpins(dt) {
       if (k >= 1) { f.steps.shift(); f.to = null; }
     } else if (f.phase === 'hold') { if (f.t >= 1) { f.phase = 'out'; f.t = 0; } }
     else { const k = Math.min(1, f.t / .3); f.mat.opacity = 1 - k; f.side.material.opacity = 1 - k; f.ptr.material.opacity = 1 - k;
-      if (k >= 1) { f.host.removeFromParent(); f.geo.dispose(); f.mat.map.dispose(); f.mat.dispose(); f.ptr.geometry.dispose(); f.ptr.material.dispose(); f.side.geometry.dispose(); f.side.material.dispose(); fieldSpins.splice(n, 1); f.done(f.landed); } }
+      if (k >= 1) { f.host.removeFromParent(); f.geo.dispose(); f.mat.map.dispose(); f.mat.dispose(); f.ptr.geometry.dispose(); f.ptr.material.dispose(); f.side.geometry.dispose(); f.side.material.map.dispose(); f.side.material.dispose(); fieldSpins.splice(n, 1); f.done(f.landed); } }
   }
 }
 function clearAbilities() { for (const a of abilityRings) endAbility(a); abilityRings.length = 0; }
