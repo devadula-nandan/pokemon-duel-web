@@ -490,30 +490,33 @@ function stepPlates(dt) {
 // Pulse, ...), each one's wheel appears flat around its stand on the board, spins and stops on the engine's result, then fades. segs:
 // [{ range (of 96), col (css colour), label }]; results: [{ num, displace }]. Resolves with the index of the slice it stopped on.
 const fieldSpins = [], SPIN_IN = BASE_R, SPIN_OUT = BASE_R + AURA_W * 1.3;   // like the status ring: from the stand out, AURA_H thick, a little wider
-function wheelTex(segs) {
+function wheelTex(segs, lit) {   // lit: the slice under the pointer; the others are dimmed (black at .5, as the battle wheel's .dimw)
   return tex(512, 512, (g, w, h) => {
     const c = w / 2, R = w / 2 - 2, rIn = R * SPIN_IN / SPIN_OUT; let a = 0;
     for (const sg of segs) {   // clockwise from 12 o'clock, as the battle wheel
       const a0 = a / 96 * Math.PI * 2 - Math.PI / 2, a1 = (a + sg.range) / 96 * Math.PI * 2 - Math.PI / 2; a += sg.range;
-      g.beginPath(); g.moveTo(c, c); g.arc(c, c, R, a0, a1); g.closePath(); g.fillStyle = sg.col; g.fill(); g.strokeStyle = '#111'; g.lineWidth = 3; g.stroke();
-      if (sg.label && sg.range >= 8) { const mid = (a0 + a1) / 2, rr = (R + rIn) / 2; g.save(); g.translate(c + Math.cos(mid) * rr, c + Math.sin(mid) * rr); g.rotate(mid + Math.PI / 2);
+      g.beginPath(); g.moveTo(c, c); g.arc(c, c, R, a0, a1); g.closePath(); g.fillStyle = sg.col; g.fill(); if (lit != null && lit !== segs.indexOf(sg) && segs.length > 1) { g.fillStyle = 'rgba(0,0,0,.5)'; g.fill(); } g.strokeStyle = '#111'; g.lineWidth = 3; g.stroke();
+      if (sg.label && sg.range >= 8) { const mid = (a0 + a1) / 2, rr = (R + rIn) / 2; g.save(); g.translate(c + Math.cos(mid) * rr, c + Math.sin(mid) * rr); g.rotate(mid - Math.PI / 2);   // upright at the near side, where the pointer is
         g.fillStyle = sg.ink || '#111'; g.font = '900 28px Segoe UI, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(sg.label, 0, 0); g.restore(); }
     }
     g.beginPath(); g.arc(c, c, R, 0, Math.PI * 2); g.strokeStyle = '#0b0b0c'; g.lineWidth = 6; g.stroke();
   });
 }
+function wallTex(segs, lit) {   // wide, so a join is as thin as on the top face; the outer wall in the slices' colours: CylinderGeometry u = 0.5 - t/96 lines up with the top face
+  return tex(2048, 16, (c, w, h) => { let a = 0; segs.forEach((sg, n) => {
+    const x = ((.5 - (a + sg.range) / 96) % 1 + 1) % 1 * w, len = sg.range / 96 * w; a += sg.range;
+    for (const col of lit != null && lit !== n && segs.length > 1 ? [sg.col, 'rgba(0,0,0,.5)'] : [sg.col]) { c.fillStyle = col; c.fillRect(x, 0, len, h); if (x + len > w) c.fillRect(x - w, 0, len, h); } });
+    a = 0; c.fillStyle = '#111'; for (const sg of segs) { const x = ((.5 - a / 96) % 1 + 1) % 1 * w; a += sg.range; c.fillRect(x - 1.5, 0, 3, h); if (x < 1.5) c.fillRect(x + w - 1.5, 0, 3, h); } });   // black joins, as on the top face
+}
 function fieldSpin(i, segs, results, still) {   // still: a frozen or melted wheel shows its result without turning
   const g = tokens.get(i); if (!g || !segs.length) return Promise.resolve(0);
   const geo = new THREE.RingGeometry(SPIN_IN, SPIN_OUT, 96, 1), mat = new THREE.MeshBasicMaterial({ map: wheelTex(segs), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
   const ring = new THREE.Mesh(geo, mat); ring.rotation.x = -Math.PI / 2; ring.renderOrder = 55;
-  const sideTex = tex(2048, 16, (c, w, h) => { let a = 0; for (const sg of segs) {   // wide, so a join is as thin as on the top face; the outer wall in the slices' colours: CylinderGeometry u = 0.5 - t/96 lines up with the top face
-    const x = ((.5 - (a + sg.range) / 96) % 1 + 1) % 1 * w, len = sg.range / 96 * w; a += sg.range; c.fillStyle = sg.col; c.fillRect(x, 0, len, h); if (x + len > w) c.fillRect(x - w, 0, len, h); }
-    a = 0; c.fillStyle = '#111'; for (const sg of segs) { const x = ((.5 - a / 96) % 1 + 1) % 1 * w; a += sg.range; c.fillRect(x - 1.5, 0, 3, h); if (x < 1.5) c.fillRect(x + w - 1.5, 0, 3, h); } });   // black joins, as on the top face
-  const side = new THREE.Mesh(new THREE.CylinderGeometry(SPIN_OUT, SPIN_OUT, AURA_H + .004, 96, 1, true), new THREE.MeshBasicMaterial({ map: sideTex, transparent: true, opacity: 0 }));
+  const side = new THREE.Mesh(new THREE.CylinderGeometry(SPIN_OUT, SPIN_OUT, AURA_H + .004, 96, 1, true), new THREE.MeshBasicMaterial({ map: wallTex(segs), transparent: true, opacity: 0 }));
   side.position.y = (AURA_H + .004) / 2; ring.position.y = AURA_H + .006;   // a solid band over the status ring, the wheel on its top face
   const turnG = new THREE.Group(); turnG.add(side, ring);
   const ptr = new THREE.Mesh(new THREE.ConeGeometry(.09, .2, 3), new THREE.MeshBasicMaterial({ color: css('--gold', '') || '#ffd23f', transparent: true, opacity: 0, depthWrite: false }));
-  ptr.rotation.x = Math.PI / 2; ptr.position.set(0, .05, -(SPIN_OUT + .08)); ptr.renderOrder = 56;   // fixed at the far side (12 o'clock on the wheel), pointing in
+  ptr.rotation.x = -Math.PI / 2; ptr.position.set(0, .05, SPIN_OUT + .08); ptr.renderOrder = 56;   // fixed at the near side, pointing in, so the lit slice is not hidden behind the figure
   const host = new THREE.Group(); host.add(turnG, ptr); host.position.copy(g.position); g.parent.add(host);
   const starts = []; let a = 0; for (const sg of segs) { starts.push(a); a += sg.range; }
   const at = num => Math.max(0, segs.findIndex((sg, n) => num >= starts[n] && num < starts[n] + sg.range));
@@ -523,7 +526,7 @@ function fieldSpin(i, segs, results, still) {   // still: a frozen or melted whe
       landed = at(r.num); steps.push({ pos: r.num + .5, turns: still ? 0 : steps.length ? 2 : 3, sec: still ? .01 : steps.length ? 1.1 : 1.6 });
       if (r.displace) { landed = ((landed + r.displace) % segs.length + segs.length * 10) % segs.length; steps.push({ pos: starts[landed] + segs[landed].range / 2, turns: 0, sec: still ? .01 : .35, back: r.displace < 0 }); }
     }
-    fieldSpins.push({ g, host, turnG, ring, side, ptr, geo, mat, steps, rot: 0, from: 0, to: null, t: 0, phase: 'in', landed, done });
+    fieldSpins.push({ g, host, turnG, ring, side, ptr, geo, mat, segs, steps, rot: 0, from: 0, to: null, t: 0, phase: 'in', landed, done });
   });
 }
 function stepFieldSpins(dt) {
@@ -532,8 +535,8 @@ function stepFieldSpins(dt) {
     if (f.phase === 'in') { const k = Math.min(1, f.t / .25); f.mat.opacity = k; f.side.material.opacity = k; f.ptr.material.opacity = k; if (k >= 1) { f.phase = 'spin'; f.t = 0; f.to = null; } }
     else if (f.phase === 'spin') {
       const st = f.steps[0];
-      if (!st) { f.phase = 'hold'; f.t = 0; continue; }
-      if (f.to == null) { let to = st.pos / 96 * Math.PI * 2; if (st.back) { while (to > f.rot) to -= Math.PI * 2; } else { while (to < f.rot + st.turns * Math.PI * 2) to += Math.PI * 2; } f.from = f.rot; f.to = to; f.t = 0; }
+      if (!st) { f.phase = 'hold'; f.t = 0; f.mat.map.dispose(); f.mat.map = wheelTex(f.segs, f.landed); f.side.material.map.dispose(); f.side.material.map = wallTex(f.segs, f.landed); continue; }   // stopped: the slice under the pointer stays lit
+      if (f.to == null) { let to = st.pos / 96 * Math.PI * 2 + Math.PI; if (st.back) { while (to > f.rot) to -= Math.PI * 2; } else { while (to < f.rot + st.turns * Math.PI * 2) to += Math.PI * 2; } f.from = f.rot; f.to = to; f.t = 0; }   // + half a turn: the pointer is at the near side
       const k = Math.min(1, f.t / st.sec), e = 1 - Math.pow(1 - k, 3); f.rot = f.from + (f.to - f.from) * e; f.turnG.rotation.y = f.rot;   // the slice at angle pos ends under the pointer
       if (k >= 1) { f.steps.shift(); f.to = null; }
     } else if (f.phase === 'hold') { if (f.t >= 1) { f.phase = 'out'; f.t = 0; } }
