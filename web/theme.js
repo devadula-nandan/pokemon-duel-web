@@ -2,7 +2,6 @@
 // Loaded in <head> so the page is drawn in the right theme from the first frame.
 // Buttons with data-theme-btn (or id themeBtn) cycle Auto -> Light -> Dark.
 // data-update-btn appears when the published theme.js carries a newer APP_VER than the one running; click hard-reloads.
-// data-refresh-btn is always there: it fetches the latest published page past every cache, then reloads.
 (() => {
   const KEY = 'pokemonduelweb.theme', sysLight = matchMedia('(prefers-color-scheme: light)'); let mode = 'auto';
   // The app's version, and the only place it is written. The Pages deploy replaces the last number with its run number on every push;
@@ -100,15 +99,7 @@
       if (tag && isNewer(tag, window.APP_VER)) paintUpdate(tag);
     } catch (e) {}
   }
-  const REFRESH_ICON = '<path d="M20 11a8 8 0 0 0-14.9-3.9"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.9 3.9"/><path d="M20 20v-4h-4"/>';
-  function paintRefresh() {
-    for (const b of document.querySelectorAll('[data-refresh-btn]')) {
-      if (b._refreshBound) continue; b._refreshBound = 1;
-      b.classList.add('iconbtn'); b.innerHTML = icon(REFRESH_ICON); b.title = 'Load the latest version (v' + window.APP_VER + ' now)'; b.setAttribute('aria-label', 'Load the latest version');
-      b.onclick = () => { b.disabled = true; b.classList.add('busy'); hardReload(); };
-    }
-  }
-  const boot = () => { paintRefresh(); checkRelease(); };
+  const boot = checkRelease;
   try { const u = new URL(location.href); if (u.searchParams.has('_')) { u.searchParams.delete('_'); history.replaceState(history.state, '', u.href); } } catch (e) {}   // the cache-busting mark has done its job once the page is here
   if (document.body) boot();
   else addEventListener('DOMContentLoaded', boot);
