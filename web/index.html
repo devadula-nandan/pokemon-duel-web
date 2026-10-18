@@ -127,6 +127,8 @@
     .top .paths a.on { background:var(--ink); border-color:var(--ink); color:var(--bg); } .top #viewLink { display:none; } }
   /* deck builder: figures, plates and the team as cards */
   #setup { grid-template-columns:minmax(0,1.7fr) minmax(320px,1fr); background:var(--line); border-left:1px solid var(--line); border-right:1px solid var(--line); }
+  img:is([src*='/scarlet-violet/'], [data-src*='/scarlet-violet/']) { transform:scale(1.3); }   /* the Scarlet / Violet sprites have a wide empty margin; this matches them to the artwork's size */
+  #list > .card { content-visibility:auto; contain-intrinsic-size:auto 170px; }   /* off-screen cards are not laid out or painted */
   .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(116px,1fr)); gap:1px; overflow:auto; padding:0; align-content:start; background:var(--line); border:1px solid var(--line); }
   #list.cards { height:min(58dvh,560px); } #plist.cards { height:250px; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); }
   .card { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:8px; padding:34px 8px 8px; margin:0 !important; background:var(--ctl); cursor:pointer; text-align:center; transition:transform .1s,background .12s,border-color .12s; }
@@ -598,6 +600,11 @@ const PIC_SET = 'other/official-artwork/';
 const sprite = f => {   // a form, Mega, Alolan or Shiny figure has its own picture (art.js); the rest are their Dex number's
   const own = FIG_ART[f.n], d = own ? own[0] : f.dex <= 1025 ? f.dex : dexByName.get(f.n.replace(/^(Alolan|Shiny|Mega) /, '').replace(/ [XY]$/, ''));
   return d ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${PIC_SET}${own && own[1] ? 'shiny/' : ''}${d}.png` : ''; };
+// The animated Scarlet / Violet sprite (art.js lists which exist); a figure without one uses its artwork. The boards keep the artwork:
+// a 1.7 MB animation per token would cost too much there.
+const anim = f => {
+  const own = FIG_ART[f.n], d = own ? own[0] : f.dex <= 1025 ? f.dex : 0, shiny = !!(own && own[1]);
+  return d && (shiny ? SV_SHINY : SV_ANIM).has(d) ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-ix/scarlet-violet/${shiny ? 'shiny/' : ''}${d}.webp` : sprite(f); };
 const byId = new Map(D.figures.map(f => [f.id, f])), byRule = new Map(), byGroup = new Map(), plateById = new Map(D.plates.map(p => [p.id, p]));
 for (const f of D.figures) { if (!byRule.has(f.rule)) byRule.set(f.rule, f); (byGroup.get(f.g) || byGroup.set(f.g, []).get(f.g)).push(f); }
 const typeNames = f => f.t.map(t => D.types[t]).join(' / ');
@@ -705,6 +712,15 @@ const autoStones = tm => [...new Set(tm.flatMap(sl => slotIds(sl).map(id => mega
 const duelPlates = (tm, pl) => pl.filter(id => !AUTO_STONES.has(id)).concat(autoStones(tm));   // what the duel record carries
 function syncMegaPlates() { myPlates = myPlates.filter(id => !AUTO_STONES.has(id)); }   // a stone in an older saved deck gives its slot back
 let listBuilt = '', plateBuilt = '', listTimer = 0;
+// The figure picker holds every figure; its cards are skipped by layout while off screen (content-visibility), and a card's animated
+// sprite (up to ~1.7 MB, decoded every frame) is attached only while the card is near the view and dropped again once it is far away.
+let picIo = null;
+function pickerPics() {
+  if (!('IntersectionObserver' in window)) { for (const im of $('list').querySelectorAll('img[data-src]')) im.src = im.dataset.src; return; }
+  if (picIo) picIo.disconnect();
+  picIo = new IntersectionObserver(es => { for (const e of es) { const im = e.target.querySelector('img[data-src]'); if (!im) continue; if (e.isIntersecting) { if (im.getAttribute('src') !== im.dataset.src) im.src = im.dataset.src; } else im.removeAttribute('src'); } }, { root: $('list'), rootMargin: '120px 0px' });
+  for (const c of $('list').children) picIo.observe(c);
+}
 $('typ').innerHTML = '<option value="">any type</option>' + D.types.map((n, i) => `<option value="${i}">${esc(n)}</option>`).join('');
 function drawList() {
   const q = $('q').value.trim().toLowerCase(), r = $('rar').value, typ = $('typ').value, mp = $('mpf').value, col = $('colf').value, kind = $('kind').value;
@@ -712,7 +728,7 @@ function drawList() {
   if (listBuilt !== sig) {
     listBuilt = sig;
     const pool = BASES.filter(f => !ownedMode || profile.items[f.id] > 0);
-    $('list').innerHTML = pool.map(f => figCard(f, { cls: 'row', attrs: `data-id="${f.id}" data-r="${f.r}" data-mp="${f.mp}" data-t="${f.t.join(',')}" data-mega="${canMega(f) ? 1 : 0}" data-evo="${canEvo(f) ? 1 : 0}" data-form="${f.fmx > 0 ? 1 : 0}"` })).join('');
+    $('list').innerHTML = pool.map(f => figCard(f, { io: true, cls: 'row', attrs: `data-id="${f.id}" data-r="${f.r}" data-mp="${f.mp}" data-t="${f.t.join(',')}" data-mega="${canMega(f) ? 1 : 0}" data-evo="${canEvo(f) ? 1 : 0}" data-form="${f.fmx > 0 ? 1 : 0}"` })).join(''); pickerPics();
   }
   let n = 0;
   for (const el of $('list').children) {
@@ -735,14 +751,14 @@ function drawList() {
 }
 const scheduleList = () => { clearTimeout(listTimer); listTimer = setTimeout(drawList, 100); };
 const figText = (id, m) => esc(byId.get(id).n) + (m.lv > 1 || sum(m.boost) ? ` <span class="note">Lv${m.lv}${sum(m.boost) ? ' +' + sum(m.boost) : ''}</span>` : '');
-const pic = (id, mod) => { const f = byId.get(id), tip = esc(figText(id, mod).replace(/<[^>]+>/g, '')); return sprite(f) ? `<img loading="lazy" src="${sprite(f)}" alt="${esc(f.n)}" title="${tip}" onerror="this.replaceWith(this.alt)">` : `<span title="${tip}">${esc(f.n)}</span>`; };
-const dot = (id, mod, form) => { const f = byId.get(id), tip = esc(figText(id, mod).replace(/<[^>]+>/g, '')); return `<span class="dot${form ? ' form' : ''}" title="${tip}">${sprite(f) ? `<img loading="lazy" src="${sprite(f)}" alt="${esc(f.n)}">` : ''}</span>`; };
+const pic = (id, mod) => { const f = byId.get(id), tip = esc(figText(id, mod).replace(/<[^>]+>/g, '')); return anim(f) ? `<img loading="lazy" src="${anim(f)}" alt="${esc(f.n)}" title="${tip}" onerror="this.replaceWith(this.alt)">` : `<span title="${tip}">${esc(f.n)}</span>`; };
+const dot = (id, mod, form) => { const f = byId.get(id), tip = esc(figText(id, mod).replace(/<[^>]+>/g, '')); return `<span class="dot${form ? ' form' : ''}" title="${tip}">${anim(f) ? `<img loading="lazy" src="${anim(f)}" alt="${esc(f.n)}">` : ''}</span>`; };
 // One figure card for every list (collection, deck, figure list, team): rarity top left, MP top right, picture, name, types, then a foot
 // row with extras on the left (copies owned, a dot per evolution or form) and buttons on the right (details, remove). The rest of what
 // there is to know about the figure is one step away, in the details panel: point at the card, or press its "i".
 const X_ICON = icon('<path d="M6 6l12 12M18 6L6 18"/>');
 function figCard(f, o = {}) {
-  const img = sprite(f) ? `<img loading="lazy" src="${sprite(f)}" alt="" onerror="this.outerHTML='<div class=nopic>no picture</div>'">` : '<div class="nopic">no picture</div>';
+  const img = anim(f) ? `<img loading="lazy" ${o.io ? 'data-src' : 'src'}="${anim(f)}" alt="" onerror="this.outerHTML='<div class=nopic>no picture</div>'">` : '<div class="nopic">no picture</div>';   // io: the figure picker attaches it on sight (pickerPics)
   return `<div class="${o.cls || ''} card fig" data-info="${f.id}" ${o.attrs || ''}><span class="chip rar${f.r}">${RAR[f.r] || '?'}</span><span class="chip r" title="MP ${f.mp}">${f.mp}</span>${img}<span class="foot"><span class="txt"><span class="nm">${o.name || esc(f.n)}</span><span class="note">${typeNames(f)}</span>${o.left || ''}</span><span><button class="info" aria-label="Details of ${esc(f.n)}">${icon('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>')}</button>${o.right || ''}</span></span></div>`;
 }
 // a team or deck slot: the figure that starts the duel is the card; its evolutions (and form changes) are dots that show their picture on hover
@@ -762,7 +778,7 @@ function figInfo(id, src, at) {
   const skills = rows.map(r => ({ id: r.id, range: r.range, speed_or_damage: r.val }));
   // a short ability fits under the wheel; a long one would leave the attack table stranded beside it, so it goes full width underneath
   const abBox = ab ? `<div class="fp-ab"><span class="h">Ability</span><b>${esc(ab[0])}</b><div class="desc">${esc(ab[1])}</div></div>` : '', long = ab && ab[1].length > 150;
-  const pic = g => sprite(g) ? `<img src="${sprite(g)}" alt="">` : '';
+  const pic = g => anim(g) ? `<img src="${anim(g)}" alt="">` : '';
   // header (who it is), the slot's line as tabs, the wheel beside the table that reads it, then the ability
   return `<button class="x" data-close title="Close" aria-label="Close">${X_ICON}</button>
     <div class="fp-head">${pic(f)}<div><div class="fp-name"><b>${mod ? figText(fid, mod) : esc(f.n)}</b><span class="chip rar${f.r}">${RAR[f.r] || '?'}</span></div><div class="note">MP ${f.mp} · ${typeNames(f)}</div></div></div>
@@ -867,7 +883,7 @@ function drawSaved(msg) {
   if (!savedTeams) loadSaved();
   $('tmsg').textContent = msg || '';
   const thumb = sl => { const f = byId.get(sl.st[0]); if (!f) return '<span class="ph">?</span>'; const tip = esc(figText(sl.st[0], blankMod(f)).replace(/<[^>]+>/g, '')), ph = `<span class="ph" title="${tip}">${esc(f.n.replace(/^(Alolan|Shiny|Mega) /, '').slice(0, 3))}</span>`;
-    return sprite(f) ? `<img loading="lazy" src="${sprite(f)}" alt="${esc(f.n)}" title="${tip}" onerror="this.outerHTML='<span class=ph>'+this.alt.slice(0,3)+'</span>'">` : ph; };
+    return anim(f) ? `<img loading="lazy" src="${anim(f)}" alt="${esc(f.n)}" title="${tip}" onerror="this.outerHTML='<span class=ph>'+this.alt.slice(0,3)+'</span>'">` : ph; };
   $('tlist').innerHTML = savedTeams.map((t, i) => `<div class="tcard" data-i="${i}" title="Load ${esc(t.name)}"><div class="th"><b>${esc(t.name)}</b><span class="chip" title="${t.plates.length} plate${t.plates.length === 1 ? '' : 's'}">${t.plates.length}P</span><button class="x" data-x="${i}" title="Delete" aria-label="Delete ${esc(t.name)}">${icon('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12h10l1-12M9 7V4h6v3"/>')}</button></div><div class="tp">${t.team.map(thumb).join('')}</div></div>`).join('') || '<p class="note" style="margin:0">No saved teams yet.</p>';
   markSaved();
 }
@@ -930,7 +946,7 @@ function openSheet(si, at, edit) {
   const cur = allPlaces[viewAt] || allPlaces[0];
   const K = cur.key, id = cur.ids[cur.k], f = id != null ? byId.get(id) : null, m = f ? (cur.mods[cur.k] || blankMod(f)) : null;
   const rows = f && (wheelRows(f, m) || wheelRows(f, blankMod(f))), ab = f && D.abilities[f.ab];
-  const pic = g => sprite(g) ? `<img src="${sprite(g)}" alt="">` : '', stepper = (val, down, up) => `<span class="stepper"><button type="button" ${down} aria-label="less">−</button><b>${val}</b><button type="button" ${up} aria-label="more">+</button></span>`;
+  const pic = g => anim(g) ? `<img src="${anim(g)}" alt="">` : '', stepper = (val, down, up) => `<span class="stepper"><button type="button" ${down} aria-label="less">−</button><b>${val}</b><button type="button" ${up} aria-label="more">+</button></span>`;
   const carm = m && m.lv > EXP_LEVEL_MAX, extMax = m ? Math.min(m.lv, EXP_LEVEL_MAX) - 1 : 0, off = x => x ? 'disabled' : '';
   const abBox = ab ? `<div class="fp-ab"><span class="h">Ability</span><b>${esc(ab[0])}</b><div class="desc">${esc(ab[1])}</div></div>` : '', long = ab && ab[1].length > 150;
   // one chain row: tabs to read a form; in edit, attachable slots are a select instead of a second tab strip
@@ -1138,7 +1154,7 @@ function drawHome() {
         <div class="ends"><span>${i > 0 ? 'demotion below ' + lg.demo : 'league ' + (i + 1)}</span><span>${next ? 'promotion at ' + next.promo : 'top league'}</span></div></div>
       <div class="wide pips" title="${lg.win} keys per win, ${lg.lose} per loss; a full set opens a key booster.">${Array.from({ length: CONST.keyCost }, (_, k) => `<i class="${k < profile.stars ? 'on' : ''}"></i>`).join('')}</div></div>
     <div class="panel"><div class="hhead"><h2>Your deck</h2><button data-act="deck">Edit deck</button></div>
-      ${profile.deck ? `<div class="hfig" data-act="deck">${profile.deck.map((d, k) => { const f = byId.get(d.st[0]); return `<div data-info="${f.id}" data-src="deck:${k}"><span class="chip rar${f.r}">${RAR[f.r] || ''}</span><span class="chip r" title="MP ${f.mp}">${f.mp}</span>${sprite(f) ? `<img loading="lazy" src="${sprite(f)}" alt="">` : ''}<b>${esc(f.n)}</b><span class="note">${esc(typeNames(f))}</span></div>`; }).join('')}</div>` : '<p class="note">Build a deck from your collection to play league matches.</p>'}
+      ${profile.deck ? `<div class="hfig" data-act="deck">${profile.deck.map((d, k) => { const f = byId.get(d.st[0]); return `<div data-info="${f.id}" data-src="deck:${k}"><span class="chip rar${f.r}">${RAR[f.r] || ''}</span><span class="chip r" title="MP ${f.mp}">${f.mp}</span>${anim(f) ? `<img loading="lazy" src="${anim(f)}" alt="">` : ''}<b>${esc(f.n)}</b><span class="note">${esc(typeNames(f))}</span></div>`; }).join('')}</div>` : '<p class="note">Build a deck from your collection to play league matches.</p>'}
       ${(profile.deckPlates || []).length ? `<div class="hpl" data-act="deck">${profile.deckPlates.map(id => { const d = plateById.get(id); return `<div data-plate="${id}"><span class="chip rar${d.r}">${RAR[d.r] || ''}</span><span class="ct">${'<i></i>'.repeat(d.c || 0)}</span><b>${esc(d.n)}</b><span class="note">${esc(d.d)}</span></div>`; }).join('')}</div>` : ''}</div>
     <div class="hrow"><div class="panel"><h2>Time boosters ${profile.boxes.length}/${TIME_SLOTS}</h2>
       <div class="boosters">${profile.boxes.map((b, k) => `<div class="booster"><span class="chip">${D.boxes[b.b][0]} min</span>${k === 0 ? (left(b) ? `<b class="tick">${clockText(left(b))}</b><span class="note">unlocking</span>` : `<button class="primary" data-open="0">Open</button>`) : '<span class="note">waiting</span>'}</div>`).join('')}${'<div class="booster empty">empty slot</div>'.repeat(Math.max(0, TIME_SLOTS - profile.boxes.length))}</div>
@@ -1943,7 +1959,7 @@ function openEvolve(i) {
 function drawEvolve() {
   if (!evoUi) return closeEvolve();
   const m = evoUi.ms[evoUi.at], cur = figOf(evoUi.i), nxt = evolveInto(m), many = new Set(evoUi.ms.map(x => evolveInto(x).n)).size > 1;
-  const face = (f, cap) => `<div class="evo-fig">${sprite(f) ? `<img src="${sprite(f)}" alt="">` : ''}<b>${esc(f.n)}</b><span class="note">${esc(cap)}</span></div>`;
+  const face = (f, cap) => `<div class="evo-fig">${anim(f) ? `<img src="${anim(f)}" alt="">` : ''}<b>${esc(f.n)}</b><span class="note">${esc(cap)}</span></div>`;
   $('evolve').innerHTML = `<div class="evo-panel"><h2>Evolve?</h2><div class="evo-row">${many ? '<button class="evo-arr" data-evo="prev" aria-label="Previous form">‹</button>' : ''}${face(cur, 'Now')}<svg class="evo-go" viewBox="0 0 18 18"><path d="M4 9h10M10 5l4 4-4 4"/></svg>${face(nxt, 'Next')}${many ? '<button class="evo-arr" data-evo="next" aria-label="Next form">›</button>' : ''}</div>
     <ul class="evo-notes"><li>Each evolution adds +10 damage and ★+1.</li><li>If you decline, the condition must be met again.</li><li>An evolution cannot be undone.</li><li>Markers and status conditions from before are cleared.</li></ul>
     <div class="evo-btns"><button data-evo="no">No</button><button class="primary" data-evo="yes">Yes</button></div></div>`;
@@ -2138,7 +2154,7 @@ function boardDetail(i, view) {   // MiniDetailFigure: a long press opens this f
   });
   const abBox = ab ? `<div class="fp-ab"><span class="h">Ability</span><b>${esc(ab[0])}</b><div class="desc">${esc(ab[1])}</div></div>` : '', long = ab && ab[1].length > 150;
   const tips = badgeTips(c), nxt = evoNext(i), ready = evolveMoves().some(m => evoFig(m) === i);
-  const chain = [i, ...nxt.map(m => m.pokemon_index)], pic = g => sprite(g) ? `<img src="${sprite(g)}" alt="">` : '';
+  const chain = [i, ...nxt.map(m => m.pokemon_index)], pic = g => anim(g) ? `<img src="${anim(g)}" alt="">` : '';
   const evoBox = chain.length > 1 ? `<div class="fp-evo"><i class="mark" title="Can evolve"></i><div><span class="h">${live ? 'Can evolve' : 'Evolution'}</span><div class="who">${chain.map(idx => { const g = figOf(idx); return `<button type="button" data-root="${i}" data-evo="${idx}" class="${idx === viewI ? 'on' : ''}">${pic(g)}<b>${esc(g.n)}</b></button>`; }).join('')}</div>${ready && live ? '<div class="note">Ready now.</div>' : ''}</div></div>` : '';
   const p = $('figpop'); placeFigpop(true); boardDetail.root = i;
   p.innerHTML = `<div class="fp-grab" aria-hidden="true"><i></i></div><button class="x" data-close title="Close" aria-label="Close">${X_ICON}</button>
