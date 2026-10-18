@@ -19,7 +19,7 @@
   /* in a duel the top bar is hidden: no strip there, the player bars reach 16px higher instead, so the smear falls on flat colour */
   html.ios-app.mview:has(#game:not([hidden])) body { padding-top:0; } html.ios-app.mview:has(#game:not([hidden])) #sbTint { display:none; }
   html.ios-app.mview .hud { --lt-h:32px; } input, button, select, textarea, a, label { touch-action:manipulation; }   /* no double-tap zoom on controls */
-  .top { display:flex; align-items:center; gap:6px; padding:6px; background:var(--bar); border-bottom:1px solid var(--line); } .top button { margin:0; }   /* one even 6px gap between everything in the bar */ .top .ticker { flex:1; min-width:0; border-bottom:0; -webkit-mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); }   /* the scrolling text fades in and out at both ends instead of being cut off */
+  .top { display:flex; align-items:stretch; gap:0; padding:0; background:var(--bar); border-bottom:1px solid var(--line); } .top button { margin:0; } .top > .iconbtn, .top .paths a { width:auto; min-width:40px; height:40px; border:0; border-left:1px solid var(--line); background:var(--bar); }   /* flush: full-height blocks split by 1px lines */ .top .ticker { flex:1; min-width:0; border-bottom:0; -webkit-mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); }   /* the scrolling text fades in and out at both ends instead of being cut off */
   .ticker { overflow:hidden; white-space:nowrap; background:var(--bar); color:var(--accent); font-size:12px; padding:5px 0; border-bottom:1px solid var(--line); }
   .ticker span { display:inline-block; padding-left:100%; animation:tick 70s linear infinite; } .ticker:hover span { animation-play-state:paused; }
   @keyframes tick { to { transform:translateX(-100%); } }
@@ -99,7 +99,7 @@
   .tok .ring { fill:none; stroke-width:3.4; } .tok .aura { fill:none; stroke-width:3.2; } .tok .mpb { fill:var(--bd-pt); stroke:var(--bd-line); stroke-width:1.6; }   /* MP disc/ring follow the table theme; aura matches route bar stroke */
   .tok .halo { fill:none; stroke:transparent; stroke-width:2.6; } .tok.sel .halo { stroke:var(--gold); } .tok.atk .halo { stroke:#e2494e; } .tok.dim { opacity:.55; }
   .pics { display:flex; align-items:center; gap:8px; flex-wrap:wrap; } .row img { width:32px; height:32px; margin:-6px 0; }
-  .bar { display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+  .bar { display:flex; gap:0; align-items:stretch; margin-bottom:0; flex-wrap:wrap; } .bar > * + * { margin-left:-1px; }   /* filters joined edge to edge */
   .chip { display:inline-block; padding:0 8px; font-size:11px; font-weight:700; background:var(--ctl2); color:var(--ink); margin-right:4px; } .chip.w { background:var(--ink); color:var(--bg); }
   .atkrow { display:grid; grid-template-columns:14px 1fr auto; gap:6px; padding:5px 0; border-top:1px solid var(--line); align-items:start; }
   .sw { border-radius:50%; width:12px; height:12px; margin-top:4px; border:1px solid rgba(255,255,255,.4); } .desc { color:var(--dim); font-size:12px; grid-column:2 / 4; }
@@ -112,7 +112,7 @@
   .tok image, .card img, .row img, .dot img, .tcard .tp img, .hfig img, .evo-fig img, .pics img,
   #figpop img, #evolve img, #result img, #battle img { filter:drop-shadow(0 2px 3px rgba(0,0,0,.45)); }
   .paths { display:none; }
-  @media (min-width:861px) { .paths { display:flex; gap:6px; margin:0; } .top .paths a { margin:0; display:inline-flex; align-items:center; height:30px; padding:0 10px; font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap; }
+  @media (min-width:861px) { .paths { display:flex; gap:0; margin:0; } .top .paths a { margin:0; display:inline-flex; align-items:center; height:40px; padding:0 10px; font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap; }
     .top .paths a.on { background:var(--ink); border-color:var(--ink); color:var(--bg); } .top #viewLink { display:none; } }
   /* deck builder: figures, plates and the team as cards */
   #setup { grid-template-columns:minmax(0,1.7fr) minmax(320px,1fr); background:var(--line); border-left:1px solid var(--line); border-right:1px solid var(--line); }
@@ -142,22 +142,23 @@
   #figpop { position:fixed; z-index:8; width:420px; max-height:calc(100dvh - 16px); overflow:auto; padding:16px; border:1px solid var(--dim); background:var(--panel); box-shadow:0 10px 30px rgba(0,0,0,.5); pointer-events:none; }
   #figpop.pl { width:300px; } #figpop.pin { pointer-events:auto; } #figpop > .x, #figpop .fp-bar .x { flex:none; width:24px; height:24px; padding:0; display:none; align-items:center; justify-content:center; border:1px solid var(--line); background:none; color:var(--dim); cursor:pointer; } #figpop.pin > .x { display:inline-flex; position:absolute; top:12px; right:12px; }
   #figpop.duel, #figpop.sheet { touch-action:pan-y; } #figpop.duel { position:absolute; left:0; right:0; top:auto; bottom:0; transform:none; width:auto; max-width:none; max-height:78%; z-index:9; border-width:1px 0 0; box-shadow:0 -10px 28px rgba(0,0,0,.4); padding:8px 16px 16px; }   /* long-press detail: a sheet inside the arena */
-  #figpop.sheet { z-index:10; display:flex; flex-direction:column; padding:0; overflow:hidden; } #figpop.sheet[hidden] { display:none !important; } #figpop.sheet .fp-scroll { flex:1; min-height:0; overflow:auto; padding:12px 18px 20px; } #figpop.sheet .fp-bar { position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--panel); border-bottom:1px solid var(--line); } #figpop.sheet .fp-bar h2 { flex:1; margin:0; font:800 13px/1 "Segoe UI",system-ui,sans-serif; letter-spacing:.08em; text-transform:uppercase; } #figpop.sheet .fp-bar .x, #figpop.sheet .fp-bar .ed { display:inline-flex; } #figpop.sheet .fp-bar .ed { padding:4px 12px; font-size:12px; }
+  body:has(#figpop.sheet:not([hidden]))::after { content:''; position:fixed; inset:0; z-index:9; background:color-mix(in srgb, var(--bg) 60%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }   /* the sheet's backdrop */
+  #figpop.sheet { z-index:10; display:flex; flex-direction:column; padding:0; overflow:hidden; } #figpop.sheet[hidden] { display:none !important; } #figpop.sheet .fp-scroll { flex:1; min-height:0; overflow:auto; padding:12px 18px 20px; } #figpop.sheet .fp-bar { position:sticky; top:0; z-index:2; display:flex; align-items:stretch; gap:0; padding:0 0 0 14px; background:var(--panel); border-bottom:1px solid var(--line); } #figpop.sheet .fp-bar h2 { flex:1; align-self:center; margin:0; font:800 13px/1 "Segoe UI",system-ui,sans-serif; letter-spacing:.08em; text-transform:uppercase; } #figpop.sheet .fp-bar .x, #figpop.sheet .fp-bar .ed { display:inline-flex; align-items:center; justify-content:center; height:44px; border:0; border-left:1px solid var(--line); } #figpop.sheet .fp-bar .x { width:44px; } #figpop.sheet .fp-bar .ed { padding:0 16px; font-size:12px; }
   @media (max-width:860px) { #figpop.sheet { inset:0; width:auto; max-width:none; max-height:none; border:0; box-shadow:none; } }
   @media (min-width:861px) { #figpop.sheet { left:50%; top:50%; right:auto; bottom:auto; transform:translate(-50%,-50%); width:min(720px,96vw); max-height:92vh; } }
   #figpop .fp-grab { display:none; } #figpop.duel .fp-grab, #figpop.sheet .fp-grab { display:flex; justify-content:center; align-items:center; height:22px; margin:0; cursor:grab; touch-action:none; flex:none; } #figpop.duel .fp-grab i, #figpop.sheet .fp-grab i { width:40px; height:4px; background:var(--dim); opacity:.7; }
   #figpop.duel.drag, #figpop.sheet.drag { transition:none; }
   .fp-head { display:flex; gap:12px; align-items:center; padding-right:36px; } .fp-head img { width:56px; height:56px; } .fp-name { display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .fp-name b { font-size:18px; line-height:1.2; } .fp-name .chip { margin:0; }
-  .fp-line { display:flex; align-items:center; gap:10px; margin:8px -4px 0; padding:4px; overflow-x:auto; } .fp-line > .fp-chev { flex:none; font-size:18px; font-weight:700; line-height:1; color:var(--dim); padding:0 2px; user-select:none; } .fp-line button { flex:none; display:flex; align-items:center; gap:6px; padding:4px 8px 4px 4px; font-size:12px; } .fp-line img { width:28px; height:28px; } .fp-line .on { border-color:var(--ink); background:var(--ctl2); }
-  .fp-line .fp-slot { flex:none; display:inline-flex; flex-direction:row; align-items:center; gap:4px; padding:2px 4px 2px 2px; border:1px solid var(--line); background:var(--ctl); } .fp-line .fp-slot.on { border-color:var(--ink); background:var(--ctl2); } .fp-line .fp-slot > button { border:0; background:none; padding:2px; }
+  .fp-line { display:flex; align-items:stretch; gap:0; margin:8px 0 0; padding:0; overflow-x:auto; border:1px solid var(--line); } .fp-line > * + * { border-left:1px solid var(--line); }   /* the evolution line: one flush strip */ .fp-line > .fp-chev { flex:none; display:grid; place-items:center; font-size:18px; font-weight:700; line-height:1; color:var(--dim); padding:0 8px; user-select:none; } .fp-line button { flex:none; display:flex; align-items:center; gap:6px; padding:4px 8px 4px 4px; font-size:12px; border:0; } .fp-line img { width:28px; height:28px; } .fp-line .on { border-color:var(--ink); background:var(--ctl2); }
+  .fp-line .fp-slot { flex:none; display:inline-flex; flex-direction:row; align-items:center; gap:4px; padding:2px 4px 2px 2px; background:var(--ctl); } .fp-line .fp-slot.on { border-color:var(--ink); background:var(--ctl2); } .fp-line .fp-slot > button { border:0; background:none; padding:2px; }
   .fp-line .fp-pick { width:auto; min-width:7.5em; max-width:140px; height:30px; padding:0 34px 0 8px; font-size:11px; background-position:right 10px center; background-size:12px; }   /* keep theme select chevron clear of the label */
   .fp-side { display:grid; gap:12px; justify-items:center; } .fp-body { display:grid; grid-template-columns:180px minmax(0,1fr); gap:16px; align-items:start; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
   .fp-atk { display:grid; grid-template-columns:minmax(0,1fr) auto auto; } .fp-atk.carm { grid-template-columns:minmax(0,1fr) auto auto auto; } .fp-atk > * { padding:6px 0 6px 12px; border-top:1px solid var(--line); text-align:right; font-weight:700; } .fp-atk > .h { padding-top:0; border-top:0; }
   .fp-atk > .an, .fp-atk > .h:first-child { padding-left:0; text-align:left; } .fp-atk .an { display:flex; gap:8px; align-items:flex-start; font-weight:400; } .fp-atk .an .sw { flex:none; } .fp-atk .an { align-items:center; } .fp-atk .an b { font-weight:600; } .fp-atk > .desc { grid-column:1 / -1; padding:0 0 8px 20px; border-top:0; text-align:left; font-weight:400; }   /* an attack's effect runs the table's full width under its row */
   .fp-z { margin-top:12px; } .fp-z .zr + .zr { margin-top:8px; } .fp-z .zr .sw { display:inline-block; vertical-align:-1px; margin:0; } .fp-z .zr b { margin-left:6px; } .fp-z .zr .desc { margin-top:2px; }   /* Z-Moves, as MiniDetailFigure's SkillZ list: name and colour, then what it does */
-  .fp-body + .fp-ab { margin-top:12px; } .fp-ab { justify-self:stretch; padding:8px 12px; border:1px solid var(--line); background:var(--ctl); } .fp-ab .h { margin-bottom:4px; } .fp-ab .desc { margin-top:4px; }
+  .fp-body + .fp-ab { margin-top:12px; } .fp-ab { justify-self:stretch; padding:12px 0 0; border-top:1px solid var(--line); }   /* a section under a 1px line, not a box */ .fp-ab .h { margin-bottom:4px; } .fp-ab .desc { margin-top:4px; }
   @media (max-width:860px) { #figpop:not(.duel):not(.sheet) { left:0; right:0; bottom:0; transform:none; width:auto; max-height:72dvh; border-width:1px 0 0; } #figpop.duel { max-height:78%; } .fp-body { grid-template-columns:minmax(0,1fr); } .fp-side { display:contents; } .fp-wheel { justify-self:center; } .fp-ab { order:3; } }
-  #figPanel > .pbody, #pltPanel > .pbody { flex:1 1 0; min-height:0; display:flex; flex-direction:column; overflow:hidden; gap:8px; padding:4px; }   /* 4px inset so :focus-visible rings on filters are not clipped */
+  #figPanel > .pbody, #pltPanel > .pbody { flex:1 1 0; min-height:0; display:flex; flex-direction:column; overflow:hidden; gap:0; padding:0; } #figPanel > .pbody > .bar + *, #pltPanel > .pbody > .bar + * { margin-top:-1px; }   /* the filters sit flush on the list */
   #figPanel > .pbody > .bar, #pltPanel > .pbody > .bar { margin-bottom:0; }
   @media (max-width:860px) { .cards { grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); } .card img { width:68px; height:68px; } }
   /* Saved teams: a strip of small cards that scrolls sideways (name, plate count and delete on one line, the six figures under it), so the
@@ -169,7 +170,7 @@
   .tcard .x:hover { background:var(--danger); border-color:var(--danger); color:#fff; }
   .tcard.on { background:var(--ink); border-color:var(--ink); color:var(--bg); } .tcard.on .chip { background:var(--bg); color:var(--ink); } .tcard.on .x { color:color-mix(in srgb, var(--bg) 70%, var(--ink)); } .tcard.on .x:hover { color:#fff; } .tcard.on .tp .ph { background:color-mix(in srgb, var(--bg) 22%, var(--ink)); color:var(--bg); }
   .tcard .tp { display:grid; grid-template-columns:repeat(6,1fr); gap:2px; } .tcard .tp img, .tcard .tp .ph { width:100%; aspect-ratio:1; object-fit:contain; } .tcard .tp .ph { display:grid; place-items:center; background:var(--ctl2); color:var(--dim); font-size:9px; font-weight:700; }
-  .tsave { display:flex; align-items:center; gap:6px; flex:1; min-width:0; max-width:260px; height:var(--ctl-h, 30px); }
+  .tsave { display:flex; align-items:stretch; gap:0; flex:1; min-width:0; max-width:260px; height:var(--ctl-h, 30px); }
   /* home: league summary, deck, boosters and collection */
   .big { font:900 46px/1 "Segoe UI",system-ui,sans-serif; letter-spacing:-.01em; } .big small { font-size:13px; font-weight:600; color:var(--dim); letter-spacing:0; margin-left:8px; }
   .meter { height:8px; background:var(--ctl2); overflow:hidden; margin:10px 0 4px; } .meter i { display:block; height:100%; background:var(--ink); }
@@ -185,7 +186,7 @@
      two smaller ones. One centred column, nothing stretched. */
   #home { grid-template-columns:minmax(0,600px); justify-content:center; padding:0; } #home .hlobby > p.note { margin:0; padding:6px 14px; background:var(--panel); } #home .hlobby { display:grid; gap:1px; min-width:0; background:var(--line); border-left:1px solid var(--line); border-right:1px solid var(--line); } #home .panel { padding:12px 14px; } #home .panel h2 { margin-bottom:8px; }
   .hlg { display:grid; grid-template-columns:auto 1fr; gap:4px 18px; align-items:center; } .hlg .big { font-size:40px; } .hlg .stats { margin:0; } .hlg .stat { padding:6px 8px; } .hlg .stat b { font-size:16px; } .hlg .wide { grid-column:1 / -1; }
-  .hhead { display:flex; align-items:center; gap:6px; margin-bottom:8px; flex-wrap:nowrap; min-width:0; min-height:var(--ctl-h, 30px); } .hhead h2, #home .hhead h2 { margin:0; flex:none; white-space:nowrap; } .hhead .hbtns { display:flex; gap:6px; flex:none; align-items:center; } .hhead label.note { display:inline-flex; align-items:center; gap:4px; margin:0 0 0 auto; font-weight:400; text-transform:none; letter-spacing:0; white-space:nowrap; min-width:0; font-size:11px; } #clr { color:var(--err); border-color:var(--danger); } #clr:hover:not(:disabled) { background:var(--danger); border-color:var(--danger); color:#fff; }   /* the theme's red, as on Resign */
+  .hhead { display:flex; align-items:center; gap:6px; margin-bottom:8px; flex-wrap:nowrap; min-width:0; min-height:var(--ctl-h, 30px); } .hhead h2, #home .hhead h2 { margin:0; flex:none; white-space:nowrap; } .hhead .hbtns { display:flex; gap:0; flex:none; align-items:center; } .hhead .hbtns > * + *, .tsave > * + *, .gobar > * + *, .evo-btns > * + *, .rbtns > * + * { margin-left:-1px; } .hhead label.note { display:inline-flex; align-items:center; gap:4px; margin:0 0 0 auto; font-weight:400; text-transform:none; letter-spacing:0; white-space:nowrap; min-width:0; font-size:11px; } #clr { color:var(--err); border-color:var(--danger); } #clr:hover:not(:disabled) { background:var(--danger); border-color:var(--danger); color:#fff; }   /* the theme's red, as on Resign */
   #pickBtn, #rnd, #clr { padding:0; } #rnd svg, #clr svg { width:22px; height:22px; } #pickBtn svg { width:18px; height:18px; }   /* pencil reads larger than the dice / trash glyphs at the same box size */
   .hfig { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); cursor:pointer; }   /* the deck: one row of six figure cards */
   .hfig > div { position:relative; display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0; padding:22px 4px 8px; background:var(--ctl); text-align:center; } .hfig > div:hover { border-color:var(--dim); }
@@ -228,9 +229,9 @@
   #setup .bar input:not([type=checkbox]) { flex:1 1 140px; min-width:0; }
   #setup .bar select { flex:1 1 104px; min-width:0; }
   #setup .tsave button, #setup #pickExp, #setup .gobar > button { display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; }
-  #pickBar { display:flex; align-items:center; gap:8px; flex:none; height:var(--ctl-h); padding:4px; margin:-4px; box-sizing:content-box; }   /* inset so :focus-visible on tabs / Expand is not clipped by #pickSide overflow */
-  .pickTabs { flex:1; display:flex; gap:3px; min-width:0; height:100%; padding:2px; box-sizing:border-box; background:var(--ctl); border:1px solid var(--line); }
-  .pickTabs button { flex:1; min-width:0; height:100%; padding:0 8px; border:0; background:transparent; color:var(--dim); font:700 11px/1 "Segoe UI",system-ui,sans-serif; letter-spacing:.06em; text-transform:uppercase; text-align:center; display:inline-flex; align-items:center; justify-content:center; }
+  #pickBar { display:flex; align-items:stretch; gap:0; flex:none; height:var(--ctl-h); padding:0; margin:0; } #pickBar > * + * { margin-left:-1px; }   /* inset so :focus-visible on tabs / Expand is not clipped by #pickSide overflow */
+  .pickTabs { flex:1; display:flex; gap:1px; min-width:0; height:100%; padding:0; background:var(--line); box-sizing:border-box; background:var(--ctl); border:1px solid var(--line); }
+  .pickTabs button { flex:1; min-width:0; height:100%; padding:0 8px; border:0; background:var(--ctl); color:var(--dim); font:700 11px/1 "Segoe UI",system-ui,sans-serif; letter-spacing:.06em; text-transform:uppercase; text-align:center; display:inline-flex; align-items:center; justify-content:center; }
   .pickTabs button[aria-selected=true] { background:var(--ink); color:var(--bg); } .pickTabs button:hover:not([aria-selected=true]) { background:var(--ctl2); color:var(--ink); }
   #pickExp { flex:none; min-width:5.5em; padding:0 10px; font-size:12px; } #pickExp[hidden] { display:none !important; }
   #pickSide #figPanel, #pickSide #pltPanel { display:none; flex-direction:column; min-height:0; overflow:hidden; margin:0; }
@@ -239,7 +240,7 @@
   #pickSide.pick-collapsed #figPanel, #pickSide.pick-collapsed #pltPanel { display:none !important; }   /* desktop: tabs only when both sides are full and collapsed */
   #pickSide #figPanel > .pbody, #pickSide #pltPanel > .pbody { flex:1 1 0; min-height:0; }
   /* opponent and Start on one line: the picker, then the button */
-  .gobar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; } .gobar #oppPanel { display:contents; } .gobar #mode { flex:1 1 150px; min-width:0; } .gobar #room { flex:0 1 96px; min-width:0; } .gobar #go { order:1; min-width:8.5em; text-align:center; } .gobar #setupErr { order:3; flex:1 1 100%; } .gobar #setupErr:empty { display:none; }
+  .gobar { display:flex; flex-wrap:wrap; align-items:stretch; gap:0; } .gobar #oppPanel { display:contents; } .gobar #mode { flex:1 1 150px; min-width:0; } .gobar #room { flex:0 1 96px; min-width:0; } .gobar #go { order:1; min-width:8.5em; text-align:center; } .gobar #setupErr { order:3; flex:1 1 100%; } .gobar #setupErr:empty { display:none; }
   #setup > section:last-child > .panel:last-child { padding:10px 12px; } #setup > section:last-child > .panel:last-child p.note { display:none; }
   @media (min-width:861px) {
     #setup { grid-template-rows:minmax(0,1fr); align-content:stretch; overflow:hidden; }
@@ -298,8 +299,8 @@
     #pickSide { position:fixed; inset:0; z-index:6; width:auto; display:flex; flex-direction:column; gap:10px; padding:12px; padding-top:max(12px, env(safe-area-inset-top)); padding-bottom:max(12px, env(safe-area-inset-bottom)); background:var(--bar); border:0; box-shadow:none; transform:translateX(100%); visibility:hidden; transition:transform .22s ease, visibility 0s linear .22s; overflow:hidden; pointer-events:none; }
     #setup.pick-open #pickSide { transform:none; visibility:visible; transition:transform .22s ease, visibility 0s; pointer-events:auto; }
     #pickSide #figPanel, #pickSide #pltPanel { background:none; border:0; box-shadow:none; padding:0; }
-    #pickSide #figPanel > .pbody, #pickSide #pltPanel > .pbody { gap:6px; padding:0; }
-    #pickSide .bar { gap:5px; } #pickSide .bar input:not([type=checkbox]) { flex:1 1 100%; } #pickSide .bar select { flex:1 1 calc(50% - 3px); max-width:calc(50% - 2px); }
+    #pickSide #figPanel > .pbody, #pickSide #pltPanel > .pbody { padding:0; }
+ #pickSide .bar input:not([type=checkbox]) { flex:1 1 100%; } #pickSide .bar select { flex:1 1 calc(50% - 3px); max-width:calc(50% - 2px); }
     #pickSide #list.cards, #pickSide #plist.cards { height:auto; flex:1 1 0; min-height:120px; padding-top:12px; padding-bottom:12px; overflow:auto; -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%); mask-image:linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%); }
     #list.cards { height:52dvh; } #plist.cards { height:40dvh; grid-template-columns:1fr; }
     #setup .bar select, #setup .bar input:not([type=checkbox]) { min-width:0; max-width:100%; } #mode { width:100%; }
@@ -313,18 +314,18 @@
   #log { padding:14px 0; -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%); mask-image:linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%); }
   #game .side { display:flex; flex-direction:column; gap:1px; background:var(--line); border-right:1px solid var(--line); overflow:hidden; } #game .side > .panel, #game #camBar, #game #sideHome { margin:0; } #game #camBar { gap:1px; background:var(--line); } #game #camBar .iconbtn, #game #camBar a.iconbtn { width:44px; height:44px; border:0; background:var(--bar); } #game #camBar .camGrow { align-self:stretch; background:var(--bar); } #game .side > .panel:has(#log), #game .side > .panel:has(#acts) { flex:1 1 0; min-height:0; display:flex; flex-direction:column; } #game .side > #card { flex:0 1 auto; max-height:40%; min-height:0; overflow:auto; }
   #game .side > .panel:has(#log) #log, #game .side > .panel:has(#acts) #acts { flex:1 1 0; height:auto; max-height:none; min-height:0; }
-  #modal { position:fixed; inset:0; background:color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter:blur(3px); display:grid; place-items:center; padding:16px; z-index:5; }
+  #modal { position:fixed; inset:0; background:color-mix(in srgb, var(--bg) 60%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); display:grid; place-items:center; padding:16px; z-index:5; }
   /* the team slot editor */
   .ed-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
   .ed-foot { position:sticky; bottom:calc(-1 * var(--pad)); z-index:1; display:flex; justify-content:flex-end; margin:16px calc(-1 * var(--pad)) calc(-1 * var(--pad)); padding:12px var(--pad); background:var(--panel); border-top:1px solid var(--line); }   /* Done stays at the editor's bottom right while it scrolls */ .ed-head h2 { margin:0; }
-  .ed-tabs { display:flex; gap:8px; margin-bottom:12px; overflow-x:auto; } .ed-tab { flex:none; display:flex; flex-direction:column; gap:8px; width:136px; padding:8px; border:1px solid var(--line); background:var(--ctl); }
+  .ed-tabs { display:flex; gap:0; margin-bottom:12px; overflow-x:auto; border:1px solid var(--line); } .ed-tab { flex:none; display:flex; flex-direction:column; gap:8px; width:136px; padding:8px; border-right:1px solid var(--line); background:var(--ctl); }
   .ed-tab.on { border-color:var(--ink); background:var(--ctl2); } .ed-tab button { display:flex; flex-direction:column; align-items:center; gap:4px; padding:0; border:0; background:none; font-weight:400; }
   .ed-tab img { width:64px; height:64px; } .box .plus { height:64px; font-size:28px; line-height:64px; color:var(--dim); } .ed-tab select { width:100%; height:28px; padding:0 26px 0 8px; background-position:right 8px center; font-size:12px; }
   .ed-tab b { height:28px; line-height:28px; text-align:center; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .ed-body { display:grid; grid-template-columns:200px minmax(0,1fr); gap:16px; align-items:start; padding-top:16px; border-top:1px solid var(--line); } .ed-fig { display:grid; justify-items:center; }
   .box .h, #figpop .h { display:block; white-space:nowrap; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); }
   .ed-id { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; } .ed-id b { font-size:18px; } .ed-id .chip { margin:0; }
-  .ed-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:8px; margin:4px 0 12px; padding:2px; } .ed-stats > div { min-width:0; display:flex; flex-direction:column; gap:4px; padding:8px; border:1px solid var(--line); background:var(--ctl); overflow:visible; } .ed-stats > div > b { height:28px; line-height:28px; font-size:16px; white-space:nowrap; } .ed-stats .stepper { align-self:flex-start; background:var(--panel); }
+  .ed-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:1px; margin:8px 0 12px; padding:0; background:var(--line); border:1px solid var(--line); } .ed-stats > div { min-width:0; display:flex; flex-direction:column; gap:4px; padding:8px; background:var(--ctl); overflow:visible; } .ed-stats > div > b { height:28px; line-height:28px; font-size:16px; white-space:nowrap; } .ed-stats .stepper { align-self:flex-start; background:var(--panel); }
   .ed-grid { display:grid; grid-template-columns:minmax(0,1fr) repeat(var(--n),auto); } .ed-grid > * { display:flex; align-items:center; justify-content:center; padding:6px 0 6px 12px; border-top:1px solid var(--line); }
   .ed-grid > .h { padding-top:0; border-top:0; } .ed-grid > .h:first-child, .ed-grid > .an { justify-content:flex-start; padding-left:0; gap:8px; min-width:0; } .ed-grid .an .sw { flex:none; margin:0; } .ed-grid .an.dim { color:var(--dim); }
   .stepper { display:inline-flex; align-items:center; justify-content:center; min-width:94px; height:30px; border:1px solid var(--line); background:var(--ctl); } .stepper.plain { border-color:transparent; background:none; }
@@ -377,7 +378,7 @@
      The dumps are in tools/original-ui. Where things are and how big is the original's; how they look is this site's theme. */
   .arena { container-type:size; --u:min(calc(100cqw / 750), calc(100cqh / 1334)); }
   /* the choices without a place on the board: one scrollable row attached to the bottom of the table, just above the action bar */
-  .table { position:relative; } #tbl { position:absolute; left:0; right:0; bottom:0; z-index:1; display:flex; flex-wrap:nowrap; gap:6px; align-items:center; justify-content:safe center; overflow-x:auto; overscroll-behavior-x:contain; padding:6px 8px; background:var(--bar); border-top:1px solid var(--line); font-size:12px; scrollbar-width:thin; } #tbl:empty { display:none; }
+  .table { position:relative; } #tbl { position:absolute; left:0; right:0; bottom:0; z-index:1; display:flex; flex-wrap:nowrap; gap:1px; align-items:stretch; justify-content:safe center; overflow-x:auto; overscroll-behavior-x:contain; padding:0; background:var(--line); border-top:1px solid var(--line); font-size:12px; scrollbar-width:thin; } #tbl:empty { display:none; }
   #tbl > * { flex:none; white-space:nowrap; } #tbl b, #tbl span { padding:2px 8px; background:var(--bar); color:var(--ink); }
   #tbl button { padding:6px 12px; font-weight:700; background:var(--ink); color:var(--bar); border-color:var(--ink); }   /* high contrast: inverted like the primary buttons */
   #tbl button b, #tbl button span { padding:0; background:none; color:inherit; } #tbl button b[style] { filter:saturate(1.2); }
@@ -390,7 +391,7 @@
   .evobtn { cursor:pointer; } .evobtn rect { fill:var(--ink); stroke:var(--line); stroke-width:1.2; } .evobtn text { fill:var(--bg); font-weight:800; text-anchor:middle; dominant-baseline:central; pointer-events:none; letter-spacing:.02em; }
   .evobtn:hover rect { fill:var(--dim); stroke:var(--dim); }
   /* Evolve?: the same card as the rest of the app. Now, then the form it becomes, then Yes. */
-  #evolve { position:absolute; inset:0; z-index:8; display:grid; place-items:center; padding:16px; background:color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter:blur(3px); }
+  #evolve { position:absolute; inset:0; z-index:8; display:grid; place-items:center; padding:16px; background:color-mix(in srgb, var(--bg) 60%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
   #evolve[hidden] { display:none; }
   .evo-panel { width:min(400px, 100%); max-height:calc(100% - 8px); overflow:auto; display:flex; flex-direction:column; gap:12px; padding:16px; background:var(--panel); color:var(--ink); border:1px solid var(--line); box-shadow:0 20px 60px rgba(0,0,0,.5); }
   .evo-panel h2 { margin:0; font-size:16px; }
@@ -400,7 +401,7 @@
   .evo-go { flex:none; width:18px; height:18px; fill:none; stroke:var(--dim); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
   .evo-arr { flex:none; width:28px; height:28px; padding:0; display:grid; place-items:center; }
   .evo-notes { margin:0; padding:0; list-style:none; color:var(--dim); font-size:12px; display:flex; flex-direction:column; gap:3px; }
-  .evo-btns { display:flex; justify-content:flex-end; gap:8px; } .evo-btns button { min-width:84px; text-align:center; }
+  .evo-btns { display:flex; justify-content:flex-end; gap:0; } .evo-btns button { min-width:84px; text-align:center; }
   /* the field moment: a glowing ball blasts open, and the new figure appears as it clears */
   .platefx { position:absolute; z-index:8; width:0; height:0; pointer-events:none; }
   .platefx .card { position:absolute; left:-26px; top:-92px; width:52px; height:72px; background:var(--bd-pt, #101216); border:2px solid var(--bd-line, #c9ced8); color:var(--bd-line, #c9ced8); font-size:8px; line-height:1.1; padding:4px; display:flex; align-items:center; justify-content:center; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,.5); animation:plateIn 1s ease-in forwards; }
@@ -438,7 +439,7 @@
   #ibWait i { min-width:18px; height:18px; padding:0 5px; background:var(--ink); color:var(--bg); font:700 11px/18px "Segoe UI",system-ui,sans-serif; }
   /* the plate list (PlateChoices): a band 468 high across the bottom, plates 178 apart that snap to the centre, a frame round the centre
      one, that plate large above, Use under the band's middle and Close at its right. Dimmed and blurred behind, like the site's dialogs. */
-  #plates { position:absolute; inset:0; z-index:5; overflow:hidden; background:color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter:blur(3px); } #plates[hidden] { display:none; } #plates > * { position:absolute; }
+  #plates { position:absolute; inset:0; z-index:5; overflow:hidden; background:color-mix(in srgb, var(--bg) 60%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); } #plates[hidden] { display:none; } #plates > * { position:absolute; }
   .pband { left:0; right:0; top:calc(50% + 238 * var(--u)); height:calc(468 * var(--u)); background:var(--bar); border-top:1px solid var(--line); }
   .plist { left:0; right:0; top:calc(50% + 260 * var(--u)); height:calc(306 * var(--u)); display:flex; align-items:center; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; padding:calc(24 * var(--u)) calc(50% - 89 * var(--u)) calc(36 * var(--u)); scrollbar-width:none; } .plist::-webkit-scrollbar { display:none; }   /* room for the plate's shadow inside the scroller, so the shadow is not cut off; the cards stay where they were */
   .plist > div { flex:none; width:calc(178 * var(--u)); scroll-snap-align:center; display:grid; place-items:center; cursor:pointer; }
@@ -495,7 +496,7 @@
   @media (prefers-reduced-motion: reduce) {
     #first, #first .half, #first .half .nm, #first .cap, #first .needle { transition:none !important; }
   }
-  #result { position:absolute; inset:0; z-index:7; display:flex; flex-direction:column; align-items:center; gap:14px; padding:28px 16px 20px; text-align:center; background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:blur(4px); animation:resin .35s ease-out; }
+  #result { position:absolute; inset:0; z-index:7; display:flex; flex-direction:column; align-items:center; gap:14px; padding:28px 16px 20px; text-align:center; background:color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); animation:resin .35s ease-out; }
   @keyframes resin { from { opacity:0; } }
   #result h2 { margin:0; font:800 13px/1 "Segoe UI",system-ui,sans-serif; text-transform:uppercase; letter-spacing:.3em; color:var(--dim); }
   .rbig { margin:auto 0 0; font:900 clamp(44px, 17cqw, 104px)/1 "Segoe UI",system-ui,sans-serif; font-style:italic; letter-spacing:.03em; animation:rbig .5s cubic-bezier(.2,1.4,.4,1); } @keyframes rbig { from { transform:scale(.6); opacity:0; } }
@@ -503,7 +504,7 @@
   .rwhy { color:var(--dim); font-size:13px; margin-bottom:auto; }
   .rrows { width:min(100%, 380px); border:1px solid var(--line); background:var(--panel); text-align:left; margin-bottom:auto; } .rrows div { display:flex; justify-content:space-between; gap:12px; padding:9px 14px; border-top:1px solid var(--line); } .rrows div:first-child { border-top:0; } .rrows b { white-space:nowrap; }
   .rrows:empty { display:none; } .rwhy:has(+ .rrows:not(:empty)) { margin-bottom:0; }
-  .rbtns { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; } .rbtns button { min-width:130px; padding:10px 18px; text-align:center; }
+  .rbtns { display:flex; flex-wrap:wrap; justify-content:center; gap:0; } .rbtns button { min-width:130px; padding:10px 18px; text-align:center; }
   .note { color:var(--dim); font-size:12px; } .err { color:var(--err); }
 </style>
 <script>if (matchMedia('(max-width:860px)').matches) document.documentElement.classList.add('mview')</script>

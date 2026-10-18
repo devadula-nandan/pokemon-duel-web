@@ -10,7 +10,7 @@ body { margin:0; color:var(--ink); background:var(--bg); font:14px/1.45 "Segoe U
 /* Always-on build id — top center, out of the way of taps */
 .appver { position:fixed; top:max(3px, env(safe-area-inset-top, 0px)); left:50%; transform:translateX(-50%); z-index:50; pointer-events:none; margin:0; padding:0 6px; font:600 10px/1.2 "Segoe UI",system-ui,sans-serif; letter-spacing:.06em; color:var(--dim); opacity:.4; user-select:none; }
 /* Asset download gate — engine / emulator / SFX / music */
-#assetGate { position:fixed; inset:0; z-index:70; display:grid; place-items:center; padding:16px; background:color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
+#assetGate { position:fixed; inset:0; z-index:70; display:grid; place-items:center; padding:16px; background:color-mix(in srgb, var(--bg) 60%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
 #assetGate .ag-box { width:min(420px,100%); max-height:min(92dvh,640px); overflow:auto; background:var(--panel); border:1px solid var(--line); padding:20px 18px 16px; box-shadow:0 20px 60px rgba(0,0,0,.55); }
 #assetGate h2 { margin:0 0 8px; font:800 16px/1.25 "Segoe UI",system-ui,sans-serif; text-align:center; }
 #assetGate > .ag-box > p { margin:0 0 14px; color:var(--dim); font-size:13px; line-height:1.45; text-align:center; }
