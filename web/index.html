@@ -1316,7 +1316,7 @@ async function start(opts) {
   rec.client_ai_name = (await api('name')).name; rec.ai_protocol_version = (await api('protocol_version')).protocol_version;   // as Engine.GameStart does
   const check = await api('check_record');
   if (check.errors && check.errors.length) throw new Error('The engine rejected this setup: ' + check.errors.join(', '));
-  leagueGame = lgMode ? { done: false } : null; sealed.clear(); boardSt = null; battleView = null; deferredSfx = null; turnBoostKey = ''; const btl = $('battle'); if (btl) { btl.hidden = true; btl.innerHTML = ''; } $('home').hidden = true; states = []; rewinds = 0;
+  leagueGame = lgMode ? { done: false } : null; sealed.clear(); zMoves.clear(); boardSt = null; battleView = null; deferredSfx = null; turnBoostKey = ''; const btl = $('battle'); if (btl) { btl.hidden = true; btl.innerHTML = ''; } $('home').hidden = true; states = []; rewinds = 0;
   sel = null; busy = false; over = null; logLines = []; clock = { black: 300, white: 300 }; gameId++;
   $('setupErr').textContent = ''; $('setup').hidden = true; $('game').hidden = false; $('log').innerHTML = '';
   sfx('duel_start');
@@ -2054,6 +2054,17 @@ function wheelSvg(skills, size) {
     <circle cx="100" cy="100" r="93.5" fill="none" stroke="#0b0b0c" stroke-width="11"/><circle cx="100" cy="100" r="96.5" fill="none" stroke="url(#${id}s)" stroke-width="2.2"/><circle cx="100" cy="100" r="88.6" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width=".9"/>
     <circle cx="100" cy="100" r="11.5" fill="#1a1a1c" stroke="#0b0b0c" stroke-width="5.5"/><circle cx="100" cy="100" r="13.6" fill="none" stroke="url(#${id}s)" stroke-width="1.6"/></svg>`;
 }
+// Roulette.SetZSkill: while a figure is in Z-state (marker z_state) it spins one full wheel, the Z-Move it was given at the power the
+// z_skill move named (range 96 of 96). The engine's status keeps the old attacks, so the Z-Move comes from the move that activated it.
+const zMoves = new Map();   // root figure -> { id, val }, from z_skill effects (an online guest has no record to read)
+function zWheel(i, s = st) {
+  const c = s && s.pokemon_conditions.find(x => x.pokemon_index === fieldForm(i, s));
+  if (!c || !c.marker || !c.marker.z_state) return null;
+  let z = null;
+  if (rec) for (let k = rec.all_moves.length - 1; k >= 0 && !z; k--) { const v = rec.all_moves[k].value; if (v.type === 'z_skill' && sameLine(v.pokemon, i)) z = { id: v.dst_skill_id, val: v.speed_or_damage }; }
+  z = z || zMoves.get(evoRoot(i));
+  return z ? [{ id: z.id, range: 96, speed_or_damage: z.val }] : null;
+}
 const power = s => { const col = (D.skills[s.id] || [0, 0, 0])[2]; return col === 2 ? '★'.repeat(Math.min(s.speed_or_damage || 0, 5)) : col === 1 || col === 3 ? (s.speed_or_damage || 0) : ''; };
 // What each state badge means, for its tooltip, in the same order badges() lists them. The engine reports a figure's state but not what
 // caused it, so for a damage change the tooltip names what in this duel could be the source instead of claiming one.
@@ -2080,7 +2091,7 @@ function badgeTips(c) {
 }
 function drawCard(c) {
   if (!c) { $('card').innerHTML = ''; return; }   // nothing selected: the panel is not shown at all
-  const i = c.pokemon_index, p = pk(i), f = figOf(i), ab = D.abilities[p.pokepower];
+  const i = c.pokemon_index, p0 = pk(i), z = zWheel(i), p = z ? Object.assign({}, p0, { skills: z }) : p0, f = figOf(i), ab = D.abilities[p.pokepower];
   $('card').innerHTML = `<div style="display:flex;gap:12px;align-items:center">${wheelSvg(p.skills, 96)}<div>
       <div style="font-size:16px">${nameOf(i)} <span class="chip rar${f.r}">${RAR[f.r] || ''}</span></div>
       <div class="note">MP ${p.mp}${c.effect && c.effect.mp ? ' (' + (c.effect.mp > 0 ? '+' : '') + c.effect.mp + ')' : ''} · ${typeNames(f)} · ${place(c.index)}</div>
@@ -2106,7 +2117,7 @@ function boardDetail(i, view) {   // MiniDetailFigure: a long press opens this f
   const viewI = view != null && pk(view) ? view : i, live = viewI === i;
   const pkm = pk(viewI) || { skills: [], mp: 0 }, f = figOf(viewI), ab = D.abilities[pkm.pokepower];
   const mp = (pkm.mp || 0) + (live && c.effect && c.effect.mp ? c.effect.mp : 0), plus = live && c.effect ? (c.effect.damage_plus || 0) : 0;
-  const skills = (pkm.skills || []).map(x => {   // the wheel as it is now: a sealed attack is a Miss, and White and Gold show the engine's current damage
+  const skills = (live && zWheel(i)) || (pkm.skills || []).map(x => {   // the wheel as it is now: a sealed attack is a Miss, and White and Gold show the engine's current damage
     const off = live && (sealed.get(i) || []).includes(x.id), col = off ? 0 : (D.skills[x.id] || [0, 0, 0])[2], dmg = (col === 1 || col === 3) && plus ? Math.max(0, (x.speed_or_damage || 0) + plus) : x.speed_or_damage;
     return Object.assign({}, x, off ? { sealed: true } : {}, dmg !== x.speed_or_damage ? { speed_or_damage: dmg } : {});
   });
@@ -2220,7 +2231,7 @@ const battleMark = text => { const t = String(text || ''); return t.includes('wi
 function wheelSnap(src, battler, spin) {   // the disk is drawn from the figure the spin names (results[0].figure), and from the status the wheel started with
   const s = src || st, first = (spin.results || [])[0] || {}, figId = fieldForm(first.figure != null && first.figure >= 0 ? first.figure : battler, s);   // spins name the pre-evolution root; draw the form on the board
   let mon = null; if (s) for (const p of s.players) for (const x of p.pokemons) if (x.pokemon_index === figId) mon = x;
-  const skills = ((mon && mon.skills) || []).filter(x => x.range > 0).map(x => (sealed.get(figId) || []).includes(x.id) ? Object.assign({}, x, { sealed: true }) : x);
+  const skills = zWheel(figId, s) || ((mon && mon.skills) || []).filter(x => x.range > 0).map(x => (sealed.get(figId) || []).includes(x.id) ? Object.assign({}, x, { sealed: true }) : x);
   const marker = ((s && (s.pokemon_conditions || []).find(c => c.pokemon_index === figId) || {}).marker) || {};
   return { skills, frozen: marker.circle === 'freeze' || marker.circle === 'melt', marker };
 }
@@ -2353,7 +2364,8 @@ async function playEffects(list, opt) {
     } else if (t === 'battle_result') {
       const side = x => `${nameOf(x.pokemon)} ${fmt('skill', x.skill)} ${x.speed_or_damage || ''} (${esc(String(x.result).replace(/_/g, ' '))})`;
       log(`Battle · ${side(v.attack)} vs ${side(v.defence)}`);
-    } else if (t === 'disable_skill') { sealed.set(v.pokemon, [].concat(v.skill_id || [])); if (sealed.get(v.pokemon).length) log(`${nameOf(v.pokemon)}: ${sealed.get(v.pokemon).map(id => fmt('skill', id)).join(', ')} sealed`); for (const id of sealed.get(v.pokemon)) tickFig(v.pokemon, `${plain(v.pokemon)}: ${(D.skills[id] || ['an attack'])[0]} became a Miss.`); }   // DisableSkill: Burn_miss per attack
+    } else if (t === 'z_skill') { zMoves.set(evoRoot(v.pokemon), { id: v.dst_skill_id, val: v.speed_or_damage }); log(describe(v)); }
+    else if (t === 'disable_skill') { sealed.set(v.pokemon, [].concat(v.skill_id || [])); if (sealed.get(v.pokemon).length) log(`${nameOf(v.pokemon)}: ${sealed.get(v.pokemon).map(id => fmt('skill', id)).join(', ')} sealed`); for (const id of sealed.get(v.pokemon)) tickFig(v.pokemon, `${plain(v.pokemon)}: ${(D.skills[id] || ['an attack'])[0]} became a Miss.`); }   // DisableSkill: Burn_miss per attack
     else if (t === 'remove_debuff') { for (const i of v.pokemons || []) sealed.delete(i); sfx('cured'); log(describe(v)); }
     else if (t === 'mp_move') { if (ctrl[st && st.selective_side] === 'ai') sfx('ai_step'); log(`${nameOf(figAt(v.route))} moves ${v.route.map(place).join(' → ')}`); }
     else if (t === 'declare_battle') { sfx('attack'); sfx('attack_phase'); log(`${nameOf(v.from_pokemon)} attacks ${nameOf(v.to_pokemon)}`); }
