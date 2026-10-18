@@ -127,7 +127,6 @@
     .top .paths a.on { background:var(--ink); border-color:var(--ink); color:var(--bg); } .top #viewLink { display:none; } }
   /* deck builder: figures, plates and the team as cards */
   #setup { grid-template-columns:minmax(0,1.7fr) minmax(320px,1fr); background:var(--line); border-left:1px solid var(--line); border-right:1px solid var(--line); }
-  img:is([src*='/scarlet-violet/'], [data-src*='/scarlet-violet/']) { transform:scale(1.3); }   /* the Scarlet / Violet sprites have a wide empty margin; this matches them to the artwork's size */
   #list > .card { content-visibility:auto; contain-intrinsic-size:auto 170px; }   /* off-screen cards are not laid out or painted */
   .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(116px,1fr)); gap:1px; overflow:auto; padding:0; align-content:start; background:var(--line); border:1px solid var(--line); }
   #list.cards { height:min(58dvh,560px); } #plist.cards { height:250px; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); }
@@ -588,6 +587,7 @@
 
 <script src="data.js"></script>
 <script src="art.js"></script>
+<script src="sprites.js"></script>
 <script src="board.js"></script>
 <script>
 'use strict';
@@ -600,11 +600,9 @@ const PIC_SET = 'other/official-artwork/';
 const sprite = f => {   // a form, Mega, Alolan or Shiny figure has its own picture (art.js); the rest are their Dex number's
   const own = FIG_ART[f.n], d = own ? own[0] : f.dex <= 1025 ? f.dex : dexByName.get(f.n.replace(/^(Alolan|Shiny|Mega) /, '').replace(/ [XY]$/, ''));
   return d ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${PIC_SET}${own && own[1] ? 'shiny/' : ''}${d}.png` : ''; };
-// The animated Scarlet / Violet sprite (art.js lists which exist); a figure without one uses its artwork. The 3D board plays its frames
-// itself (board3d.js animated()); the 2D board's SVG image animates on its own, drawn 1.3x larger for the sprite's empty margin.
-const anim = f => {
-  const own = FIG_ART[f.n], d = own ? own[0] : f.dex <= 1025 ? f.dex : 0, shiny = !!(own && own[1]);
-  return d && (shiny ? SV_SHINY : SV_ANIM).has(d) ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-ix/scarlet-violet/${shiny ? 'shiny/' : ''}${d}.webp` : sprite(f); };
+// Every figure's animated sprite, hosted with the page (web/sprites, built by tools/build_sprites.py from PokeAPI: the Scarlet / Violet
+// model, else the Showdown sprite), all normalised to the same size. The artwork above is only the fallback should one be missing.
+const anim = f => FIG_SPRITE[f.n] ? `sprites/${FIG_SPRITE[f.n]}.webp` : sprite(f);
 const byId = new Map(D.figures.map(f => [f.id, f])), byRule = new Map(), byGroup = new Map(), plateById = new Map(D.plates.map(p => [p.id, p]));
 for (const f of D.figures) { if (!byRule.has(f.rule)) byRule.set(f.rule, f); (byGroup.get(f.g) || byGroup.set(f.g, []).get(f.g)).push(f); }
 const typeNames = f => f.t.map(t => D.types[t]).join(' / ');
@@ -1843,7 +1841,7 @@ function render() {
     h += `<g class="tok ${i === sel ? 'sel' : ''} ${targets.has(i) ? 'atk' : ''} ${c.index >= 40 ? 'dim' : ''}" data-fig="${i}" transform="translate(${x},${y}) scale(${c.index >= 44 ? .85 : 1.3})"><circle class="halo" r="27.5"/>${aura ? `<circle class="aura" r="21.1" stroke="${aura}"/>` : ''}
       <circle class="bg" r="19" fill="${TYPE_COL[f.t[0]] || '#888'}"/><circle class="ring" r="19" stroke="${col === low ? '#1565c0' : '#b71c1c'}"/>
       <text class="nm" y="4" font-size="8.5" fill="#10141a">${esc(f.n.replace(/^(Alolan|Shiny|Mega) /, '').slice(0, 7))}</text>
-      ${anim(f) ? (/\.webp$/.test(anim(f)) ? `<image href="${anim(f)}" x="-31" y="-38" width="62" height="62" style="pointer-events:none" onerror="this.remove()"/>` : `<image href="${anim(f)}" x="-24" y="-27" width="48" height="48" style="pointer-events:none" onerror="this.remove()"/>`) : ''}
+      ${anim(f) ? `<image href="${anim(f)}" x="-24" y="-27" width="48" height="48" style="pointer-events:none" onerror="this.remove()"/>` : ''}
       ${c.index < 40 ? `<circle class="mpb" cx="15" cy="15" r="6.6" stroke="${mpd < 0 ? '#ff6b7a' : mpd > 0 ? '#39d98a' : 'var(--bd-line)'}"/><text x="15" y="18" font-size="8.6" fill="${mpd < 0 ? '#ff6b7a' : mpd > 0 ? '#39d98a' : 'var(--bd-line)'}">${mp}</text>` : ''}
       ${b.length ? `<rect x="-24" y="23" width="48" height="11" rx="5.5" fill="#10141a"/><text y="31.3" font-size="7.2" fill="#ffd88a">${esc(b[0].slice(0, 11))}${b.length > 1 ? '+' : ''}</text>` : ''}</g>`;
     if (evoOk) h += `<g class="evobtn" data-act="evo:${i}" transform="translate(${x},${y - 46})"><title>Evolve</title><rect x="-28" y="-9" width="56" height="16" rx="8"/><text y="1" font-size="8.4">Evolve</text></g>`;

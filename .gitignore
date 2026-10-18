@@ -11,3 +11,5 @@ __pycache__/
 tools/sfx-src/
 tools/_*.py
 tools/_*.txt
+# downloaded sprite sources (tools/build_sprites.py)
+tools/.sprite-cache/

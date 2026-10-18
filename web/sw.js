@@ -1,4 +1,4 @@
-// Cache-first for assets the gate has stored; everything else goes to the network.
+// Cache-first for assets the gate has stored and for figure sprites (kept on first use); everything else goes to the network.
 const CACHE = 'pdw-assets-v1';
 
 self.addEventListener('install', event => {
@@ -22,6 +22,8 @@ self.addEventListener('fetch', event => {
     const cache = await caches.open(CACHE);
     const hit = await cache.match(req, { ignoreSearch: true });
     if (hit) return hit;
-    return fetch(req);
+    const res = await fetch(req);
+    if (res.ok && url.pathname.includes('/sprites/')) cache.put(req, res.clone());   // figure sprites: fetched once, then kept
+    return res;
   })());
 });

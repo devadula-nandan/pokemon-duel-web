@@ -105,9 +105,9 @@ const images = new Map(), loader = new THREE.TextureLoader().setCrossOrigin('ano
 const still = url => loader.load(url, t => { t.colorSpace = THREE.SRGBColorSpace; });
 const picture = url => images.get(url) || images.set(url, /\.webp$/.test(url) && 'ImageDecoder' in window ? animated(url) : still(url)).get(url);
 // An animated sprite (the Scarlet / Violet .webp): WebGL only ever uploads an animated image's first frame, so its frames are decoded
-// once with ImageDecoder, scaled down to FRAME px (about 7 MB for a 34-frame sprite), and played on a canvas texture at their own pace.
-// The empty margin round the model is cropped by the same 1.3 the cards use. Without ImageDecoder (or if decoding fails) it stays still.
-const FRAME = 256, playing = [];
+// once with ImageDecoder, kept at FRAME px (about 3.5 MB for a 36-frame sprite), and played on a canvas texture at their own pace.
+// Without ImageDecoder (or if decoding fails) it shows its first frame.
+const FRAME = 160, playing = [];   // the hosted sprites are 160px
 function animated(url) {
   const cv = document.createElement('canvas'); cv.width = cv.height = FRAME;
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace;
@@ -115,8 +115,8 @@ function animated(url) {
     const buf = await (await fetch(url)).arrayBuffer(), dec = new ImageDecoder({ data: buf, type: 'image/webp' });
     await dec.tracks.ready; const n = dec.tracks.selectedTrack.frameCount, frames = [];
     for (let k = 0; k < n; k++) {
-      const { image } = await dec.decode({ frameIndex: k }), w = image.displayWidth, h = image.displayHeight, cw = w / 1.3, ch = h / 1.3;
-      frames.push({ bmp: await createImageBitmap(image, (w - cw) / 2, h - ch - (h - ch) * .35, cw, ch, { resizeWidth: FRAME, resizeHeight: FRAME }), ms: Math.max(20, (image.duration || 50000) / 1000) });
+      const { image } = await dec.decode({ frameIndex: k });
+      frames.push({ bmp: await createImageBitmap(image, { resizeWidth: FRAME, resizeHeight: FRAME }), ms: Math.max(20, (image.duration || 50000) / 1000) });
       image.close();
     }
     dec.close();
