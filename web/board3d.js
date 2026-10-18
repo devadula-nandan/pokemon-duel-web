@@ -489,7 +489,7 @@ function stepPlates(dt) {
 // A field spin (MatchMain field declare spin): when an effect makes figures that are not in a battle spin (Ice Shard, Powder Snow, Origin
 // Pulse, ...), each one's wheel appears flat around its stand on the board, spins and stops on the engine's result, then fades. segs:
 // [{ range (of 96), col (css colour), label }]; results: [{ num, displace }]. Resolves with the index of the slice it stopped on.
-const fieldSpins = [], SPIN_IN = BASE_R + .06, SPIN_OUT = SPIN_IN + AURA_W;   // the status ring's width, a little further out
+const fieldSpins = [], SPIN_IN = BASE_R, SPIN_OUT = BASE_R + AURA_W * 1.3;   // like the status ring: from the stand out, AURA_H thick, a little wider
 function wheelTex(segs) {
   return tex(512, 512, (g, w, h) => {
     const c = w / 2, R = w / 2 - 2, rIn = R * SPIN_IN / SPIN_OUT; let a = 0;
@@ -506,7 +506,9 @@ function fieldSpin(i, segs, results, still) {   // still: a frozen or melted whe
   const g = tokens.get(i); if (!g || !segs.length) return Promise.resolve(0);
   const geo = new THREE.RingGeometry(SPIN_IN, SPIN_OUT, 96, 1), mat = new THREE.MeshBasicMaterial({ map: wheelTex(segs), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
   const ring = new THREE.Mesh(geo, mat); ring.rotation.x = -Math.PI / 2; ring.renderOrder = 55;
-  const turnG = new THREE.Group(); turnG.add(ring); turnG.position.y = AURA_H + .004;   // level with the top of the status ring
+  const side = new THREE.Mesh(band((SPIN_IN + SPIN_OUT) / 2, SPIN_OUT - SPIN_IN, AURA_H + .004), new THREE.MeshBasicMaterial({ color: 0x101216, transparent: true, opacity: 0 }));
+  side.rotation.x = Math.PI / 2; side.position.y = (AURA_H + .004) / 2; ring.position.y = AURA_H + .006;   // a solid band over the status ring, the wheel on its top face
+  const turnG = new THREE.Group(); turnG.add(side, ring);
   const ptr = new THREE.Mesh(new THREE.ConeGeometry(.09, .2, 3), new THREE.MeshBasicMaterial({ color: css('--gold', '') || '#ffd23f', transparent: true, opacity: 0, depthWrite: false }));
   ptr.rotation.x = Math.PI / 2; ptr.position.set(0, .05, -(SPIN_OUT + .08)); ptr.renderOrder = 56;   // fixed at the far side (12 o'clock on the wheel), pointing in
   const host = new THREE.Group(); host.add(turnG, ptr); host.position.copy(g.position); g.parent.add(host);
@@ -518,13 +520,13 @@ function fieldSpin(i, segs, results, still) {   // still: a frozen or melted whe
       landed = at(r.num); steps.push({ pos: r.num + .5, turns: still ? 0 : steps.length ? 2 : 3, sec: still ? .01 : steps.length ? 1.1 : 1.6 });
       if (r.displace) { landed = ((landed + r.displace) % segs.length + segs.length * 10) % segs.length; steps.push({ pos: starts[landed] + segs[landed].range / 2, turns: 0, sec: still ? .01 : .35, back: r.displace < 0 }); }
     }
-    fieldSpins.push({ g, host, turnG, ring, ptr, geo, mat, steps, rot: 0, from: 0, to: null, t: 0, phase: 'in', landed, done });
+    fieldSpins.push({ g, host, turnG, ring, side, ptr, geo, mat, steps, rot: 0, from: 0, to: null, t: 0, phase: 'in', landed, done });
   });
 }
 function stepFieldSpins(dt) {
   for (let n = fieldSpins.length - 1; n >= 0; n--) {
     const f = fieldSpins[n]; f.t += dt; f.host.position.copy(f.g.position);
-    if (f.phase === 'in') { const k = Math.min(1, f.t / .25); f.mat.opacity = k; f.ptr.material.opacity = k; if (k >= 1) { f.phase = 'spin'; f.t = 0; f.to = null; } }
+    if (f.phase === 'in') { const k = Math.min(1, f.t / .25); f.mat.opacity = k; f.side.material.opacity = k; f.ptr.material.opacity = k; if (k >= 1) { f.phase = 'spin'; f.t = 0; f.to = null; } }
     else if (f.phase === 'spin') {
       const st = f.steps[0];
       if (!st) { f.phase = 'hold'; f.t = 0; continue; }
@@ -532,8 +534,8 @@ function stepFieldSpins(dt) {
       const k = Math.min(1, f.t / st.sec), e = 1 - Math.pow(1 - k, 3); f.rot = f.from + (f.to - f.from) * e; f.turnG.rotation.y = f.rot;   // the slice at angle pos ends under the pointer
       if (k >= 1) { f.steps.shift(); f.to = null; }
     } else if (f.phase === 'hold') { if (f.t >= 1) { f.phase = 'out'; f.t = 0; } }
-    else { const k = Math.min(1, f.t / .3); f.mat.opacity = 1 - k; f.ptr.material.opacity = 1 - k;
-      if (k >= 1) { f.host.removeFromParent(); f.geo.dispose(); f.mat.map.dispose(); f.mat.dispose(); f.ptr.geometry.dispose(); f.ptr.material.dispose(); fieldSpins.splice(n, 1); f.done(f.landed); } }
+    else { const k = Math.min(1, f.t / .3); f.mat.opacity = 1 - k; f.side.material.opacity = 1 - k; f.ptr.material.opacity = 1 - k;
+      if (k >= 1) { f.host.removeFromParent(); f.geo.dispose(); f.mat.map.dispose(); f.mat.dispose(); f.ptr.geometry.dispose(); f.ptr.material.dispose(); f.side.geometry.dispose(); f.side.material.dispose(); fieldSpins.splice(n, 1); f.done(f.landed); } }
   }
 }
 function clearAbilities() { for (const a of abilityRings) endAbility(a); abilityRings.length = 0; }
