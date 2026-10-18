@@ -185,7 +185,12 @@ function face(c, top) {
 }
 function drawTable(t) {
   const key = JSON.stringify(t); if (key === extrasKey) return; extrasKey = key;
-  for (const o of extras.children) { const i = pickable.indexOf(o); if (i >= 0) pickable.splice(i, 1); }
+  const shared = new Set(Object.values(M));
+  for (const o of extras.children) {   // free what was built for the last table (cardGeo and the M materials are shared); without this the GPU fills up turn by turn
+    const i = pickable.indexOf(o); if (i >= 0) pickable.splice(i, 1);
+    if (o.geometry !== cardGeo) o.geometry.dispose();
+    for (const m of [].concat(o.material)) if (!shared.has(m)) { if (m.map) m.map.dispose(); m.dispose(); }
+  }
   extras.clear();
   const flat = (w, d, y, material) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(w, d), material); p.rotation.x = -Math.PI / 2; p.position.y = y; return p; }, hit = (w, h, d, x, z, act) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M.unseen); b.position.set(x, h / 2, z); b.userData.pick = { act }; extras.add(b); pickable.push(b); };
   for (const k of t.stacks) {
@@ -456,5 +461,5 @@ function project(i) {   // where a figure sits on the arena, so the evolution fl
   const rect = renderer.domElement.getBoundingClientRect(), host = (document.querySelector('.arena') || renderer.domElement.parentElement).getBoundingClientRect();
   return { x: (v.x * .5 + .5) * rect.width + rect.left - host.left, y: (-v.y * .5 + .5) * rect.height + rect.top - host.top };
 }
-window.Board3D = { draw, controls, tokens, project, blast, clearBlasts, ability, clearAbilities };   // controls and tokens are exposed for inspection
+window.Board3D = { draw, controls, tokens, project, blast, clearBlasts, ability, clearAbilities, info: () => ({ ...renderer.info.memory, objects: (() => { let n = 0; scene.traverse(() => n++); return n; })() }) };   // controls and tokens are exposed for inspection
 if (window.board3dModel) draw(window.board3dModel);

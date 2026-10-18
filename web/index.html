@@ -1167,7 +1167,7 @@ function playerEntry(color, slots, plates) { // the original Player(UserDeck, co
 // ---------- the rule engine, in the page ----------
 // The original engine (libTFG.so from the 7.0.16 APK) runs in Web Workers under an ARM emulator (tfg.js + unicorn.js).
 // The site ships web/libTFG.so so play is ready with no APK step; IndexedDB caches it after the first fetch. APK pick is only a fallback.
-const ENGINE_FILE = 'lib/armeabi-v7a/libTFG.so', WORKERS = 3;
+const ENGINE_FILE = 'lib/armeabi-v7a/libTFG.so', WORKERS = 4;   // one per engine call a move needs (output_effects, status, legal_moves, selective_side), so they run side by side
 let enginePool = null, engineSeq = 0;
 const idb = (mode, fn, name = 'pokemon-duel-web') => new Promise((ok, bad) => { const o = indexedDB.open(name, 1); o.onupgradeneeded = () => o.result.createObjectStore('kv'); o.onerror = () => bad(o.error);
   o.onsuccess = () => { const r = fn(o.result.transaction('kv', mode).objectStore('kv')); r.onsuccess = () => ok(r.result); r.onerror = () => bad(r.error); }; });
