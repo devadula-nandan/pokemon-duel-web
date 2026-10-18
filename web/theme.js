@@ -5,7 +5,8 @@
 // data-refresh-btn is always there: it fetches the latest published page past every cache, then reloads.
 (() => {
   const KEY = 'pokemonduelweb.theme', sysLight = matchMedia('(prefers-color-scheme: light)'); let mode = 'auto';
-  // The app's version, and the only place it is written: bump it when shipping a build. Running copies compare it with the published one.
+  // The app's version, and the only place it is written. The Pages deploy replaces the last number with its run number on every push;
+  // raise major.minor here by hand. Running copies compare theirs with the published one.
   window.APP_VER = '0.4.0';
   // Small line icons drawn here (no icon font or image files). icon() is shared with the pages for their own buttons.
   window.icon = body => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';

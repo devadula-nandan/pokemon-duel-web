@@ -19,6 +19,9 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Stamp the app version
+        # every deploy gets its own APP_VER: the major.minor written in theme.js plus this run's number, so open pages see the update
+        run: sed -i -E "s/APP_VER = '([0-9]+\.[0-9]+)\.[0-9]+'/APP_VER = '\1.${{ github.run_number }}'/" web/theme.js && grep -n "APP_VER = " web/theme.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
