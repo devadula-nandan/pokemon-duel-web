@@ -29,7 +29,9 @@
   #game .arena { --ar:var(--board-ar, .72); --fit:min(100cqh, calc((100cqw - 200px - var(--g)) / var(--ar))); height:var(--fit); width:calc(var(--fit) * var(--ar)); justify-self:center; align-self:center; }   /* full height of the row; the width is that height times the table's shape, and it shrinks only when the side column would drop under 200px */
   #sideBtn, #sideHome { display:none; } #camBar { margin-bottom:14px; flex-wrap:nowrap; } #camBar:empty { display:none; }
   html:not(.mview) #camBar :is(#camUpdate, #camSound, #camTheme, #camView, #camHome) { display:none !important; }   /* the top bar has these; the duel row repeats them only when the top bar is hidden (narrow screen) */
-  #camBar .camGrow { flex:1 1 auto; min-width:4px; } #camBar a.iconbtn { margin:0; border:1px solid var(--line); border-radius:4px; background:var(--ctl); display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; text-decoration:none; color:inherit; } #camBar a.iconbtn:hover { background:var(--ctl2); border-color:var(--dim); }
+  #camBar .camGrow { flex:1 1 auto; min-width:4px; display:flex; align-items:center; justify-content:center; }
+  .sidever { display:none; font:600 10px/1.2 "Segoe UI",system-ui,sans-serif; color:var(--dim); letter-spacing:.04em; } html.mview .sidever { display:block; }
+  html.mview:has(#game:not([hidden])) .appver { display:none; }   /* phone duel: the version sits in the side panel instead of over the board */ #camBar a.iconbtn { margin:0; border:1px solid var(--line); border-radius:4px; background:var(--ctl); display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; text-decoration:none; color:inherit; } #camBar a.iconbtn:hover { background:var(--ctl2); border-color:var(--dim); }
   @media (max-width:860px) {
     html, body { height:100dvh; max-height:100dvh; overflow:hidden; }   /* home / setup / game fill the screen; no document scroll */
     #setup, #home { grid-template-columns:1fr !important; flex:1 1 0; min-height:0; max-width:none; width:100%; overflow-x:hidden; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; align-content:start; }
@@ -553,7 +555,7 @@
       <button type="button" id="camTheme" class="iconbtn" data-theme-btn title="Theme" aria-label="Theme"></button>
       <a id="camView" class="iconbtn"></a>
       <button type="button" id="camHome" class="iconbtn" title="Home" aria-label="Home"></button>
-      <span class="camGrow" aria-hidden="true"></span>
+      <span class="camGrow"><span class="sidever" id="sideVer"></span></span>
       <button id="fsBtn" class="iconbtn" title="Fullscreen" aria-label="Fullscreen" aria-pressed="false"></button>
     </div>
     <div class="panel"><h2>Log</h2><div id="log"></div></div>
@@ -2468,6 +2470,7 @@ const figAt = route => { const c = st.pokemon_conditions.find(c => c.index === r
 $('mode').onchange = () => { $('room').hidden = $('mode').value !== 'join'; $('go').disabled = false; $('go').textContent = $('mode').value === 'join' ? 'Join duel' : $('mode').value === 'host' ? 'Open room' : 'Start duel'; };
 $('ticker').firstElementChild.textContent = `pokemon duel web ◆ ${D.figures.length} figures · ${D.plates.length} plates · ${Object.keys(D.skills).length} attacks · ${Object.keys(D.abilities).length} abilities ◆ Parity: every legal move, spin, attack effect, ability, plate, evolution and AI decision is computed by the original game's own rule engine, not re-implemented ◆ Deck rules, levels, chain boosts, Rewind, league thresholds and booster odds follow the original client and its master data ◆ Not original: the look, the league opponent (the original AI with a random deck), fixed rating points, the starter set ◆ Missing because their data did not survive: quests, shop, level-up costs ◆ Everything runs in this page: no install, no server ◆ Online: one player opens a room and shares the code, the other joins with it`;
 { const free = loadFree(); if (free) { team = free.team; myPlates = free.plates; } loadUi(); loadUi.done = true; document.getElementById('setup').addEventListener('change', e => { if (UI_IDS.includes(e.target.id)) storeUi(); }); }
+$('sideVer').textContent = 'v' + window.APP_VER;
 drawList(); drawTeam(); drawSaved(); { let last = null; try { last = localStorage.getItem(LAST_KEY); } catch (e) {} const i = savedTeams.findIndex(t => t.name === last); if (i >= 0 && !team.length) { $('tlist').querySelector(`.tcard[data-i="${i}"]`).click(); drawSaved(); } } viewHref(); if (/^#g=\d+$/.test(location.hash)) resumeGame().catch(x => { showHome(); drawHome.msg = x.message; drawHome(); }); else showHome();
 </script>
 </body>
