@@ -1,6 +1,6 @@
 /* Shared look for every page: the palette in a dark and a light version, and the styling of every standard control (buttons, fields,
    selects, checkboxes, file pickers, scrollbars, focus rings, text selection). Pages add only their own layout on top. */
-:root { color-scheme:dark; --bg:#0a0a0a; --bar:#000; --panel:#161616; --ctl:#1f1f1f; --ctl2:#2b2b2b; --line:#333; --ink:#f2f2f2; --dim:#9a9a9a; --accent:#f2f2f2; --err:#ff8a94; --danger:#d13a47;
+:root { --row-h:44px; color-scheme:dark; --bg:#0a0a0a; --bar:#000; --panel:#161616; --ctl:#1f1f1f; --ctl2:#2b2b2b; --line:#333; --ink:#f2f2f2; --dim:#9a9a9a; --accent:#f2f2f2; --err:#ff8a94; --danger:#d13a47;
   --p0:#2f8cff; --p0d:#0f3fa8; --p1:#ff4658; --p1d:#a3122a; --ok:#39d98a; --gold:#ffd23f; --bd:#0c0d10; --bd2:#17191e; --bd-line:#c9ced8; --bd-pt:#101216; }
 :root[data-theme=light] { color-scheme:light; --bg:#f1f1f1; --bar:#fff; --panel:#fff; --ctl:#f3f3f3; --ctl2:#e4e4e4; --line:#cfcfcf; --ink:#111; --dim:#666; --accent:#111; --err:#c62828; --danger:#c62828;
   --bd:#dedad1; --bd2:#f3f0e9; --bd-line:#3c4048; --bd-pt:#fbfaf6; }
