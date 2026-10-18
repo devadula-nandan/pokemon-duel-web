@@ -60,6 +60,7 @@
   .hud .pl { position:relative; display:flex; align-items:center; gap:8px; min-width:0; height:44px; padding:0 34px 0 0; color:#fff; background:linear-gradient(90deg, var(--p0), var(--p0d)); }   /* bright where it meets the avatar, darker toward the middle */
   .hud .pl.right { justify-content:flex-end; padding:0 0 0 34px; background:linear-gradient(90deg, var(--p1d), var(--p1)); }
   .hud .pl::after { content:""; position:absolute; inset:0 -1px; background:rgba(0,0,0,.35); -webkit-backdrop-filter:saturate(.15); backdrop-filter:saturate(.15); pointer-events:none; clip-path:inset(0); transition:clip-path .3s ease-in; }
+  :root[data-theme=light] .hud .pl::after { background:rgba(255,255,255,.55); }   /* light theme: the side not to act fades toward white instead of black */
   .hud .pl.turn::after { clip-path:inset(0 100% 0 0); transition:clip-path .35s ease-out .25s; } .hud .pl.right.turn::after { clip-path:inset(0 0 0 100%); }
   /* The side not to act is dimmed and drained of colour. On a turn change the cover sweeps toward whoever now acts: it rolls over the
      bar that loses the turn from its outer edge, then peels off the other bar from the middle out to its avatar. */
