@@ -28,10 +28,10 @@
   #game { --g:0px; height:100%; container-type:size; grid-template-columns:auto minmax(200px,420px); grid-template-rows:minmax(0,1fr); justify-content:center; align-content:stretch; gap:var(--g); padding:var(--g); overflow:hidden; }   /* one gap: around the frame, between the board and the side, and down the side */
   #game .arena { --ar:var(--board-ar, .72); --fit:min(100cqh, calc((100cqw - 200px - var(--g)) / var(--ar))); height:var(--fit); width:calc(var(--fit) * var(--ar)); justify-self:center; align-self:center; }   /* full height of the row; the width is that height times the table's shape, and it shrinks only when the side column would drop under 200px */
   #sideBtn, #sideHome { display:none; } #camBar { margin-bottom:14px; flex-wrap:nowrap; } #camBar:empty { display:none; }
-  html:not(.mview) #camBar :is(#camUpdate, #camSound, #camTheme, #camView, #camHome) { display:none !important; }   /* the top bar has these; the duel row repeats them only when the top bar is hidden (narrow screen) */
+  html:not(.mview) #camBar :is(#camUpdate, #camSound, #camTheme, #camMotion, #camView, #camHome) { display:none !important; }   /* the top bar has these; the duel row repeats them only when the top bar is hidden (narrow screen) */
   #camBar .camGrow { flex:1 1 auto; min-width:4px; display:flex; align-items:center; justify-content:center; }
   .sidever { display:none; font:600 10px/1.2 "Segoe UI",system-ui,sans-serif; color:var(--dim); letter-spacing:.04em; } html.mview .sidever { display:block; }
-  html.mview:has(#game:not([hidden])) .appver { display:none; }   /* phone duel: the version sits in the side panel instead of over the board */ #camBar a.iconbtn { margin:0; border:1px solid var(--line); background:var(--ctl); display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; text-decoration:none; color:inherit; } #camBar a.iconbtn:hover { background:var(--ctl2); border-color:var(--dim); }
+  html.mview:has(#game:not([hidden])) .appver { display:none; }   /* phone duel: the version sits in the side panel instead of over the board */ #camBar a.iconbtn { margin:0; border:1px solid var(--line); background:var(--ctl); display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; text-decoration:none; color:inherit; } #camBar a.iconbtn:hover { background:var(--ctl2); }
   @media (max-width:860px) {
     html, body { height:100dvh; max-height:100dvh; overflow:hidden; }   /* home / setup / game fill the screen; no document scroll */
     #setup, #home { grid-template-columns:1fr !important; flex:1 1 0; min-height:0; max-width:none; width:100%; overflow-x:hidden; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; align-content:start; }
@@ -60,8 +60,8 @@
   #setup .panel > .hhead .hbtns { align-self:stretch; align-items:stretch; } #setup .panel > .hhead .hbtns > .iconbtn { width:44px; height:auto; margin:0; border:0; border-left:1px solid var(--line); }   /* the heading's buttons fill its corner */ @media (max-width:860px) { #setup .panel > .hhead .hbtns > .iconbtn { width:34px; } }
   /* home: the deck and booster grids run to the panel's edges; headings and notes are inset; Edit deck fills the heading's corner */
   #home .panel:has(> .hfig, > .hpl, > .boosters) { padding:0; } #home .panel > h2 { margin:0; padding:0 14px; min-height:var(--row-h); display:flex; align-items:center; } #home .panel > :is(p.note, #homeMsg) { padding:6px 14px; } #home .panel > #homeMsg:empty { display:none; }
-  #home .panel > :is(.hfig, .hpl, .boosters) { border-left:0; border-right:0; border-bottom:0; } #home .panel > .hhead > h2 { align-self:center; } #home .panel > .hhead > button { align-self:stretch; height:auto; margin-left:auto; border:0; border-left:1px solid var(--line); } #setup .panel > #tmsg { padding:4px 14px; } #setup .panel > #tmsg:empty { display:none; }
-  #setup .panel > :is(#team, #myplates, #tlist) { border-left:0; border-right:0; border-bottom:0; }
+  #home .panel > :is(.hfig, .hpl, .boosters) { border-left:0; border-right:0; } #home .panel > :is(.hfig, .hpl):last-child { border-bottom:0; }   /* a grid at the panel's foot uses the panel's own line */ #home .panel > .hhead > h2 { align-self:center; } #home .panel > .hhead > button { align-self:stretch; height:auto; margin-left:auto; border:0; border-left:1px solid var(--line); } #setup .panel > #tmsg { padding:4px 14px; } #setup .panel > #tmsg:empty { display:none; }
+  #setup .panel > :is(#team, #myplates, #tlist) { border-left:0; border-right:0; border-bottom:0; } #setup .panel > #team { border-bottom:1px solid var(--line); }   /* the team grid: a line before the plates heading under it */
   #setup :is(#list, #plist) { border:0; } #setup .pbody > .bar > * { border-width:0 1px 1px 0; } #setup .pbody > .bar + * { margin-top:0; }
   .gobar #mode, .gobar #room { border:0; } .gobar #go { border:0; border-left:1px solid var(--line); margin-left:0; }
   .panel h2 { font:800 12px/1 "Segoe UI",system-ui,sans-serif; text-transform:uppercase; letter-spacing:.14em; color:var(--accent); margin:0 0 10px; }
@@ -100,8 +100,8 @@
     /* a fine grain, a faint weave, then the slate itself */
     background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .28 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), repeating-linear-gradient(45deg, color-mix(in srgb, var(--bd-line) 5%, transparent) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, color-mix(in srgb, var(--bd-line) 5%, transparent) 0 1px, transparent 1px 9px), linear-gradient(180deg,var(--bd2),var(--bd)); }
   #board3d { flex:1; min-width:0; min-height:0; } #board3d canvas { display:block; }
-  .top a { margin:0; border:1px solid var(--line); background:var(--ctl); } .top a:hover { background:var(--ctl2); border-color:var(--dim); }
-  svg#board { width:100%; height:100%; display:block; user-select:none; }
+  .top a { margin:0; border:1px solid var(--line); background:var(--ctl); } .top a:hover { background:var(--ctl2); }
+  svg#board { width:100%; height:100%; display:block; }
   /* the flat board uses the 3D table's shapes: thin routes, dots, rings, team-coloured goal discs */
   .edge { stroke:var(--bd-line); stroke-width:3.2; stroke-linecap:round; }
   .dot, .arrowmark { fill:var(--bd-line); } .ringmark { fill:none; stroke:var(--bd-line); stroke-width:3.2; } .goal.g0 { fill:#1565c0; } .goal.g1 { fill:#b71c1c; }
@@ -131,41 +131,51 @@
   .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(116px,1fr)); gap:1px; overflow:auto; padding:0; align-content:start; background:var(--line); border:1px solid var(--line); }
   #list.cards { height:min(58dvh,560px); } #plist.cards { height:250px; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); }
   .card { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:8px; padding:34px 8px 8px; margin:0 !important; background:var(--ctl); cursor:pointer; text-align:center; transition:transform .1s,background .12s,border-color .12s; }
-  .card:hover { background:var(--ctl2); border-color:var(--dim); transform:translateY(-2px); }
+  .card:hover { background:var(--ctl2); }   /* flush grids: hover shades, nothing moves */
   .card img { width:84px; height:84px; margin:0; } .card .nopic { height:84px; display:grid; place-items:center; color:var(--dim); font-size:12px; }
   .card .chip { position:absolute; top:8px; left:8px; margin:0; height:18px; line-height:18px; padding:0 6px; } .card .chip.r { left:auto; right:8px; min-width:18px; text-align:center; background:var(--ink); color:var(--bg); }
   .card .nm { font-weight:700; font-size:13px; line-height:1.2; } .card .note { line-height:1.25; }
-  .card.plate .info { position:absolute; right:8px; top:6px; }
+  .card.plate .info { position:absolute; right:0; top:0; }   /* fills the plate card's corner */
   /* plates are shown inverted everywhere (list, chosen chips, Home), so they never read as figures */
-  #plist .card.plate { background:var(--ink); border-color:var(--ink); color:var(--bg); } #plist .card.plate:hover { background:var(--ink); border-color:var(--ink); opacity:.9; }
+  #plist .card.plate { background:var(--ink); border-color:var(--ink); color:var(--bg); } #plist .card.plate:hover { background:var(--ink); opacity:.9; }
   #plist .card.plate .note { color:color-mix(in srgb, var(--bg) 72%, var(--ink)); } #plist .card.plate .chip { background:var(--bg); color:var(--ink); }
-  #plist .card.plate .info { border-color:color-mix(in srgb, var(--bg) 35%, var(--ink)); color:color-mix(in srgb, var(--bg) 72%, var(--ink)); } #plist .card.plate .info:hover { background:var(--bg); border-color:var(--bg); color:var(--ink); }
+
   .card.plate { align-items:flex-start; text-align:left; gap:4px; } .card.plate .note { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
   .teamcards.cards { grid-template-columns:repeat(3,minmax(0,1fr)); overflow:visible; margin-bottom:0; } .teamcards .card { min-height:124px; justify-content:center; }
   .teamcards .card img { width:64px; height:64px; } .teamcards .pics { justify-content:center; gap:2px; } .dots { display:flex; gap:4px; justify-content:center; } .dots:empty { display:none; } .card .txt > .dots { position:absolute; left:8px; top:34px; flex-direction:column; overflow:visible; }   /* evolutions and forms: a column down the card's left edge, under the rarity badge */ .dot { border-radius:50%; position:relative; width:10px; height:10px; background:var(--dim); } .dot.form { background:none; border:2px solid var(--dim); } .dot:hover { background:var(--ink); }
   .teamcards .dot img { display:none; position:absolute; left:16px; top:50%; transform:translateY(-50%); max-width:none; width:72px; height:72px; padding:4px; background:var(--panel); border:1px solid var(--dim); box-shadow:0 6px 18px rgba(0,0,0,.4); z-index:3; } .teamcards .dot:hover img { display:block; }
-  .teamcards .card.empty { background:var(--panel); cursor:pointer; color:var(--dim); font-size:22px; } .teamcards .card.empty:hover { transform:none; background:var(--ctl); }
+  .teamcards .card.empty { background:var(--panel); cursor:pointer; color:var(--dim); font-size:22px; } .teamcards .card.empty:hover { background:var(--ctl); }
   #team .card.fig { cursor:pointer; } #team .card.fig.sel { border-color:var(--ink); box-shadow:0 0 0 2px var(--ink); }   /* selected slot: next list pick replaces it */
   .card .foot > .txt { flex:1; min-width:0; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; } .card .txt > * { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .teamcards .foot > span:last-child { flex-direction:column; }
-  .card .foot { display:flex; justify-content:space-between; align-items:flex-end; gap:8px; width:100%; min-height:24px; margin-top:auto; padding-right:22px; } .card .foot > span:has(> button) { position:absolute; right:0; bottom:0; flex-direction:column; gap:0; } .card .foot > span:has(> button) > button + button { border-top:1px solid var(--line); }   /* the buttons fill the card's bottom-right corner */ .card .foot > span { display:flex; align-items:center; gap:4px; } .card .own { font-size:12px; color:var(--dim); }
-  .card .info, .card .x, #figpop > .x { flex:none; width:28px; height:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:0; border-left:1px solid var(--line); border-top:1px solid var(--line); background:none; color:var(--dim); cursor:pointer; } .card .info svg, .card .x svg, #figpop > .x svg { width:14px; height:14px; }
-  .card .info:hover, .card .x:hover, #figpop > .x:hover { background:var(--line); color:var(--ink); } .card .x:hover { background:var(--danger); border-color:var(--danger); color:#fff; }   /* remove: the theme's red */
+  .card .foot { display:flex; justify-content:space-between; align-items:flex-end; gap:8px; width:100%; min-height:24px; margin-top:auto; padding-right:22px; } .card .foot > span:has(> button) { position:absolute; right:0; bottom:0; flex-direction:column; gap:0; }    /* the buttons fill the card's bottom-right corner */ .card .foot > span { display:flex; align-items:center; gap:4px; } .card .own { font-size:12px; color:var(--dim); }
+  .card .info, .card .x, #figpop > .x { flex:none; width:28px; height:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:0; background:none; color:var(--dim); cursor:pointer; } .card .info { background:var(--p0); color:#fff; }   /* details: filled with the theme's blue; remove: red (below) */ .card .info svg, .card .x svg, #figpop > .x svg { width:14px; height:14px; } .card .x { background:var(--danger); color:#fff; }
+  .card .info:hover { background:var(--p0); color:#fff; opacity:.85; } .card .x:hover { background:var(--danger); color:#fff; opacity:.85; }   /* remove: the theme's red */
   /* the details panel of a figure card */
-  #figpop { position:fixed; z-index:8; width:420px; max-height:calc(100dvh - 16px); overflow:auto; padding:16px; border:1px solid var(--dim); background:var(--panel); box-shadow:0 10px 30px rgba(0,0,0,.5); pointer-events:none; }
-  #figpop.pl { width:300px; } #figpop.pin { pointer-events:auto; } #figpop > .x, #figpop .fp-bar .x { flex:none; width:24px; height:24px; padding:0; display:none; align-items:center; justify-content:center; border:1px solid var(--line); background:none; color:var(--dim); cursor:pointer; } #figpop.pin > .x { display:inline-flex; position:absolute; top:12px; right:12px; }
+  #figpop { position:fixed; z-index:8; width:420px; max-height:calc(100dvh - 16px); overflow:auto; padding:16px; border:1px solid var(--line); background:var(--panel); box-shadow:0 10px 30px rgba(0,0,0,.5); pointer-events:none; }
+  #figpop.pl { width:300px; } #figpop.pin { pointer-events:auto; } #figpop > .x, #figpop .fp-bar .x { flex:none; width:24px; height:24px; padding:0; display:none; align-items:center; justify-content:center; border:1px solid var(--line); background:var(--danger); color:#fff; cursor:pointer; } #figpop > .x:hover, #figpop .fp-bar .x:hover { background:var(--danger); color:#fff; opacity:.85; }   /* danger buttons are always filled with the theme's red */ #figpop.pin > .x { display:inline-flex; position:absolute; top:12px; right:12px; }
   #figpop.duel, #figpop.sheet { touch-action:pan-y; } #figpop.duel { position:absolute; left:0; right:0; top:auto; bottom:0; transform:none; width:auto; max-width:none; max-height:78%; z-index:9; border-width:1px 0 0; box-shadow:0 -10px 28px rgba(0,0,0,.4); padding:8px 16px 16px; }   /* long-press detail: a sheet inside the arena */
   body:has(#figpop.sheet:not([hidden]))::after { content:''; position:fixed; inset:0; z-index:9; background:color-mix(in srgb, var(--bg) 60%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }   /* the sheet's backdrop */
-  #figpop.sheet { z-index:10; display:flex; flex-direction:column; padding:0; overflow:hidden; } #figpop.sheet[hidden] { display:none !important; } #figpop.sheet .fp-scroll { flex:1; min-height:0; overflow:auto; padding:12px 18px 20px; } #figpop.sheet .fp-bar { position:sticky; top:0; z-index:2; display:flex; align-items:stretch; gap:0; padding:0 0 0 14px; background:var(--panel); border-bottom:1px solid var(--line); } #figpop.sheet .fp-bar h2 { flex:1; align-self:center; margin:0; font:800 13px/1 "Segoe UI",system-ui,sans-serif; letter-spacing:.08em; text-transform:uppercase; } #figpop.sheet .fp-bar .x, #figpop.sheet .fp-bar .ed { display:inline-flex; align-items:center; justify-content:center; height:44px; border:0; border-left:1px solid var(--line); } #figpop.sheet .fp-bar .x { width:44px; } #figpop.sheet .fp-bar .ed { padding:0 16px; font-size:12px; }
+  #figpop.sheet { z-index:10; display:flex; flex-direction:column; padding:0; overflow:hidden; } #figpop.sheet[hidden] { display:none !important; } #figpop.sheet .fp-scroll { flex:1; min-height:0; overflow:auto; padding:0; } #figpop.sheet .fp-bar { position:sticky; top:0; z-index:2; display:flex; align-items:stretch; gap:0; padding:0 0 0 14px; background:var(--panel); border-bottom:1px solid var(--line); } #figpop.sheet .fp-bar h2 { flex:1; align-self:center; margin:0; font:800 13px/1 "Segoe UI",system-ui,sans-serif; letter-spacing:.08em; text-transform:uppercase; } #figpop.sheet .fp-bar .x, #figpop.sheet .fp-bar .ed { display:inline-flex; align-items:center; justify-content:center; height:44px; border:0; border-left:1px solid var(--line); } #figpop.sheet .fp-bar .x { width:44px; } #figpop.sheet .fp-bar .ed { padding:0 16px; font-size:12px; }
+  /* the sheet, flush: header, evolution strip, stats, then the wheel + ability column beside the attack table, then Z-Moves; one 1px line between each */
+  #figpop.sheet .fp-scroll > .fp-head { padding:12px 14px; } #figpop.sheet .fp-scroll > #editErr { padding:6px 14px; } #figpop.sheet .fp-scroll > #editErr:empty { display:none; }
+  #figpop.sheet .fp-scroll > .fp-line { margin:0; border-width:1px 0 0; } #figpop.sheet .fp-scroll > .ed-stats { margin:0; border-width:1px 0 0; }
+  #figpop.sheet .fp-scroll > .fp-body { margin:0; padding:0; gap:0; align-items:stretch; border-top:1px solid var(--line); grid-template-columns:209px minmax(0,1fr); }   /* 180 wheel + 2 x 14 padding + the 1px line */
+  #figpop.sheet .fp-body > .fp-side { padding:14px; border-right:1px solid var(--line); align-content:start; } #figpop.sheet .fp-body > :not(.fp-side, .fp-atk) { padding:12px 14px; }
+  #figpop.sheet .fp-side > .fp-ab { margin:0 -14px; padding:12px 14px 0; }   /* its line runs the column's full width */
+  /* the attack table runs to the column's edges: its row lines touch the borders; the cells carry the inset instead */
+  #figpop.sheet .fp-atk { padding:0; } #figpop.sheet .fp-atk > .h { padding-top:12px; } #figpop.sheet .fp-atk > :is(.an, .h:first-child) { padding-left:14px; }
+  #figpop.sheet .fp-atk > .desc { padding:0 14px 8px 34px; } #figpop.sheet .fp-atk:not(.carm) > :is(.an + * + *, .h:nth-child(3)), #figpop.sheet .fp-atk.carm > :is(.an + * + * + *, .h:nth-child(4)) { padding-right:14px; }
+  #figpop.sheet .fp-scroll > .fp-ab { margin:0; padding:12px 14px 16px; }   /* Z-Moves (and a long ability) under the table */
+  @media (max-width:860px) { #figpop.sheet .fp-scroll > .fp-body { grid-template-columns:minmax(0,1fr); } #figpop.sheet .fp-body > .fp-side { border-right:0; } #figpop.sheet .fp-body > :not(.fp-side, .fp-atk) { padding:12px 14px; } #figpop.sheet .fp-side > .fp-ab { margin:0; padding:12px 14px; } }
   @media (max-width:860px) { #figpop.sheet { inset:0; width:auto; max-width:none; max-height:none; border:0; box-shadow:none; } }
   @media (min-width:861px) { #figpop.sheet { left:50%; top:50%; right:auto; bottom:auto; transform:translate(-50%,-50%); width:min(720px,96vw); max-height:92vh; } }
-  #figpop .fp-grab { display:none; } #figpop.duel .fp-grab, #figpop.sheet .fp-grab { display:flex; justify-content:center; align-items:center; height:22px; margin:0; cursor:grab; touch-action:none; flex:none; } #figpop.duel .fp-grab i, #figpop.sheet .fp-grab i { width:40px; height:4px; background:var(--dim); opacity:.7; }
   #figpop.duel.drag, #figpop.sheet.drag { transition:none; }
   .fp-head { display:flex; gap:12px; align-items:center; padding-right:36px; } .fp-head img { width:56px; height:56px; } .fp-name { display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .fp-name b { font-size:18px; line-height:1.2; } .fp-name .chip { margin:0; }
-  .fp-line { display:flex; align-items:stretch; gap:0; margin:8px 0 0; padding:0; overflow-x:auto; border:1px solid var(--line); } .fp-line > * + * { border-left:1px solid var(--line); }   /* the evolution line: one flush strip */ .fp-line > .fp-chev { flex:none; display:grid; place-items:center; font-size:18px; font-weight:700; line-height:1; color:var(--dim); padding:0 8px; user-select:none; } .fp-line button { flex:none; display:flex; align-items:center; gap:6px; padding:4px 8px 4px 4px; font-size:12px; border:0; } .fp-line img { width:28px; height:28px; } .fp-line .on { border-color:var(--ink); background:var(--ctl2); }
+  .fp-line { display:flex; align-items:stretch; gap:0; margin:8px 0 0; padding:0; overflow-x:auto; border:1px solid var(--line); } .fp-line > * + * { border-left:1px solid var(--line); }   /* the evolution line: one flush strip */ .fp-line > .fp-chev { flex:none; display:grid; place-items:center; font-size:18px; font-weight:700; line-height:1; color:var(--dim); padding:0 8px; } .fp-line button { flex:none; display:flex; align-items:center; gap:6px; padding:4px 8px 4px 4px; font-size:12px; border:0; } .fp-line img { width:28px; height:28px; } .fp-line .on { border-color:var(--ink); background:var(--ctl2); }
   .fp-line .fp-slot { flex:none; display:inline-flex; flex-direction:row; align-items:center; gap:4px; padding:2px 4px 2px 2px; background:var(--ctl); } .fp-line .fp-slot.on { border-color:var(--ink); background:var(--ctl2); } .fp-line .fp-slot > button { border:0; background:none; padding:2px; }
   .fp-line .fp-pick { width:auto; min-width:7.5em; max-width:140px; height:30px; padding:0 34px 0 8px; font-size:11px; background-position:right 10px center; background-size:12px; }   /* keep theme select chevron clear of the label */
   .fp-side { display:grid; gap:12px; justify-items:center; } .fp-body { display:grid; grid-template-columns:180px minmax(0,1fr); gap:16px; align-items:start; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
-  .fp-atk { display:grid; grid-template-columns:minmax(0,1fr) auto auto; } .fp-atk.carm { grid-template-columns:minmax(0,1fr) auto auto auto; } .fp-atk > * { padding:6px 0 6px 12px; border-top:1px solid var(--line); text-align:right; font-weight:700; } .fp-atk > .h { padding-top:0; border-top:0; }
+  .fp-atk { display:grid; align-content:start; grid-template-columns:minmax(0,1fr) auto auto; } .fp-atk.carm { grid-template-columns:minmax(0,1fr) auto auto auto; } .fp-atk > * { padding:6px 0 6px 12px; border-top:1px solid var(--line); text-align:right; font-weight:700; } .fp-atk > .h { padding-top:0; border-top:0; }
   .fp-atk > .an, .fp-atk > .h:first-child { padding-left:0; text-align:left; } .fp-atk .an { display:flex; gap:8px; align-items:flex-start; font-weight:400; } .fp-atk .an .sw { flex:none; } .fp-atk .an { align-items:center; } .fp-atk .an b { font-weight:600; } .fp-atk > .desc { grid-column:1 / -1; padding:0 0 8px 20px; border-top:0; text-align:left; font-weight:400; }   /* an attack's effect runs the table's full width under its row */
   .fp-z { margin-top:12px; } .fp-z .zr + .zr { margin-top:8px; } .fp-z .zr .sw { display:inline-block; vertical-align:-1px; margin:0; } .fp-z .zr b { margin-left:6px; } .fp-z .zr .desc { margin-top:2px; }   /* Z-Moves, as MiniDetailFigure's SkillZ list: name and colour, then what it does */
   .fp-body + .fp-ab { margin-top:12px; } .fp-ab { justify-self:stretch; padding:12px 0 0; border-top:1px solid var(--line); }   /* a section under a 1px line, not a box */ .fp-ab .h { margin-bottom:4px; } .fp-ab .desc { margin-top:4px; }
@@ -177,10 +187,10 @@
      panel is the same height however many teams there are. The name box and Save sit on the heading's line. */
   #tlist { display:flex; gap:0; overflow-x:auto; overflow-y:hidden; border:1px solid var(--line); padding:0 !important; -webkit-mask-image:none !important; mask-image:none !important; scroll-snap-type:x proximity; }
   .tcard { flex:0 0 196px; min-width:0; scroll-snap-align:start; display:flex; flex-direction:column; gap:4px; padding:6px 8px; background:var(--ctl); border-right:1px solid var(--line); cursor:pointer; transition:background .12s, border-color .12s; }
-  .tcard:hover { background:var(--ctl2); border-color:var(--dim); } .tcard .th { display:flex; align-items:center; gap:6px; min-width:0; } .tcard .th b { flex:1; min-width:0; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .tcard .th .chip { margin:0; flex:none; } .tcard .x { flex:none; width:22px; height:22px; padding:0; display:grid; place-items:center; border:1px solid transparent; background:none; color:var(--dim); } .tcard .x svg { width:13px; height:13px; }
-  .tcard .x:hover { background:var(--danger); border-color:var(--danger); color:#fff; }
-  .tcard.on { background:var(--ink); border-color:var(--ink); color:var(--bg); } .tcard.on .chip { background:var(--bg); color:var(--ink); } .tcard.on .x { color:color-mix(in srgb, var(--bg) 70%, var(--ink)); } .tcard.on .x:hover { color:#fff; } .tcard.on .tp .ph { background:color-mix(in srgb, var(--bg) 22%, var(--ink)); color:var(--bg); }
+  .tcard:hover { background:var(--ctl2); } .tcard .th { display:flex; align-items:center; gap:6px; min-width:0; } .tcard .th b { flex:1; min-width:0; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tcard .th .chip { margin:0; flex:none; } .tcard .x { flex:none; width:22px; height:22px; padding:0; display:grid; place-items:center; border:1px solid transparent; background:var(--danger); color:#fff; } .tcard .x svg { width:13px; height:13px; }
+  .tcard .x:hover { background:var(--danger); color:#fff; opacity:.85; }
+  .tcard.on { background:var(--ink); color:var(--bg); } .tcard.on .chip { background:var(--bg); color:var(--ink); }  .tcard.on .x:hover { color:#fff; } .tcard.on .tp .ph { background:color-mix(in srgb, var(--bg) 22%, var(--ink)); color:var(--bg); }
   .tcard .tp { display:grid; grid-template-columns:repeat(6,1fr); gap:2px; } .tcard .tp img, .tcard .tp .ph { width:100%; aspect-ratio:1; object-fit:contain; } .tcard .tp .ph { display:grid; place-items:center; background:var(--ctl2); color:var(--dim); font-size:9px; font-weight:700; }
   .tsave { display:flex; align-items:stretch; gap:0; flex:1; min-width:0; max-width:260px; height:var(--ctl-h, 30px); }
   /* home: league summary, deck, boosters and collection */
@@ -191,17 +201,18 @@
   .pips { display:flex; gap:4px; margin:6px 0 4px; } .pips i { flex:1; height:8px; background:var(--ctl2); } .pips i.on { background:var(--gold); }
   .teamcards.cards.six { margin:0; }   /* the deck on Home: three to a row, like the team in the builder, so names have room */
   .boosters { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); } .booster { background:var(--ctl); padding:12px 8px; text-align:center; min-height:86px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; } .booster.empty { background:var(--panel); color:var(--dim); font-size:12px; }
-  #home .cards { max-height:min(62dvh,560px); } #home .card { cursor:default; } #home .card:hover { transform:none; background:var(--ctl); border-color:var(--line); } #home [data-act] .card { cursor:pointer; }
+  #home .cards { max-height:min(62dvh,560px); } #home .card { cursor:default; } #home .card:hover { background:var(--ctl); } #home [data-act] .card { cursor:pointer; }
   #card:empty { display:none; }
   /* Home is laid out as the original's league lobby is (RatingMatchPrefab, a 750-wide portrait screen): rating at the top, the deck (here a
      plain row of six cards, not the original's fan round a lead figure), the row of time boosters under it, and the League match button at the bottom, flanked by
      two smaller ones. One centred column, nothing stretched. */
-  #home { grid-template-columns:minmax(0,600px); justify-content:center; padding:0; } #home .hlobby > p.note { margin:0; padding:6px 14px; background:var(--panel); } #home .hlobby { display:grid; gap:1px; min-width:0; background:var(--line); border-left:1px solid var(--line); border-right:1px solid var(--line); } #home .panel { padding:12px 14px; } #home .panel h2 { margin-bottom:8px; }
+  #home { grid-template-columns:minmax(0,600px); justify-content:center; padding:0; } #home .hlobby > p.note { margin:0; padding:6px 14px; background:var(--panel); } #home .hlobby { display:grid; gap:1px; min-width:0; background:var(--line); border:1px solid var(--line); border-top:0; } #home .panel { padding:12px 14px; }
   .hlg { display:grid; grid-template-columns:auto 1fr; gap:4px 18px; align-items:center; } .hlg .big { font-size:40px; } .hlg .stats { margin:0; } .hlg .stat { padding:6px 8px; } .hlg .stat b { font-size:16px; } .hlg .wide { grid-column:1 / -1; }
-  .hhead { display:flex; align-items:center; gap:6px; margin-bottom:8px; flex-wrap:nowrap; min-width:0; min-height:var(--ctl-h, 30px); } .hhead h2, #home .hhead h2 { margin:0; flex:none; white-space:nowrap; } .hhead .hbtns { display:flex; gap:0; flex:none; align-items:center; } .hhead .hbtns > * + *, .tsave > * + *, .gobar > * + *, .evo-btns > * + *, .rbtns > * + * { margin-left:-1px; } .hhead label.note { display:inline-flex; align-items:center; gap:4px; margin:0 0 0 auto; font-weight:400; text-transform:none; letter-spacing:0; white-space:nowrap; min-width:0; font-size:11px; } #clr { color:var(--err); border-color:var(--danger); } #clr:hover:not(:disabled) { background:var(--danger); border-color:var(--danger); color:#fff; }   /* the theme's red, as on Resign */
+  .hhead { display:flex; align-items:center; gap:6px; margin-bottom:8px; flex-wrap:nowrap; min-width:0; min-height:var(--ctl-h, 30px); } .hhead h2, #home .hhead h2 { margin:0; flex:none; white-space:nowrap; } .hhead .hbtns { display:flex; gap:0; flex:none; align-items:center; } .hhead .hbtns > * + *, .tsave > * + *, .gobar > * + *, .evo-btns > * + *, .rbtns > * + * { margin-left:-1px; } .hhead label.note { display:inline-flex; align-items:center; gap:4px; margin:0 0 0 auto; font-weight:400; text-transform:none; letter-spacing:0; white-space:nowrap; min-width:0; font-size:11px; } #clr { background:var(--danger); color:#fff; } #clr:hover:not(:disabled) { background:var(--danger); color:#fff; opacity:.85; }   /* the theme's red, as on Resign */
   #pickBtn, #rnd, #clr { padding:0; } #rnd svg, #clr svg { width:22px; height:22px; } #pickBtn svg { width:18px; height:18px; }   /* pencil reads larger than the dice / trash glyphs at the same box size */
+  .hfig > div:hover { background:var(--ctl2); }
   .hfig { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); cursor:pointer; }   /* the deck: one row of six figure cards */
-  .hfig > div { position:relative; display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0; padding:22px 4px 8px; background:var(--ctl); text-align:center; } .hfig > div:hover { border-color:var(--dim); }
+  .hfig > div { position:relative; display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0; padding:22px 4px 8px; background:var(--ctl); text-align:center; }
   .hfig img { width:100%; max-width:72px; aspect-ratio:1; object-fit:contain; } .hfig .chip { position:absolute; left:6px; top:6px; margin:0; font-size:10px; padding:0 5px; } .hfig .chip.r { left:auto; right:6px; background:var(--ink); color:var(--bg); }
   .hfig b, .hfig .note { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .hfig b { font-size:12px; } .hfig .note { font-size:10px; }
   @media (max-width:520px) { .hfig { grid-template-columns:repeat(3,minmax(0,1fr)); } .hlg { grid-template-columns:1fr; } }
@@ -219,13 +230,13 @@
   #myplates .mpl { min-width:0; height:var(--slot-h, 146px); box-sizing:border-box; }   /* same height as #team cards */
   #myplates .mpl .mhd { display:flex; align-items:flex-start; gap:0; flex:none; min-height:24px; margin:-8px -10px 0 0; }   /* rarity · spacer · i · x, the buttons in the corner */ #myplates .mpl .mhd .chip { position:static; margin:8px auto 0 0; }
   #myplates .mpl .ct { display:flex; gap:3px; flex:none; } #myplates .mpl .ct:empty { display:none; }   /* cost dots under the name */
-  #myplates .mpl .info, #myplates .mpl .x { position:static; flex:none; width:28px; height:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; background:none; color:var(--bg); border:0; border-left:1px solid color-mix(in srgb, var(--bg) 30%, transparent); border-bottom:1px solid color-mix(in srgb, var(--bg) 30%, transparent); cursor:pointer; }   /* flush in the plate's top-right corner */   /* same 24px box as #team .card .info / .x */
-  #myplates .mpl .info svg, #myplates .mpl .x svg { width:14px; height:14px; }
-  #myplates .mpl .info:hover { background:var(--bg); border-color:var(--bg); color:var(--ink); } #myplates .mpl .x:hover { background:var(--danger); border-color:var(--danger); color:#fff; }
+  #myplates .mpl .info, #myplates .mpl .x { position:static; flex:none; width:28px; height:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; background:none; color:var(--bg); border:0; cursor:pointer; } #myplates .mpl .info { background:var(--p0); color:#fff; }   /* flush in the plate's top-right corner */   /* same 24px box as #team .card .info / .x */
+  #myplates .mpl .info svg, #myplates .mpl .x svg { width:14px; height:14px; } #myplates .mpl .x { background:var(--danger); color:#fff; }
+  #myplates .mpl .info:hover { background:var(--p0); color:#fff; opacity:.85; } #myplates .mpl .x:hover { background:var(--danger); color:#fff; opacity:.85; }
   #myplates .mpl > b { flex:none; min-width:0; } #myplates .mpl > .note { flex:1 1 0; min-height:0; min-width:0; display:block; -webkit-line-clamp:unset; overflow:hidden; -webkit-mask-image:linear-gradient(to bottom, #000 55%, transparent); mask-image:linear-gradient(to bottom, #000 55%, transparent); }   /* soft fade instead of a hard clamp */
   #pcost .pc { color:var(--gold); font-weight:700; } #pcost .auto { display:block; margin-top:2px; text-transform:none; letter-spacing:0; font-weight:600; }   /* Mega Stones: outside the six slots */   /* same gold as the cost dots on .mpl */
   #myplates .mpl.empty { background:var(--ink); color:var(--bg); font-size:22px; font-weight:700; align-items:center; justify-content:center; cursor:pointer; opacity:1; padding:8px 10px; }
-  #myplates .mpl.empty:hover { opacity:.88; border-color:var(--bg); }
+  #myplates .mpl.empty:hover { opacity:.88; }
   /* Deck builder layout. Wide screen: saved teams, then tabbed figures/plates on the left; team + Start on the right.
      Narrow screen: team + saved + Start; figures & plates open from a side drawer (#pickSide) with the same tabs. */
   #pickScrim { display:none; } #pickClose { display:none; }
@@ -281,7 +292,7 @@
     #home .hpl { flex:1 1 0; min-height:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:1fr; margin-top:-1px; overflow:hidden; }   /* 2-col fills 4 or 6 plates with no empty cells */
     #home .hpl > div { height:100%; padding:6px 8px; gap:2px; min-height:0; overflow:hidden; } #home .hpl b { font-size:11px; } #home .hpl .note { flex:1 1 0; min-height:0; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4; overflow:hidden; font-size:10px; line-height:1.3; } #home .hpl .ct { top:6px; right:6px; }
     #home .hrow { flex:none; display:grid; grid-template-columns:1fr minmax(7.5em, 30%); gap:1px; align-items:stretch; }
-    #home .hrow > .panel { display:flex; flex-direction:column; gap:4px; min-width:0; } #home .hrow > .panel > h2 { margin-bottom:0; font-size:11px; } #home .hrow > .panel > p.note, #home #homeMsg:empty { display:none; }
+    #home .hrow > .panel { display:flex; flex-direction:column; gap:4px; min-width:0; } #home .hrow > .panel > h2 { font-size:11px; } #home .hrow > .panel > p.note, #home #homeMsg:empty { display:none; }
     #home .boosters { flex:1; } #home .booster { aspect-ratio:auto; height:100%; min-height:52px; max-height:72px; padding:4px; gap:2px; font-size:10px; } #home .booster .chip { font-size:9px; padding:0 4px; } #home .booster .primary { height:26px; padding:0 8px; font-size:11px; }
     #home .hgo { position:static; gap:1px; padding:0; } #home .hgo button { padding:0 8px; min-height:36px; font-size:12px; } #home .hgo .primary { font-size:14px; min-height:0; flex:2; }
     #home .hlobby > p.note { display:none; }   /* footer blurb — room goes to the deck */
@@ -303,7 +314,7 @@
     #setup #myplates .mpl > b { flex:1 1 auto; min-height:0; font-size:11px; line-height:1.2; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; white-space:normal; }
     #setup #myplates .mpl .ct { margin-top:auto; }
     #setup #myplates .mpl.empty { background:var(--panel); color:var(--dim); font-size:22px; font-weight:700; }
-    #setup #myplates .mpl.empty:hover { opacity:1; border-color:var(--dim); }
+    #setup #myplates .mpl.empty:hover { opacity:1; }
     #setup #tmsg { display:none; } #savedPanel #tlist { margin:0; padding:0; -webkit-mask-image:linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%); mask-image:linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%); scroll-padding-inline:var(--fade); } #savedPanel .tcard { flex:0 0 160px; padding:4px 6px; gap:2px; scroll-snap-align:start; }
     #pickBtn { display:inline-flex !important; } #pickClose { display:inline-flex; } #pickExp { display:none !important; }
     #pickScrim { display:block; position:fixed; inset:0; z-index:5; background:color-mix(in srgb, var(--bg) 55%, transparent); opacity:0; pointer-events:none; transition:opacity .2s; } #setup.pick-open #pickScrim:not([hidden]) { opacity:1; pointer-events:auto; } #pickScrim[hidden] { display:none !important; }
@@ -437,12 +448,12 @@
   /* the bar along the bottom: the original's three places (Give up left, the one centre button, Wait right), slim like the top bar */
   .ibar { flex:none; display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:stretch; gap:0; padding:0; min-height:44px; background:var(--bar); border-top:1px solid var(--line); }   /* Resign · the main action filling the rest · status; flush, no empty stretches */
   .ibar button { padding:5px 14px; font-size:13px; text-align:center; white-space:nowrap; }
-  #ibGive { justify-self:start; color:var(--err); border-color:var(--danger); } #ibGive:hover:not(:disabled) { background:var(--danger); border-color:var(--danger); color:#fff; }   /* the theme's red, as on the remove buttons */ #ibWait { grid-column:3; display:inline-flex; align-items:center; gap:8px; padding:0 14px; border-left:1px solid var(--line); color:var(--dim); }
+  #ibGive { justify-self:start; background:var(--danger); color:#fff; } #ibGive:hover:not(:disabled) { background:var(--danger); color:#fff; opacity:.85; }   /* the theme's red, as on the remove buttons */ #ibWait { grid-column:3; display:inline-flex; align-items:center; gap:8px; padding:0 14px; border-left:1px solid var(--line); color:var(--dim); }
   #ibMid { grid-column:2; min-width:0; background:var(--ink); border-color:var(--ink); color:var(--bg); } #ibMid:hover:not(:disabled) { opacity:.85; } #ibMid:disabled { background:var(--ctl); border-color:var(--line); color:var(--dim); }
   @media (max-width:860px) { #ibMid { min-width:0; overflow:hidden; text-overflow:ellipsis; } }
   /* flush, like the HUD above the board: full-height square segments split by 1px theme lines, no gaps or rounding */
   .ibar button, .ibar #ibWait { height:44px; border-width:0; }
-  #ibGive { border-right:1px solid var(--line); padding:0 18px; } #ibGive:hover:not(:disabled) { border-color:var(--line); }
+  #ibGive { border-right:1px solid var(--line); padding:0 18px; }
   #ibMid, #ibMid:disabled { padding:0 24px; }
   html.mview #game .ibar { gap:0; align-items:stretch; }
   html.mview #sideBtn, html.mview #fsGame { width:44px; height:44px; border-width:0 0 0 1px; border-color:var(--line); }   /* the centre label gives up width so the menu button keeps the bar's right inset */
@@ -514,14 +525,14 @@
   .rwhy { color:var(--dim); font-size:13px; margin-bottom:auto; }
   .rrows { width:min(100%, 380px); border:1px solid var(--line); background:var(--panel); text-align:left; margin-bottom:auto; } .rrows div { display:flex; justify-content:space-between; gap:12px; padding:9px 14px; border-top:1px solid var(--line); } .rrows div:first-child { border-top:0; } .rrows b { white-space:nowrap; }
   .rrows:empty { display:none; } .rwhy:has(+ .rrows:not(:empty)) { margin-bottom:0; }
-  .rbtns { display:flex; flex-wrap:wrap; justify-content:center; gap:0; } .rbtns button { min-width:130px; padding:10px 18px; text-align:center; }
+  .rbtns { display:flex; flex-wrap:wrap; justify-content:center; gap:0; } .rbtns button { min-width:130px; padding:10px 18px; text-align:center; } .dangerbtn { background:var(--danger); color:#fff; } .dangerbtn:hover { background:var(--danger); color:#fff; opacity:.85; }
   .note { color:var(--dim); font-size:12px; } .err { color:var(--err); }
 </style>
 <script>if (matchMedia('(max-width:860px)').matches) document.documentElement.classList.add('mview')</script>
 </head>
 <body>
 <div id="sbTint" aria-hidden="true"></div>
-<div class="top"><div class="ticker" id="ticker"><span></span></div><nav class="paths" id="paths" aria-label="Pages"></nav><button id="updateBtn" class="iconbtn updatebtn" data-update-btn hidden title="Update available" aria-label="Update available"></button><button id="soundBtn" class="iconbtn" data-sound-btn></button><button id="themeBtn" class="iconbtn" data-theme-btn></button><a id="viewLink" class="iconbtn"></a><button id="newBtn" class="iconbtn" title="Home" aria-label="Home"></button></div>
+<div class="top"><div class="ticker" id="ticker"><span></span></div><nav class="paths" id="paths" aria-label="Pages"></nav><button id="updateBtn" class="iconbtn updatebtn" data-update-btn hidden title="Update available" aria-label="Update available"></button><button id="soundBtn" class="iconbtn" data-sound-btn></button><button id="themeBtn" class="iconbtn" data-theme-btn></button><button id="motionBtn" class="iconbtn" data-motion-btn></button><a id="viewLink" class="iconbtn"></a><button id="newBtn" class="iconbtn" title="Home" aria-label="Home"></button></div>
 
 <main id="home"></main>
 
@@ -572,6 +583,7 @@
       <button type="button" id="camUpdate" class="iconbtn updatebtn" data-update-btn hidden title="Update available" aria-label="Update available"></button>
       <button type="button" id="camSound" class="iconbtn" data-sound-btn title="Sound" aria-label="Sound"></button>
       <button type="button" id="camTheme" class="iconbtn" data-theme-btn title="Theme" aria-label="Theme"></button>
+      <button type="button" id="camMotion" class="iconbtn" data-motion-btn title="Figure pictures" aria-label="Figure pictures"></button>
       <a id="camView" class="iconbtn"></a>
       <button type="button" id="camHome" class="iconbtn" title="Home" aria-label="Home"></button>
       <span class="camGrow"><span class="sidever" id="sideVer"></span></span>
@@ -600,9 +612,12 @@ const PIC_SET = 'other/official-artwork/';
 const sprite = f => {   // a form, Mega, Alolan or Shiny figure has its own picture (art.js); the rest are their Dex number's
   const own = FIG_ART[f.n], d = own ? own[0] : f.dex <= 1025 ? f.dex : dexByName.get(f.n.replace(/^(Alolan|Shiny|Mega) /, '').replace(/ [XY]$/, ''));
   return d ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${PIC_SET}${own && own[1] ? 'shiny/' : ''}${d}.png` : ''; };
-// Every figure's animated sprite, hosted with the page (web/sprites, built by tools/build_sprites.py from PokeAPI: the Scarlet / Violet
-// model, else the Showdown sprite), all normalised to the same size. The artwork above is only the fallback should one be missing.
-const anim = f => FIG_SPRITE[f.n] ? `sprites/${FIG_SPRITE[f.n]}.webp` : sprite(f);
+// Every figure's picture, hosted with the page (web/sprites, built by tools/build_sprites.py from PokeAPI): the best animated model it has,
+// or its Pokémon HOME render when pictures are set to still; all normalised to the same size. The artwork above is only a fallback.
+const anim = f => FIG_SPRITE[f.n] ? `sprites/${FIG_SPRITE[f.n][spriteMotion() === 'still' ? 1 : 0]}.webp` : sprite(f);   // the Animated / Still setting (theme.js)
+addEventListener('spritemotion', () => {   // switched: every picture on screen is redrawn from the other set
+  listBuilt = ''; if (!$('home').hidden) drawHome(); if (!$('setup').hidden) { drawList(); drawTeam(); drawSaved(); } if (!$('game').hidden && st) render();
+});
 const byId = new Map(D.figures.map(f => [f.id, f])), byRule = new Map(), byGroup = new Map(), plateById = new Map(D.plates.map(p => [p.id, p]));
 for (const f of D.figures) { if (!byRule.has(f.rule)) byRule.set(f.rule, f); (byGroup.get(f.g) || byGroup.set(f.g, []).get(f.g)).push(f); }
 const typeNames = f => f.t.map(t => D.types[t]).join(' / ');
@@ -719,6 +734,9 @@ function pickerPics() {
   picIo = new IntersectionObserver(es => { for (const e of es) { const im = e.target.querySelector('img[data-src]'); if (!im) continue; if (e.isIntersecting) { if (im.getAttribute('src') !== im.dataset.src) im.src = im.dataset.src; } else im.removeAttribute('src'); } }, { root: $('list'), rootMargin: '120px 0px' });
   for (const c of $('list').children) picIo.observe(c);
 }
+// started while the list is hidden, the observer does not fire when it appears: start it again whenever the list's size changes (opened,
+// expanded, tab switched, window resized)
+if ('ResizeObserver' in window) { let was = ''; new ResizeObserver(([e]) => { const k = Math.round(e.contentRect.width) + 'x' + Math.round(e.contentRect.height); if (k !== was) { was = k; if (e.contentRect.height) pickerPics(); } }).observe($('list')); }
 $('typ').innerHTML = '<option value="">any type</option>' + D.types.map((n, i) => `<option value="${i}">${esc(n)}</option>`).join('');
 function drawList() {
   const q = $('q').value.trim().toLowerCase(), r = $('rar').value, typ = $('typ').value, mp = $('mpf').value, col = $('colf').value, kind = $('kind').value;
@@ -887,13 +905,15 @@ function drawSaved(msg) {
 }
 $('tsave').onclick = () => {
   if (team.length !== 6) return drawSaved('Pick six figures before saving.');
+  const now = teamSig(team, myPlates), same = savedTeams.find(t => teamSig(t.team, t.plates) === now && t.name !== $('tname').value.trim());
+  if (same) return drawSaved(`This team is already saved as "${same.name}".`);
   const name = $('tname').value.trim() || 'Team ' + (savedTeams.length + 1), entry = { name, team: JSON.parse(JSON.stringify(team)), plates: myPlates.slice() }, at = savedTeams.findIndex(t => t.name === name);
   if (at >= 0) savedTeams[at] = entry; else savedTeams.unshift(entry);
   storeSaved(); try { localStorage.setItem(LAST_KEY, name); } catch (e) {} $('tname').value = ''; drawSaved(at >= 0 ? `Replaced "${name}".` : `Saved "${name}".`);
 };
 $('tlist').onclick = e => {
   const r = e.target.closest('.tcard'); if (!r) return; const i = +r.dataset.i, t = savedTeams[i];
-  if (e.target.closest('[data-x]')) { if (!confirm(`Delete the saved team "${t.name}"?`)) return; savedTeams.splice(i, 1); storeSaved(); return drawSaved(`Deleted "${t.name}".`); }
+  if (e.target.closest('[data-x]')) return ask(`Delete the saved team "${t.name}"?`, 'Delete').then(ok => { if (!ok) return; savedTeams.splice(savedTeams.indexOf(t), 1); storeSaved(); drawSaved(`Deleted "${t.name}".`); });
   const ids = t.team.flatMap(sl => sl.st.concat(sl.forms).filter(id => id != null));
   if (ids.some(id => !byId.has(id)) || t.plates.some(id => !plateById.has(id))) return drawSaved(`"${t.name}" uses figures or plates this version does not have.`);
   if (ownedMode) {   // a league deck can only use what the collection holds, at the levels the collection has
@@ -962,13 +982,13 @@ function openSheet(si, at, edit) {
     return `<span class="an${c ? '' : ' dim'}"><span class="sw" style="background:${SEG_COL[c]}"></span><b>${esc(sk[0])}</b></span><span>${size}</span><span>${pow}</span>${carmBtns ? `<span>${carmBtns}</span>` : ''}${sk[2] && sk[1] ? `<span class="desc">${esc(sk[1])}</span>` : ''}`;
   }).join('') : '';
   const p = $('figpop'); placeFigpop(false);
-  p.innerHTML = `<div class="fp-grab" aria-hidden="true"><i></i></div>
+  p.innerHTML = `
     <div class="fp-bar"><h2>Team slot ${si + 1}</h2><button type="button" class="ed" data-edit="${sheet.edit ? 0 : 1}">${sheet.edit ? 'Done' : 'Edit'}</button><button type="button" class="x" data-close title="Close" aria-label="Close">${X_ICON}</button></div>
     <div class="fp-scroll">
       ${f ? `<div class="fp-head">${pic(f)}<div><div class="fp-name"><b>${figText(id, m)}</b><span class="chip rar${f.r}">${RAR[f.r] || '?'}</span></div><div class="note">MP ${f.mp} · ${typeNames(f)}</div></div></div>` : '<p class="note">Choose an evolution or form to attach.</p>'}
       ${chainRow ? `<div class="fp-line">${chainRow}</div>` : ''}
       <div id="editErr" class="err"></div>
-      ${f && sheet.edit ? `<div class="ed-stats" style="margin-top:12px"><div><span class="h">Level</span>${stepper(m.lv, `data-lv="${K}:-1" ${off(m.lv <= 1)}`, `data-lv="${K}:1" ${off(m.lv >= lvMax())}`)}</div>
+      ${f && sheet.edit ? `<div class="ed-stats"><div><span class="h">Level</span>${stepper(m.lv, `data-lv="${K}:-1" ${off(m.lv <= 1)}`, `data-lv="${K}:1" ${off(m.lv >= lvMax())}`)}</div>
           <div><span class="h">Wheel points</span><b>${sum(m.ext)} / ${extMax}</b></div><div><span class="h">Chain</span><b>${sum(m.boost)} / ${boostMax()}</b></div>
           ${carm ? `<div><span class="h">Carmonite</span><b>▲${sum(m.inc)} ▼${sum(m.dec)} / ${m.lv - EXP_LEVEL_MAX}</b></div>` : ''}</div>` : ''}
       ${f ? `<div class="fp-body"><div class="fp-side"><div class="fp-wheel">${wheelSvg(rows.filter(r => r.range > 0).map(r => ({ id: r.id, range: r.range, speed_or_damage: r.val })), 180)}</div>${long ? '' : abBox}</div>
@@ -2018,7 +2038,7 @@ $('ibar').onclick = e => {
   const b = e.target.closest('button'); if (!b || b.disabled || busy) return;
   if (b.id === 'ibWait') return rewind();
   if (b.id === 'ibMid') return drawBar.mid && drawBar.mid();
-  if (confirm('Resign this duel?')) play(legal[+b.dataset.m]);
+  const m = legal[+b.dataset.m]; ask('Resign this duel?', 'Resign').then(ok => { if (ok) play(m); });
 };
 // The plate list (MatchPlateChoices): plates still in hand first, spent ones after and greyed; the one at the centre is the selected one,
 // shown large, and Use is offered only for a plate of the player to act that the engine allows now.
@@ -2155,7 +2175,7 @@ function boardDetail(i, view) {   // MiniDetailFigure: a long press opens this f
   const chain = [i, ...nxt.map(m => m.pokemon_index)], pic = g => anim(g) ? `<img src="${anim(g)}" alt="">` : '';
   const evoBox = chain.length > 1 ? `<div class="fp-evo"><i class="mark" title="Can evolve"></i><div><span class="h">${live ? 'Can evolve' : 'Evolution'}</span><div class="who">${chain.map(idx => { const g = figOf(idx); return `<button type="button" data-root="${i}" data-evo="${idx}" class="${idx === viewI ? 'on' : ''}">${pic(g)}<b>${esc(g.n)}</b></button>`; }).join('')}</div>${ready && live ? '<div class="note">Ready now.</div>' : ''}</div></div>` : '';
   const p = $('figpop'); placeFigpop(true); boardDetail.root = i;
-  p.innerHTML = `<div class="fp-grab" aria-hidden="true"><i></i></div><button class="x" data-close title="Close" aria-label="Close">${X_ICON}</button>
+  p.innerHTML = `<button class="x" data-close title="Close" aria-label="Close">${X_ICON}</button>
     <div class="fp-head">${pic(f)}<div><div class="fp-name">${nameOf(viewI)}<span class="chip rar${f.r}">${RAR[f.r] || ''}</span><span class="chip">MP ${mp}</span></div><div class="note">${typeNames(f)} · ${place(c.index)}${c.evolution_ring ? ` · evolved ${c.evolution_ring}` : ''}${!live ? ' · preview' : ''}</div></div></div>
     ${evoBox}
     ${live && badges(c).length ? `<div style="margin-top:10px">${badges(c).map((b, k) => `<div class="desc"><b>${esc(b)}</b> — ${esc(tips[k] || '')}</div>`).join('')}</div>` : ''}
@@ -2164,9 +2184,27 @@ function boardDetail(i, view) {   // MiniDetailFigure: a long press opens this f
   p.hidden = false; p.classList.add('pin', 'duel'); p.classList.remove('pl', 'drag'); p.style.left = p.style.top = p.style.transform = ''; p.scrollTop = 0; showInfo.pin = true; showInfo.card = null;
 }
 window.boardDetail = boardDetail;
-(() => {   // swipe a duel / team sheet down to dismiss (grab bar, or pull down when already scrolled to the top)
+(() => {   // swipe a duel / team sheet down to dismiss, from anywhere on it, once its content is scrolled to the top
+  // Touch uses touch events: the sheet lets the browser scroll it (touch-action: pan-y), so a pointer drag would be cancelled the moment
+  // the browser takes the gesture; a touchmove can still claim a pull-down (preventDefault) when there is nothing above to scroll to.
+  // Mouse and pen use pointer events.
   const p = $('figpop'); let y0 = null, dy = 0, dragging = false, pid = null;
   const scroller = () => p.querySelector('.fp-scroll') || p;
+  const open = () => (p.classList.contains('duel') || p.classList.contains('sheet')) && !p.hidden;
+  const skip = t => t.closest('button:not(.x), a, input, select, .stepper');
+  const start = y => { y0 = y; dy = 0; dragging = false; };
+  const move = (y, ev) => {   // true while this gesture drags the sheet
+    if (y0 == null) return false;
+    dy = y - y0;
+    if (!dragging) {
+      if (dy < 10) { if (dy < -4) y0 = null; return false; }   // upward first: an ordinary scroll
+      if (scroller().scrollTop > 0) { y0 = null; return false; }
+      dragging = true; p.classList.add('drag');
+    }
+    if (dy < 0) dy = 0;
+    p.style.transform = p.classList.contains('sheet') && innerWidth > 860 ? `translate(-50%, calc(-50% + ${dy}px))` : `translateY(${dy}px)`;
+    ev.preventDefault(); return true;
+  };
   const end = () => {
     if (y0 == null) return;
     if (dragging) {
@@ -2177,27 +2215,15 @@ window.boardDetail = boardDetail;
     if (pid != null) try { p.releasePointerCapture(pid); } catch (_) {}
     y0 = null; dy = 0; dragging = false; pid = null;
   };
+  p.addEventListener('touchstart', e => { if (!open() || e.touches.length !== 1 || skip(e.target) || scroller().scrollTop > 0) return; start(e.touches[0].clientY); }, { passive: true });
+  p.addEventListener('touchmove', e => { if (e.touches.length === 1) move(e.touches[0].clientY, e); }, { passive: false });
+  p.addEventListener('touchend', end); p.addEventListener('touchcancel', end);
   p.addEventListener('pointerdown', e => {
-    if (!(p.classList.contains('duel') || p.classList.contains('sheet')) || p.hidden || e.button) return;
-    if (e.target.closest('button:not(.x), a, input, select')) return;
-    const fromGrab = !!e.target.closest('.fp-grab');
-    if (!fromGrab && scroller().scrollTop > 0) return;
-    y0 = e.clientY; dy = 0; dragging = false; pid = e.pointerId;
+    if (e.pointerType === 'touch' || !open() || e.button || skip(e.target) || scroller().scrollTop > 0) return;
+    start(e.clientY); pid = e.pointerId;
   });
-  p.addEventListener('pointermove', e => {
-    if (y0 == null || e.pointerId !== pid) return;
-    dy = e.clientY - y0;
-    if (!dragging) {
-      if (dy < 10) return;
-      if (scroller().scrollTop > 0) { y0 = null; return; }
-      dragging = true; p.classList.add('drag');
-      try { p.setPointerCapture(pid); } catch (_) {}
-    }
-    if (dy < 0) dy = 0;
-    p.style.transform = p.classList.contains('sheet') && innerWidth > 860 ? `translate(-50%, calc(-50% + ${dy}px))` : `translateY(${dy}px)`;
-    e.preventDefault();
-  }, { passive: false });
-  p.addEventListener('pointerup', end); p.addEventListener('pointercancel', end);
+  p.addEventListener('pointermove', e => { if (e.pointerType === 'touch' || e.pointerId !== pid) return; if (move(e.clientY, e) && dragging) try { p.setPointerCapture(pid); } catch (_) {} }, { passive: false });
+  p.addEventListener('pointerup', e => { if (e.pointerType !== 'touch') end(); }); p.addEventListener('pointercancel', e => { if (e.pointerType !== 'touch') end(); });
 })();
 function boardFigAt(x, y) { const el = document.elementFromPoint(x, y), g = el && el.closest && el.closest('[data-fig]'); return g ? +g.dataset.fig : null; }
 let figDown = null, figHold = 0, figHeld = false;
@@ -2219,7 +2245,7 @@ $('acts').onclick = $('tbl').onclick = e => {
   const t = e.target.closest('[data-c]'); if (t) return choose([drawPrompt.opts[+t.dataset.c]]);
   if (e.target.closest('[data-rw]')) return rewind();
   if (e.target.closest('[data-ai]')) return askAi();
-  const b = e.target.closest('[data-m]'); if (b && !busy) { const m = legal[+b.dataset.m]; if (m.value.type !== 'resign' || confirm('Resign this duel?')) play(m); } };
+  const b = e.target.closest('[data-m]'); if (b && !busy) { const m = legal[+b.dataset.m]; if (m.value.type !== 'resign') play(m); else ask('Resign this duel?', 'Resign').then(ok => { if (ok) play(m); }); } };
 
 // ---------- playing back the engine's effect list ----------
 // Each line is tinted with the colour of the player whose turn it happened in (logSide, set while a move's effects are played back): blue for
@@ -2242,6 +2268,7 @@ async function tickNext() {
   el.hidden = true; el.textContent = ''; tickQ.shift(); tickNext();
 }
 function log(html) { const cls = P_COL[logSide] ? (logSide === (flip ? 'white' : 'black') ? 'me' : 'op') : ''; logLines.push(`<div class="${cls}">${html}</div>`); $('log').innerHTML = logLines.slice(-120).join(''); $('log').scrollTop = 1e6; }
+const ask = (q, yes) => modal(`<h2 style="margin-top:0">${esc(q)}</h2><div class="rbtns"><button data-v="">Cancel</button><button data-v="1" class="dangerbtn">${esc(yes)}</button></div>`).then(Boolean);
 function modal(html) { $('box').innerHTML = html; $('modal').hidden = false; return new Promise(res => { $('box').onclick = e => { const b = e.target.closest('[data-v]'); if (b) { $('modal').hidden = true; res(b.dataset.v); } }; }); }
 // The battle screen. It covers the whole arena (HUD and board), with no dialog around it, and is laid out as the original lays it out: two large disks on a dark stage, the opponent's above and to the right and
 // yours below and to the left, touching at one point where a red gem marks what each wheel landed on. The wheels spin and stop with the

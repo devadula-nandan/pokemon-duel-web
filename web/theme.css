@@ -6,7 +6,8 @@
   --bd:#dedad1; --bd2:#f3f0e9; --bd-line:#3c4048; --bd-pt:#fbfaf6; }
 * { box-sizing:border-box; scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
 [hidden] { display:none !important; }
-body { margin:0; color:var(--ink); background:var(--bg); font:14px/1.45 "Segoe UI",system-ui,Roboto,sans-serif; }
+body { margin:0; color:var(--ink); background:var(--bg); font:14px/1.45 "Segoe UI",system-ui,Roboto,sans-serif; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }   /* an app, not a document: nothing is selectable */
+input, textarea, [contenteditable] { -webkit-user-select:text; user-select:text; }   /* except what is typed */
 /* Always-on build id — top center, out of the way of taps */
 .appver { position:fixed; top:max(3px, env(safe-area-inset-top, 0px)); left:50%; transform:translateX(-50%); z-index:50; pointer-events:none; margin:0; padding:0 6px; font:600 10px/1.2 "Segoe UI",system-ui,sans-serif; letter-spacing:.06em; color:var(--dim); opacity:.4; user-select:none; }
 /* Asset download gate — engine / emulator / SFX / music */
@@ -32,7 +33,7 @@ body { margin:0; color:var(--ink); background:var(--bg); font:14px/1.45 "Segoe U
 #assetGate .ag-actions { display:flex; flex-direction:column; gap:8px; }
 #assetGate .ag-actions button { width:100%; text-align:center; justify-content:center; }
 #assetGate .ag-actions button.linkish { background:transparent; border-color:transparent; color:var(--dim); font-weight:600; }
-#assetGate .ag-actions button.linkish:hover:not(:disabled) { color:var(--ink); background:var(--ctl); border-color:var(--line); }
+#assetGate .ag-actions button.linkish:hover:not(:disabled) { color:var(--ink); background:var(--ctl); }
 a { color:var(--ink); }
 ::selection { background:var(--ink); color:var(--bg); }
 :focus-visible { outline:2px solid var(--dim); outline-offset:2px; }
@@ -43,12 +44,12 @@ select { appearance:none; -webkit-appearance:none; padding-right:34px; text-over
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23888' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E"); }
 select option { background:var(--ctl); color:var(--ink); }
 button { cursor:pointer; text-align:left; font-weight:600; transition:background .12s,border-color .12s,transform .05s; }
-button:hover:not(:disabled) { background:var(--ctl2); border-color:var(--dim); } button:active:not(:disabled) { transform:translateY(1px); } button:disabled { opacity:.4; cursor:default; }
-button.primary { background:var(--ink); border-color:var(--ink); color:var(--bg); } button.primary:hover:not(:disabled) { background:var(--ink); border-color:var(--ink); opacity:.85; }
+button:hover:not(:disabled) { background:var(--ctl2); } button:disabled { opacity:.4; cursor:default; }
+button.primary { background:var(--ink); border-color:var(--ink); color:var(--bg); } button.primary:hover:not(:disabled) { background:var(--ink); opacity:.85; }
 .iconbtn { display:inline-flex; align-items:center; justify-content:center; flex:none; width:30px; height:30px; padding:0; line-height:0; color:var(--ink); cursor:pointer; text-decoration:none; }
 .iconbtn[aria-pressed="true"] { background:var(--ink) !important; color:var(--bg) !important; border-color:var(--ink) !important; }   /* a toggle that is on (e.g. the view lock) */
 .iconbtn.updatebtn { color:var(--gold); border-color:color-mix(in srgb, var(--gold) 55%, var(--line)); background:color-mix(in srgb, var(--gold) 14%, var(--ctl)); }
-.iconbtn.updatebtn:hover:not(:disabled) { background:color-mix(in srgb, var(--gold) 22%, var(--ctl2)); border-color:var(--gold); }
+.iconbtn.updatebtn:hover:not(:disabled) { background:color-mix(in srgb, var(--gold) 22%, var(--ctl2)); }
 input[type=checkbox], input[type=radio] { accent-color:var(--ink); width:15px; height:15px; padding:0; vertical-align:-2px; }
 input[type=file] { padding:5px; max-width:100%; }
 input[type=file]::file-selector-button { font:inherit; font-weight:600; color:var(--bg); background:var(--ink); border:0; padding:6px 12px; margin-right:10px; cursor:pointer; }

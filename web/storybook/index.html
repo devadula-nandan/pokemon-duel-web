@@ -15,12 +15,12 @@
   #nav h1 { font:900 15px/1 "Segoe UI",system-ui,sans-serif; font-style:italic; letter-spacing:.06em; margin:0 14px 4px; } #nav p { margin:0 14px 10px; color:var(--dim); font-size:12px; }
   #nav h2 { font:800 11px/1 "Segoe UI",system-ui,sans-serif; text-transform:uppercase; letter-spacing:.14em; color:var(--accent); margin:14px 14px 6px; }
   #nav button { display:block; width:100%; background:none; border:0; border-left:3px solid transparent; padding:5px 14px; font-weight:400; }
-  #nav button:hover:not(:disabled) { background:var(--ctl2); border-color:transparent; } #nav button.on, #nav button.on:hover:not(:disabled) { background:var(--ctl2); border-left-color:var(--ink); font-weight:700; }
+  #nav button:hover:not(:disabled) { background:var(--ctl2); } #nav button.on, #nav button.on:hover:not(:disabled) { background:var(--ctl2); border-left-color:var(--ink); font-weight:700; }
   main { display:flex; flex-direction:column; min-width:0; min-height:0; }
   header { display:flex; align-items:center; padding:0 8px 0 16px; border-bottom:1px solid var(--line); background:var(--bar); } header > div { flex:1; min-width:0; display:flex; align-items:baseline; gap:10px; white-space:nowrap; overflow:hidden; } header b { font-size:14px; } #note { color:var(--dim); font-size:12px; overflow:hidden; text-overflow:ellipsis; } header button { margin:3px 3px; }
   .paths { display:none; }
   @media (min-width:861px) { .paths { display:flex; gap:4px; margin:0 6px; } .paths a { padding:4px 10px; font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap; border:1px solid var(--line); background:var(--ctl); }
-    .paths a:hover { background:var(--ctl2); border-color:var(--dim); } .paths a.on { background:var(--ink); border-color:var(--ink); color:var(--bg); } }
+    .paths a:hover { background:var(--ctl2); } .paths a.on { background:var(--ink); border-color:var(--ink); color:var(--bg); } }
   #board3d { position:relative; flex:1; min-height:0; background:var(--bd); } #board3d canvas { display:block; }
   /* the same evolution moment the duel plays: a glowing ball blasts open, then the figure on the table is the new form */
   #evoanim { position:absolute; z-index:8; width:120px; height:120px; margin:-60px 0 0 -60px; pointer-events:none; }
@@ -72,7 +72,7 @@
 </head>
 <body>
 <nav id="nav"><h1>3D STORYBOOK</h1><p>Every state the 3D table can draw. <a href="./">Play in 3D</a></p></nav>
-<main><header><div><b id="title"></b><div id="note"></div></div><nav class="paths" aria-label="Pages"><a href="./" title="Back to the game">Game</a><a href="storybook/" class="on" aria-current="page">Storybook</a></nav><button id="soundBtn"></button><button id="themeBtn"></button></header><div id="board3d"><div id="evoanim" hidden></div><div id="battle" hidden></div></div><pre id="props"></pre></main>
+<main><header><div><b id="title"></b><div id="note"></div></div><nav class="paths" aria-label="Pages"><a href="./" title="Back to the game">Game</a><a href="storybook/" class="on" aria-current="page">Storybook</a></nav><button id="soundBtn"></button><button id="themeBtn"></button><button id="motionBtn" data-motion-btn></button></header><div id="board3d"><div id="evoanim" hidden></div><div id="battle" hidden></div></div><pre id="props"></pre></main>
 <script src="data.js"></script>
 <script src="art.js"></script>
 <script src="sprites.js"></script>
@@ -81,7 +81,7 @@
 // Each story is a model for board3d.js, the renderer the 3D client uses, so what is shown here is exactly what a duel draws.
 const D = DUEL_DATA, $ = id => document.getElementById(id), cond = k => (D.conds[k] || k).replace(' {0}', '');
 const fig = D.figures.find(f => f.n === 'Pikachu') || D.figures[0];
-const art = f => FIG_SPRITE[f.n] ? `sprites/${FIG_SPRITE[f.n]}.webp` : artwork(f);   // the game's own sprite (web/sprites)
+const art = f => FIG_SPRITE[f.n] ? `sprites/${FIG_SPRITE[f.n][spriteMotion() === 'still' ? 1 : 0]}.webp` : artwork(f);   // the game's own picture (web/sprites), per the Animated / Still setting
 const artwork = f => { const own = FIG_ART[f.n], d = own ? own[0] : f.dex <= 1025 ? f.dex : 0; return d ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${own && own[1] ? 'shiny/' : ''}${d}.png` : ''; };
 const tok = (over = {}, f) => {   // prefer over.f so row([{ f: Regigigas, … }]) is not painted as the default Pikachu
   const who = f || over.f || fig, { f: _drop, ...rest } = over;
@@ -564,7 +564,8 @@ window.boardPick = (fig, pt, act) => {   // click a figure to toggle its selecti
   sfx(on ? 'select' : 'cancel');   // Se028 selects, Se029 cancels
   Board3D.draw(current);
 };
-const [g0, n0] = decodeURIComponent(location.hash.slice(1)).split('/');   // a third part is a story's own position (Every figure: the figure number)
+const [g0, n0] = decodeURIComponent(location.hash.slice(1)).split('/');
+addEventListener('spritemotion', () => { const [g, n] = decodeURIComponent(location.hash.slice(1)).split('/'); if (STORIES[g] && STORIES[g][n]) show(g, n); });   // Animated / Still switched: redraw the story   // a third part is a story's own position (Every figure: the figure number)
 import(new URL('board3d.js?v=leap2', document.baseURI)).then(() => show(...(STORIES[g0] && STORIES[g0][n0] ? [g0, n0] : ['Figure', 'Interaction states'])));
 </script>
 </body>

@@ -45,6 +45,23 @@
   sysLight.addEventListener('change', () => { if (mode === 'auto') setTheme('auto'); else label(); });
   addEventListener('DOMContentLoaded', () => label());
 
+  // --- Figure pictures: animated or still -----------------------------------
+  // Buttons with data-motion-btn show the current choice and switch it. Pages read spriteMotion() ('anim' / 'still') and redraw on the
+  // 'spritemotion' event. Remembered on this device; with no choice made, a device that asks for reduced motion gets still pictures.
+  const MKEY = 'pokemonduelweb.motion', MICON = { anim: '<circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/>', still: '<rect x="3.5" y="5" width="17" height="14" rx="1"/><circle cx="9" cy="10" r="1.6"/><path d="M20.5 16l-5-5-8 8"/>' };
+  let motion = null; try { motion = localStorage.getItem(MKEY); } catch (e) {}
+  if (motion !== 'anim' && motion !== 'still') motion = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'still' : 'anim';
+  window.spriteMotion = () => motion;
+  const motionLabel = () => {
+    const title = 'Figure pictures: ' + (motion === 'anim' ? 'animated' : 'still') + ' — click for ' + (motion === 'anim' ? 'still' : 'animated');
+    for (const b of document.querySelectorAll('[data-motion-btn]')) {
+      b.innerHTML = icon(MICON[motion]); b.title = title; b.setAttribute('aria-label', title); b.classList.add('iconbtn');
+      if (!b._motionBound) { b._motionBound = 1; b.onclick = () => window.setSpriteMotion(motion === 'anim' ? 'still' : 'anim'); }
+    }
+  };
+  window.setSpriteMotion = m => { motion = m === 'still' ? 'still' : 'anim'; try { localStorage.setItem(MKEY, motion); } catch (e) {} motionLabel(); dispatchEvent(new Event('spritemotion')); };
+  addEventListener('DOMContentLoaded', motionLabel);
+
   // --- Update check (the published APP_VER) -------------------------------
   const parts = v => String(v || '').replace(/^v/i, '').split(/[.+-]/).map(x => { const n = parseInt(x, 10); return Number.isFinite(n) ? n : 0; });
   const isNewer = (remote, local) => {

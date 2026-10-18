@@ -103,7 +103,7 @@ function build(m) {   // routes, spots and slots never move during a duel (the f
 
 const images = new Map(), loader = new THREE.TextureLoader().setCrossOrigin('anonymous');
 const still = url => loader.load(url, t => { t.colorSpace = THREE.SRGBColorSpace; });
-const picture = url => images.get(url) || images.set(url, /\.webp$/.test(url) && 'ImageDecoder' in window ? animated(url) : still(url)).get(url);
+const picture = url => images.get(url) || images.set(url, /\/anim\/.*\.webp$/.test(url) && 'ImageDecoder' in window ? animated(url) : still(url)).get(url);
 // An animated sprite (the Scarlet / Violet .webp): WebGL only ever uploads an animated image's first frame, so its frames are decoded
 // once with ImageDecoder, kept at FRAME px (about 3.5 MB for a 36-frame sprite), and played on a canvas texture at their own pace.
 // Without ImageDecoder (or if decoding fails) it shows its first frame.
