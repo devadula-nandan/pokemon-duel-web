@@ -354,6 +354,7 @@ renderer.setAnimationLoop(() => {
   }
   stepBlasts(dt);
   stepAbilities(dt);
+  stepPlates(dt);
   // Each figure is drawn whole, from the farthest to the nearest: its base, then its picture (which ignores depth, so its own base cannot
   // cut it off), then its MP badge. A nearer figure's base and picture therefore cover whatever stands behind them. The bases are marked
   // transparent only so that they take part in this ordering; they are fully opaque.
@@ -453,6 +454,37 @@ function stepAbilities(dt) {
     }
   }
 }
+// MatchMain.UsePlateEffect: for one second the plate's effect plays on every figure its action names (AttackEffect Plate_In, or Plate_Out
+// when the action moves, evolves, swaps, removes or marks a figure); with no figure it plays over the table. The original's effect
+// prefabs did not survive, so it is drawn here: the plate card appears over the figure, then sinks into it with a gold ring (in) or
+// bursts away from it with a red ring (out).
+const plateFx = [];
+function plate(i, out, c) {
+  const g = i == null ? null : tokens.get(i), card = new THREE.Mesh(cardGeo, new THREE.MeshBasicMaterial({ map: face(c || { n: '', r: 1, c: 0 }, true), transparent: true, depthWrite: false }));
+  card.renderOrder = 60;
+  const ringGeo = new THREE.TorusGeometry(BASE_R + .06, .03, 8, 72), ringMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(out ? '#ff5a6e' : (css('--gold', '') || '#ffd23f')), transparent: true, opacity: 0, depthWrite: false });
+  const ring = new THREE.Mesh(ringGeo, ringMat); ring.rotation.x = Math.PI / 2; ring.renderOrder = 59;
+  const host = new THREE.Group(); if (g) host.position.copy(g.position); else host.position.set(0, 0, 0);
+  host.add(card, ring); (g ? g.parent : scene).add(host);   // in the token's own space (the board group), so it sits on the figure
+  plateFx.push({ host, g, card, ring, ringGeo, ringMat, out, big: !g, t: 0 });
+}
+function stepPlates(dt) {
+  for (let n = plateFx.length - 1; n >= 0; n--) {
+    const f = plateFx[n]; f.t += dt; const t = Math.min(1, f.t), s0 = f.big ? 1 : .5, y0 = f.big ? 1.4 : 1.55;
+    if (f.g) f.host.position.copy(f.g.position);   // follows the figure (a new form's token may still be on its way in)
+    f.card.quaternion.copy(camera.quaternion);   // the card faces the player
+    if (t < .3) { const k = t / .3, e = 1 - Math.pow(1 - k, 3); f.card.scale.setScalar(s0 * e); f.card.position.y = y0 + .35 * (1 - e); f.card.material.opacity = e; }
+    else if (t < .65) { f.card.scale.setScalar(s0); f.card.position.y = y0; f.card.material.opacity = 1; }
+    else {
+      const k = (t - .65) / .35, e = k * k;
+      if (f.out) { f.card.scale.setScalar(s0 * (1 + e * .6)); f.card.position.y = y0 + e * .7; }
+      else { f.card.scale.setScalar(s0 * (1 - e * .9)); f.card.position.y = y0 - e * 1.1; }
+      f.card.material.opacity = 1 - e;
+      f.ringMat.opacity = .95 * Math.sin(Math.PI * k); f.ring.position.y = f.out ? .05 + e * .6 : .6 - e * .55; f.ring.scale.setScalar(f.big ? 3 : 1 + e * .5);
+    }
+    if (f.t >= 1) { f.host.removeFromParent(); f.card.material.dispose(); f.ringGeo.dispose(); f.ringMat.dispose(); plateFx.splice(n, 1); }
+  }
+}
 function clearAbilities() { for (const a of abilityRings) endAbility(a); abilityRings.length = 0; }
 
 function project(i) {   // where a figure sits on the arena, so the evolution flash can land on it
@@ -461,5 +493,5 @@ function project(i) {   // where a figure sits on the arena, so the evolution fl
   const rect = renderer.domElement.getBoundingClientRect(), host = (document.querySelector('.arena') || renderer.domElement.parentElement).getBoundingClientRect();
   return { x: (v.x * .5 + .5) * rect.width + rect.left - host.left, y: (-v.y * .5 + .5) * rect.height + rect.top - host.top };
 }
-window.Board3D = { draw, controls, tokens, project, blast, clearBlasts, ability, clearAbilities, info: () => ({ ...renderer.info.memory, objects: (() => { let n = 0; scene.traverse(() => n++); return n; })() }) };   // controls and tokens are exposed for inspection
+window.Board3D = { draw, controls, tokens, project, blast, clearBlasts, ability, clearAbilities, plate, info: () => ({ ...renderer.info.memory, objects: (() => { let n = 0; scene.traverse(() => n++); return n; })() }) };   // controls and tokens are exposed for inspection
 if (window.board3dModel) draw(window.board3dModel);

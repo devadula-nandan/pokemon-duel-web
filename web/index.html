@@ -18,7 +18,7 @@
   html.ios-app body { box-sizing:border-box; padding-top:16px; } html.ios-app body > .top { padding-top:0; }   /* the strip is the bar's top padding */
   /* in a duel the top bar is hidden: no strip there, the player bars reach 16px higher instead, so the smear falls on flat colour */
   html.ios-app.mview:has(#game:not([hidden])) body { padding-top:0; } html.ios-app.mview:has(#game:not([hidden])) #sbTint { display:none; }
-  html.ios-app.mview .hud .pl { height:60px; padding-top:16px; } html.ios-app.mview .hud .turns { top:38px; } input, button, select, textarea, a, label { touch-action:manipulation; }   /* no double-tap zoom on controls */
+  html.ios-app.mview .hud { --lt-h:41px; } input, button, select, textarea, a, label { touch-action:manipulation; }   /* no double-tap zoom on controls */
   .top { display:flex; align-items:center; gap:6px; padding:6px; background:var(--bar); border-bottom:1px solid var(--line); } .top button { margin:0; }   /* one even 6px gap between everything in the bar */ .top .ticker { flex:1; min-width:0; border-bottom:0; -webkit-mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); }   /* the scrolling text fades in and out at both ends instead of being cut off */
   .ticker { overflow:hidden; white-space:nowrap; background:var(--bar); color:var(--accent); font-size:12px; padding:5px 0; border-bottom:1px solid var(--line); }
   .ticker span { display:inline-block; padding-left:100%; animation:tick 70s linear infinite; } .ticker:hover span { animation-play-state:paused; }
@@ -62,15 +62,19 @@
   .hud .av { flex:none; width:30px; height:30px; border-radius:4px; display:grid; place-items:center; font-weight:800; font-size:14px; line-height:1; color:#fff; border:2px solid rgba(255,255,255,.75); box-shadow:0 1px 4px rgba(0,0,0,.4); }
   .hud .who { min-width:0; font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 2px rgba(0,0,0,.4); }
   .clock { margin-left:auto; font-variant-numeric:tabular-nums; font-weight:800; font-size:15px; color:#fff; opacity:.75; } .hud .pl.right .clock { margin:0 auto 0 0; } .clock.on { opacity:1; color:var(--gold); }
-  .hud .turns { position:absolute; left:50%; top:22px; transform:translate(-50%,-50%); z-index:1; min-width:50px; height:30px; padding:0 10px; border-radius:15px; display:grid; place-items:center; background:var(--bar); border:1px solid var(--line); color:var(--gold); font-weight:800; font-size:15px; font-variant-numeric:tabular-nums; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+  .hud .turns { position:absolute; left:50%; top:calc(var(--lt-h, 25px) + 22px); transform:translate(-50%,-50%); z-index:1; min-width:50px; height:30px; padding:0 10px; border-radius:15px; display:grid; place-items:center; background:var(--bar); border:1px solid var(--line); color:var(--gold); font-weight:800; font-size:15px; font-variant-numeric:tabular-nums; box-shadow:0 2px 8px rgba(0,0,0,.35); }
   :root[data-theme=light] .hud .turns { color:var(--ink); }
   .zrow { grid-column:1 / -1; display:grid; grid-template-columns:1fr 26px 1fr; align-items:stretch; height:16px; background:var(--bar); }
   .zg { position:relative; height:16px; background:var(--bar); overflow:hidden; } .zg i { position:absolute; top:0; bottom:0; left:0; width:var(--v,0%); background:#00ee27; transition:width .5s; } .zg.right i { left:auto; right:0; }   /* the fill stays the gauge green; the track matches the turn banner under it */
   .zg span { position:absolute; inset:0 8px; font-size:10px; font-weight:700; line-height:16px; color:#fff; text-shadow:0 0 3px #000, 0 0 3px #000; } .zg.right span { text-align:right; }
   .zg.max i { background:#67ff0c; animation:zmax 1.2s ease-in-out infinite alternate; } @keyframes zmax { from { filter:brightness(.8); } to { filter:brightness(1.2); } } .zg.max span { color:#06240a; text-shadow:none; }   /* full: its z_light glow, #67ff0c, pulsing */
   .zi { text-align:center; font-weight:900; font-style:italic; font-size:12px; line-height:16px; color:#00ee27; } :root[data-theme=light] .zi { color:#009900; }
-  #lt { position:absolute; left:0; right:0; bottom:0; height:16px; line-height:16px; font-size:10px; padding:0 8px; text-align:left; background:#000; font-weight:700; white-space:nowrap; overflow:hidden; } #lt[hidden] { display:none; }   /* MatchLiveTicker: black BoxBase strip, text typed in from the left */
-  .banner { grid-column:1 / -1; text-align:center; color:var(--dim); font-size:10px; font-weight:700; line-height:16px; height:16px; padding:0 8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:var(--bar); }   /* as thick as the Z gauge above it */ .banner b { color:var(--ink); }
+  /* MatchLiveTicker, 1:1 in place and proportion: a black BoxBase strip across the top of the HUD (47 of 1334, above the 82-high player
+     bars), text typed in from the left at 24/82 of a bar's height. It is empty until something is announced; the original has no
+     "to act" line (the turn shows on the player bars). Errors and how the duel ended use the same strip. */
+  .ltbar { grid-column:1 / -1; position:relative; height:var(--lt-h, 25px); background:#000; overflow:hidden; }
+  #status, #lt { position:absolute; left:0; right:0; bottom:0; height:25px; line-height:25px; padding:0 10px; font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #status { color:#fff; } #status:empty { display:none; } #lt { background:#000; } #lt[hidden] { display:none; }
   /* the table: red end at the top, blue end at the bottom */
   .table { flex:1; min-height:0; display:flex; padding:0; border-radius:8px; border:1px solid var(--line); box-shadow:0 10px 30px rgba(0,0,0,.5), inset 0 0 0 2px color-mix(in srgb, var(--bd-line) 10%, transparent);
     /* a fine grain, a faint weave, then the slate itself */
@@ -388,6 +392,13 @@
   .evo-notes { margin:0; padding:0; list-style:none; color:var(--dim); font-size:12px; display:flex; flex-direction:column; gap:3px; }
   .evo-btns { display:flex; justify-content:flex-end; gap:8px; } .evo-btns button { min-width:84px; text-align:center; }
   /* the field moment: a glowing ball blasts open, and the new figure appears as it clears */
+  .platefx { position:absolute; z-index:8; width:0; height:0; pointer-events:none; }
+  .platefx .card { position:absolute; left:-26px; top:-92px; width:52px; height:72px; border-radius:6px; background:var(--bd-pt, #101216); border:2px solid var(--bd-line, #c9ced8); color:var(--bd-line, #c9ced8); font-size:8px; line-height:1.1; padding:4px; display:flex; align-items:center; justify-content:center; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,.5); animation:plateIn 1s ease-in forwards; }
+  .platefx.out .card { animation-name:plateOut; } .platefx.big .card { transform:scale(1.6); }
+  .platefx .ring { position:absolute; left:-24px; top:-12px; width:48px; height:24px; border-radius:50%; border:3px solid var(--gold, #ffd23f); opacity:0; animation:plateRing 1s linear forwards; } .platefx.out .ring { border-color:#ff5a6e; }
+  @keyframes plateIn { 0% { opacity:0; transform:translateY(-14px) scale(.2); } 30% { opacity:1; transform:none; } 65% { opacity:1; transform:none; } 100% { opacity:0; transform:translateY(46px) scale(.1); } }
+  @keyframes plateOut { 0% { opacity:0; transform:translateY(-14px) scale(.2); } 30% { opacity:1; transform:none; } 65% { opacity:1; transform:none; } 100% { opacity:0; transform:translateY(-36px) scale(1.6); } }
+  @keyframes plateRing { 0%, 65% { opacity:0; transform:scale(.6); } 82% { opacity:1; } 100% { opacity:0; transform:scale(1.5); } }
   #evoanim { position:absolute; z-index:8; width:120px; height:120px; margin:-60px 0 0 -60px; pointer-events:none; }
   #evoanim[hidden] { display:none; }
   #evoanim .ball { position:absolute; left:50%; top:46%; width:34px; height:34px; margin:-17px; border-radius:50%; animation:evoBall .72s ease-in forwards;
@@ -514,11 +525,11 @@
 <main id="game" hidden>
   <section class="arena">
   <div class="hud">
+      <div class="ltbar"><div id="status"></div><div id="lt" hidden></div></div>
       <div class="pl" id="hudBottom"><span class="av" id="d0"></span><span class="who" id="n0"></span><span class="clock" id="c0"></span></div>
       <div class="pl right" id="hudTop"><span class="clock" id="c1"></span><span class="who" id="n1"></span><span class="av" id="d1"></span></div>
       <div class="turns" title="Turns left" id="turns"></div>
       <div class="zrow"><div class="zg" id="zg0"><i></i><span id="z0"></span></div><b class="zi" title="Z gauge">Z</b><div class="zg right" id="zg1"><i></i><span id="z1"></span></div></div>
-      <div id="status" class="banner"></div><div id="lt" hidden></div>
     </div>
     <div class="table"><svg id="board" viewBox="0 -32 420 764" preserveAspectRatio="xMidYMid meet"></svg><div id="board3d" hidden></div><div id="tbl"></div></div>
     <div class="ibar"><div id="ibar" style="display:contents"></div><button id="fsGame" class="iconbtn" title="Fullscreen" aria-label="Fullscreen" aria-pressed="false"></button><button id="sideBtn" title="Menu" aria-label="Menu" onclick="toggleSide()"></button></div>
@@ -1566,7 +1577,7 @@ async function sync(played) {
     if (ss.game_set && !over) over = { winner: ss.winner, reason: ss.reason }; saveGame();
     const moved = played ? rec.all_moves[rec.all_moves.length - 1] : null;
     if (net && net.host) net.conn.send({ t: 'state', st, legal, fx: effects, over: ss.game_set ? { winner: ss.winner, reason: ss.reason } : null, clock, played, hold: chainHold, mv: moved, bot: !!ss.beginning_of_turn });
-    if (fx) await playEffects(effects, { hold: chainHold, wheelSt: boardSt, move: moved }); logSide = null;
+    if (fx) await playEffects(effects, { before: prev, hold: chainHold, wheelSt: boardSt, move: moved }); logSide = null;
     if (id !== gameId) return;
     const side = st.selective_side;
     if (!over && ss.game_set) over = { winner: ss.winner, reason: ss.reason };
@@ -1842,8 +1853,7 @@ function render() {
     const slots = []; for (let p = 28; p < 44; p++) slots.push(U(xy(p)));
     window.board3dModel = { pts, slots, toks, edges: EDGES.map(([a, b]) => [U(xy(a)), U(xy(b))]), table: tm }; if (window.Board3D) Board3D.draw(board3dModel);
   }
-  $('status').innerHTML = over ? `<b>${over.winner && P_COL[over.winner] ? wins(over.winner) : 'Draw'}</b> — ${esc(String(over.reason).replace(/_/g, ' '))}`
-    : `<b style="color:${P_COL[side] || 'inherit'}">${P_COL[side] ? label(side) : '…'}</b>${busy ? ' · working…' : mine ? ' to act' : ''}`; $('turns').textContent = st.remaining_turns;
+  $('status').innerHTML = over ? `<b>${over.winner && P_COL[over.winner] ? wins(over.winner) : 'Draw'}</b> — ${esc(String(over.reason).replace(/_/g, ' '))}` : ''; $('turns').textContent = st.remaining_turns;   // no "to act": the player bars show the turn
   // every engine legal move, including ones also playable on the board — easier to spot UI / index bugs than hiding the "on-board" set
   $('acts').innerHTML = (!mine ? [] : legal).map((m, i) => `<button data-m="${i}"${m.value.type === 'resign' ? ' class="note"' : ''}>${describe(m.value)}</button>`).join('') +
     (rewindTarget() >= 0 ? `<button data-rw="1">Rewind to the start of your turn (${REWIND_MAX - rewinds} left)</button>` : '') +
@@ -2373,7 +2383,7 @@ async function playEffects(list, opt) {
     else if (t === 'game_set') { over = { winner: v.win, reason: v.reason }; log(`<b>${P_COL[v.win] ? wins(v.win) : 'Draw'}</b> (${esc(String(v.reason).replace(/_/g, ' '))})`); }
     else if (t === 'add_z_gauge') { for (const c of ['black', 'white']) if (v[c] > 0) log(`Z-Move gauge · <b style="color:${P_COL[c]}">${esc(label(c))}</b> +${v[c]} (${Math.min(100, v[c + '_result'])}/100)`); }
     else if (/^(evolve|mega_evolve|double_evolve)$/.test(t) || (/^declare_(plate|pokepower)$/.test(t) && v.value && /^(evolve|mega_evolve)$/.test(v.value.type))) {   // EvolveCommonCalc: every evolution flashes, the computer's and a Mega stone's too
-      const ev = v.value && v.value.pokemon != null ? v.value : v; log(describe(v)); if (t === 'declare_plate') plateUsed(v);
+      const ev = v.value && v.value.pokemon != null ? v.value : v; log(describe(v)); if (t === 'declare_plate') await plateUsed(v, opt.before);
       if (!evoShown && ev.pokemon != null) await showEvolveAnim(fieldForm(ev.pokemon));
     }
     else if (t === 'knockedout_move') { const i = figAt([v.to]); sfx('ko'); log(`${nameOf(i)} fainted · ${place(v.from)} → ${place(v.to)}`); tickFig(i, `${plain(i)} fainted.`); }   // KnockedOutMove: Se038, Faint
@@ -2394,7 +2404,7 @@ async function playEffects(list, opt) {
     else if (t === 'enable_plate' || t === 'disable_plate_by_effect') {
       for (const c of ['black', 'white']) for (const id of v[c] || []) { const n = plateById.has(id) ? plateById.get(id).n : 'plate ' + id; log(`${esc(n)} ${t === 'enable_plate' ? 'can be used again' : 'can no longer be used'}`); ticker(c, `${n} ${t === 'enable_plate' ? 'can be used again.' : 'can no longer be used.'}`); }   // EnablePlate / DisablePlateByEffect
     }
-    else if (t === 'declare_plate') { log(describe(v)); plateUsed(v); }
+    else if (t === 'declare_plate') { log(describe(v)); await plateUsed(v, opt.before); }
     else if (t === 'plate_notice') { sfx('plate_energy'); const n = (plateById.get(v.plate) || { n: 'A plate' }).n; log(`<b>${esc(n)}</b> takes effect`); if (v.pokemon >= 0) tickFig(v.pokemon, n); }   // StartUsePlateCutIn: Plate, Se129
     else if (t === 'marker_notice') { log(describe(v)); if (v.marker === 'curse') tickFig(v.pokemon, `${plain(v.pokemon)}: ${condName('curse')}`); }   // MarkerNotice: only a curse has a cut-in
     else if (t === 'route_move_and_wait') { const i = figAt(v.route); sfx('wait'); log(`${nameOf(i)} moves ${v.route.map(place).join(' → ')} and must wait`); await abilityCue(i, true, false); }   // MoveFigure then PutAnother: Debuff oneshot
@@ -2427,10 +2437,42 @@ async function playEffects(list, opt) {
     else if (!QUIET.has(t)) log(describe(v));
   }
 }
-function plateUsed(v) {   // UsePlateEffect: "Used {0}." in the ticker, Se114 (Plate_In) or Se130 (Plate_Out) when it lands on the other side's figure
-  const side = logSide || st.selective_side, target = v.value && typeof v.value.pokemon === 'number' ? v.value.pokemon : null;
-  sfx(target != null && colorOf(target) !== side ? 'plate_action' : 'plate');
-  ticker(side, `Used ${(plateById.get(v.plate_id) || { n: 'a plate' }).n}.`);
+// MatchGameManager.UsePlateEffect: which figures a plate's effect plays on, and whether it is Plate_Out (Se130) or Plate_In (Se114),
+// from the type of the action the plate carries. Figures named by a point are the ones standing there before the move.
+const PLATE_OUT = { pokemon: ['evolve', 'mega_evolve', 'double_evolve', 'degenerate', 'degenerate_by_koori_no_soukou', 'tokiwatari', 'tokiwatari_execute', 'makimodoshi', 'bench_move'],
+  pokemons: ['remove_debuff', 'reset', 'reset_mushikui', 'add_hanpatsu_gomu', 'set_chousyuha_shindou', 'set_punisher', 'swap_move', 'swap_move_auto', 'swap_move_and_wait', 'remove_pokemon',
+    'remove_pokemon_by_owari_no_daichi', 'move_to_ultra_space', 'remove_pokemon_with_duration', 'remove_pokemon_with_pc_move_duration', 'meremere_no_inori', 'ulaula_no_inori', 'wait', 'put_circle',
+    'put_circle_auto', 'put_triangle', 'put_triangle_with_duration', 'declare_spot_move_to_pc'],
+  from: ['knockedout_move', 'spot_move', 'spot_move_with_source'], route: ['route_move', 'ghost_move', 'route_move_and_wait', 'route_move_and_put_circle', 'route_move_and_put_triangle', 'route_move_with_source'] };
+const PLATE_IN = { pokemon: ['select_pokemon', 'select_pokemon_and_declare_aura', 'pokemon_move', 'use_pokepower', 'select_pokemon_by_psychic', 'disable_skill', 'change_skill', 'speedup_skill', 'speeddown_skill',
+    'move_from_ultra_space', 'move_from_remove', 'disable_plate_for_one_pokemon'], pokemons: ['move_to_ultra_space_with_duration', 'put_continuous_effect_with_skills'] };
+function plateTargets(a, before) {
+  const t = a && a.type, at = pt => { const c = (before || st).pokemon_conditions.find(c => c.index === pt); return c ? c.pokemon_index : null; };
+  if (!t) return { figs: [], out: false };
+  if (PLATE_OUT.pokemon.includes(t)) return { figs: [a.pokemon], out: true };
+  if (PLATE_OUT.pokemons.includes(t)) return { figs: a.pokemons || [], out: true };
+  if (PLATE_OUT.from.includes(t)) return { figs: [at(a.from)], out: true };
+  if (PLATE_OUT.route.includes(t)) return { figs: [at(a.route[0])], out: true };
+  if (t === 'asym_swap_move') return { figs: [a.pokemon, a.mate], out: true };
+  if (t === 'touch') return { figs: [a.from_pokemon, a.to_pokemon], out: true };
+  if (PLATE_IN.pokemon.includes(t)) return { figs: [a.pokemon], out: false };
+  if (PLATE_IN.pokemons.includes(t)) return { figs: a.pokemons || [], out: false };
+  if (t === 'disable_skill_for_prob_spin') return { figs: (a.disable_skills || []).map(d => d.pokemon), out: false };
+  return { figs: [], out: false };   // no figure: the effect plays over the table
+}
+// UsePlateEffect: "Used {0}." in the live ticker, the plate's effect for one second on each of its figures, Se114 or Se130.
+async function plateUsed(v, before) {
+  const side = logSide || st.selective_side, pl = plateById.get(v.plate_id) || { n: 'a plate', r: 1, c: 0 }, { figs, out } = plateTargets(v.value, before);
+  ticker(side, `Used ${pl.n}.`); sfx(out ? 'plate_action' : 'plate');
+  const card = { n: pl.n, r: pl.r, c: pl.c }, onBoard = i => { const a = fieldForm(i, before || st), b = fieldForm(i); return window.Board3D && Board3D.tokens && !Board3D.tokens.has(a) && Board3D.tokens.has(b) ? b : a; },   // the board still shows the position before the move
+    list = figs.filter(i => i != null && i >= 0).map(onBoard);
+  if (VIEW3D && window.Board3D && Board3D.plate) { if (list.length) list.forEach(i => Board3D.plate(i, out, card)); else Board3D.plate(null, out, card); }
+  else {   // the flat board: the same card and ring over each figure
+    const arena = document.querySelector('#game .arena'), spots = list.length ? list.map(figScreen) : [{ x: arena.clientWidth / 2, y: arena.clientHeight / 2 }];
+    for (const p of spots) { const el = document.createElement('div'); el.className = 'platefx' + (out ? ' out' : '') + (list.length ? '' : ' big'); el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
+      el.innerHTML = `<div class="card r${pl.r}"><b>${esc(pl.n)}</b></div><i class="ring"></i>`; arena.appendChild(el); setTimeout(() => el.remove(), 1000); }
+  }
+  await sleep(1000);   // the original holds the sequence for the effect's second
 }
 const figAt = route => { const c = st.pokemon_conditions.find(c => c.index === route[route.length - 1]); return c ? c.pokemon_index : -1; };
 

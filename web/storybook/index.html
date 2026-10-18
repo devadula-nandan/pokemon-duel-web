@@ -162,6 +162,15 @@ async function loopAbility(m, job) {
     if (!(await sleep(1600, job))) return;
   }
 }
+async function loopPlate(m, job) {   // UsePlateEffect: the plate's effect on each figure it names (or over the table), Se114 in / Se130 out, every 1.6 s
+  const pl = D.plates.find(p => p.n === m.plate) || D.plates[0], card = { n: pl.n, r: pl.r, c: pl.c };
+  while (job === demoJob && window.Board3D && Board3D.plate) {
+    const on = m.toks.filter(t => t._plate);
+    if (on.length) on.forEach(t => Board3D.plate(t.i, !!m.out, card)); else Board3D.plate(null, !!m.out, card);
+    sfx(m.out ? 'plate_action' : 'plate');
+    if (!(await sleep(1600, job))) return;
+  }
+}
 async function loopTurnBoost(m, job) {   // only figures that currently hold a passive boost (MP / damage / …), like the original at turn start
   while (job === demoJob && window.Board3D && Board3D.ability) {
     const boosted = m.toks.filter(t => t.mpd || t._boost);
@@ -327,6 +336,12 @@ const STORIES = {
     }],
     'Several at once': ['Same cue on a few figures (any Pokémon).', () => ({ ...row([{}, { team: 1 }, {}]), demo: 'ability' })],
   },
+  Plates: {
+    'On your figure': ['A plate that picks or powers up a figure (here X Attack): its card appears over the figure and sinks into it with a gold ring (Plate_In, Se114). Loops.', () => ({ ...row([{ _plate: true }]), demo: 'plate', plate: 'X Attack' })],
+    'On an opponent': ['A plate that moves, evolves, removes or marks a figure (here Scoop Up on a figure of the other side): the card bursts away with a red ring (Plate_Out, Se130). Loops.', () => ({ ...row([{ team: 1, _plate: true }]), demo: 'plate', plate: 'Scoop Up', out: true })],
+    'On two figures': ['A swap names two figures; the effect plays on both at once.', () => ({ ...row([{ _plate: true }, {}, { _plate: true }]), demo: 'plate', plate: 'Pokémon Switch', out: true })],
+    'No figure': ['A plate whose action names no figure (Recycle) plays its effect over the table.', () => ({ ...row([{}, { team: 1 }]), demo: 'plate', plate: 'Recycle' })],
+  },
   Sounds: {
     'Figure sounds': ['Every clip the original game names for something that happens to a figure. The list under the table is the whole set.', () => ({ ...row([{ badge: 'figure sounds' }]), catalog: true })],
   },
@@ -442,6 +457,7 @@ function show(group, name) {
   if (m.demo === 'wheel' || m.demo === 'battle') { draw(m); if (m.demo === 'battle') { sfx('attack'); sfx('select'); } playWheel(m, job); return; }
   if (m.demo === 'ability') { draw(m); loopAbility(m, job); return; }
   if (m.demo === 'turnboost') { draw(m); loopTurnBoost(m, job); return; }
+  if (m.demo === 'plate') { draw(m); loopPlate(m, job); return; }
   // what arrives after the story opens, in order: each status condition, then each figure's MP change
   const playStatus = kind => { const row = COND_SOUND[kind]; if (row) sfx(row[2]); else statusSfx(kind); };
   const arrivals = [...new Set(m.toks.map(t => t.status).filter(Boolean))].map(kind => ({ hits: t => t.status === kind, sound: () => playStatus(kind) }))
