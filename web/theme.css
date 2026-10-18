@@ -11,11 +11,11 @@ body { margin:0; color:var(--ink); background:var(--bg); font:14px/1.45 "Segoe U
 .appver { position:fixed; top:max(3px, env(safe-area-inset-top, 0px)); left:50%; transform:translateX(-50%); z-index:50; pointer-events:none; margin:0; padding:0 6px; font:600 10px/1.2 "Segoe UI",system-ui,sans-serif; letter-spacing:.06em; color:var(--dim); opacity:.4; user-select:none; }
 /* Asset download gate — engine / emulator / SFX / music */
 #assetGate { position:fixed; inset:0; z-index:70; display:grid; place-items:center; padding:16px; background:color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
-#assetGate .ag-box { width:min(420px,100%); max-height:min(92dvh,640px); overflow:auto; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px 18px 16px; box-shadow:0 20px 60px rgba(0,0,0,.55); }
+#assetGate .ag-box { width:min(420px,100%); max-height:min(92dvh,640px); overflow:auto; background:var(--panel); border:1px solid var(--line); padding:20px 18px 16px; box-shadow:0 20px 60px rgba(0,0,0,.55); }
 #assetGate h2 { margin:0 0 8px; font:800 16px/1.25 "Segoe UI",system-ui,sans-serif; text-align:center; }
 #assetGate > .ag-box > p { margin:0 0 14px; color:var(--dim); font-size:13px; line-height:1.45; text-align:center; }
 #assetGate .ag-packs { display:flex; flex-direction:column; gap:8px; margin:0 0 14px; }
-#assetGate .ag-pack { display:flex; gap:10px; align-items:flex-start; margin:0; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--ctl); cursor:pointer; text-align:left; }
+#assetGate .ag-pack { display:flex; gap:10px; align-items:flex-start; margin:0; padding:10px 12px; border:1px solid var(--line); background:var(--ctl); cursor:pointer; text-align:left; }
 #assetGate .ag-pack.ready { border-color:color-mix(in srgb, var(--ok) 55%, var(--line)); }
 #assetGate .ag-pack input { margin-top:3px; flex:none; }
 #assetGate .ag-pack-body { display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
@@ -24,7 +24,7 @@ body { margin:0; color:var(--ink); background:var(--bg); font:14px/1.45 "Segoe U
 #assetGate .ag-pack-body > span { font-size:12px; color:var(--dim); line-height:1.35; }
 #assetGate .ag-pack-st { color:var(--ok) !important; font-weight:700; font-size:11px !important; }
 #assetGate .ag-progress { margin:0 0 4px; }
-#assetGate .ag-bar { height:8px; background:var(--ctl2); border-radius:99px; overflow:hidden; margin:0 0 8px; }
+#assetGate .ag-bar { height:8px; background:var(--ctl2); overflow:hidden; margin:0 0 8px; }
 #assetGate .ag-bar i { display:block; height:100%; width:0%; background:var(--ink); transition:width .12s linear; }
 #assetGate .ag-meta { min-height:1.2em; margin:0 0 12px; font-size:12px; color:var(--dim); font-variant-numeric:tabular-nums; text-align:center; }
 #assetGate.busy .ag-packs { opacity:.55; pointer-events:none; }
@@ -36,7 +36,7 @@ body { margin:0; color:var(--ink); background:var(--bg); font:14px/1.45 "Segoe U
 a { color:var(--ink); }
 ::selection { background:var(--ink); color:var(--bg); }
 :focus-visible { outline:2px solid var(--dim); outline-offset:2px; }
-button, select, input, textarea { font:inherit; color:var(--ink); background:var(--ctl); border:1px solid var(--line); border-radius:4px; padding:7px 14px; }
+button, select, input, textarea { font:inherit; color:var(--ink); background:var(--ctl); border:1px solid var(--line); padding:7px 14px; }
 input::placeholder, textarea::placeholder { color:var(--dim); opacity:1; }
 /* selects draw their own chevron, 12px from the right edge with room for the text to stop before it (the browser's own arrow sits wherever it likes) */
 select { appearance:none; -webkit-appearance:none; padding-right:34px; text-overflow:ellipsis; cursor:pointer; background-repeat:no-repeat; background-position:right 12px center; background-size:12px;
@@ -51,9 +51,9 @@ button.primary { background:var(--ink); border-color:var(--ink); color:var(--bg)
 .iconbtn.updatebtn:hover:not(:disabled) { background:color-mix(in srgb, var(--gold) 22%, var(--ctl2)); border-color:var(--gold); }
 input[type=checkbox], input[type=radio] { accent-color:var(--ink); width:15px; height:15px; padding:0; vertical-align:-2px; }
 input[type=file] { padding:5px; max-width:100%; }
-input[type=file]::file-selector-button { font:inherit; font-weight:600; color:var(--bg); background:var(--ink); border:0; border-radius:4px; padding:6px 12px; margin-right:10px; cursor:pointer; }
+input[type=file]::file-selector-button { font:inherit; font-weight:600; color:var(--bg); background:var(--ink); border:0; padding:6px 12px; margin-right:10px; cursor:pointer; }
 /* older WebKit (Safari) has no scrollbar-color, so it gets the same look this way */
 @supports not (scrollbar-color:auto) {
   ::-webkit-scrollbar { width:10px; height:10px; } ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background:transparent; }
-  ::-webkit-scrollbar-thumb { background:var(--line); border-radius:99px; border:2px solid transparent; background-clip:padding-box; } ::-webkit-scrollbar-thumb:hover { background-color:var(--dim); }
+  ::-webkit-scrollbar-thumb { background:var(--line); border:2px solid transparent; background-clip:padding-box; } ::-webkit-scrollbar-thumb:hover { background-color:var(--dim); }
 }

@@ -133,7 +133,7 @@ const shadeTex = tex(64, 64, g => { const r = g.createRadialGradient(32, 32, 0, 
 function paintEvoMap() {   // same inverted primary look as the app's ink buttons, so it follows light/dark
   return tex(256, 80, (g, w, h) => {
     const face = css('--ink', '#111'), edge = css('--line', face), ink = css('--bg', '#fff');
-    g.fillStyle = face; g.beginPath(); g.roundRect(6, 10, w - 12, h - 20, 28); g.fill();
+    g.fillStyle = face; g.beginPath(); g.rect(6, 10, w - 12, h - 20); g.fill();
     g.lineWidth = 6; g.strokeStyle = edge; g.stroke();
     g.fillStyle = ink; g.font = '800 42px Segoe UI, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('EVOLVE', w / 2, h / 2 + 1);
   });
@@ -166,7 +166,7 @@ const extras = new THREE.Group(); scene.add(extras); let extrasKey = '';
 const words = (text, w, h, ink, px) => tex(w, h, g => { g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = ink; g.font = `900 ${px}px Segoe UI, sans-serif`; let s = 1; const tw = g.measureText(text).width; if (tw > w * .94) s = w * .94 / tw; g.translate(w / 2, h / 2); g.scale(s, s); g.fillText(text, 0, 0); });
 // A plate card: a rounded slab 0.96 x 1.404 and 0.02 thick (the fan's own step, so the stack reads as a deck). Its face is painted here:
 // a rarity band down the edge that shows in the fan, and on the top card a frame, the rarity, the name and the cost.
-const cardGeo = (() => { const w = .48, h = .702, r = .07, s = new THREE.Shape(); s.moveTo(-w + r, -h); s.lineTo(w - r, -h); s.absarc(w - r, -h + r, r, -Math.PI / 2, 0, false); s.lineTo(w, h - r); s.absarc(w - r, h - r, r, 0, Math.PI / 2, false);
+const cardGeo = (() => { const w = .48, h = .702, r = .0001, s = new THREE.Shape(); s.moveTo(-w + r, -h); s.lineTo(w - r, -h); s.absarc(w - r, -h + r, r, -Math.PI / 2, 0, false); s.lineTo(w, h - r); s.absarc(w - r, h - r, r, 0, Math.PI / 2, false);
   s.lineTo(-w + r, h); s.absarc(-w + r, h - r, r, Math.PI / 2, Math.PI, false); s.lineTo(-w, -h + r); s.absarc(-w + r, -h + r, r, Math.PI, Math.PI * 1.5, false); return new THREE.ExtrudeGeometry(s, { depth: .02, bevelEnabled: false, curveSegments: 6 }); })();
 const RARE = ['#8a8f98', '#8a8f98', '#2e9e5b', '#2f7fe0', '#d9a514', '#c0392b'], RARE_NAME = ['', 'C', 'UC', 'R', 'EX', 'UX'], faces = new Map();
 function face(c, top) {
@@ -174,8 +174,8 @@ function face(c, top) {
   const t = tex(320, 468, (g, w, h) => {
     g.fillStyle = pt; g.fillRect(0, 0, w, h); const sheen = g.createLinearGradient(0, 0, w, h); sheen.addColorStop(0, 'rgba(255,255,255,.14)'); sheen.addColorStop(.5, 'rgba(255,255,255,0)'); sheen.addColorStop(1, 'rgba(0,0,0,.18)'); g.fillStyle = sheen; g.fillRect(0, 0, w, h);
     g.fillStyle = RARE[c.r] || RARE[1]; g.fillRect(0, 0, 30, h);
-    if (top) { g.strokeStyle = line; g.globalAlpha = .55; g.lineWidth = 3; g.beginPath(); g.roundRect(48, 20, w - 68, h - 40, 14); g.stroke(); g.globalAlpha = 1;
-      g.font = '800 26px Segoe UI, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; const rn = RARE_NAME[c.r] || ''; if (rn) { g.fillStyle = RARE[c.r]; g.beginPath(); g.roundRect(w - 96, 38, 60, 36, 8); g.fill(); g.fillStyle = '#fff'; g.fillText(rn, w - 66, 57); }
+    if (top) { g.strokeStyle = line; g.globalAlpha = .55; g.lineWidth = 3; g.beginPath(); g.rect(48, 20, w - 68, h - 40); g.stroke(); g.globalAlpha = 1;
+      g.font = '800 26px Segoe UI, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; const rn = RARE_NAME[c.r] || ''; if (rn) { g.fillStyle = RARE[c.r]; g.beginPath(); g.rect(w - 96, 38, 60, 36); g.fill(); g.fillStyle = '#fff'; g.fillText(rn, w - 66, 57); }
       g.fillStyle = line; g.font = '800 36px Segoe UI, sans-serif'; const words = c.n.split(' '), lines = []; for (const x of words) { const l = lines[lines.length - 1]; if (l && g.measureText(l + ' ' + x).width < w - 96) lines[lines.length - 1] = l + ' ' + x; else lines.push(x); }
       lines.slice(0, 4).forEach((l, n) => g.fillText(l, (w + 30) / 2, h * .46 + (n - (Math.min(lines.length, 4) - 1) / 2) * 44, w - 90));
       g.fillStyle = css('--gold', '#ffd23f'); for (let n = 0; n < c.c; n++) { g.beginPath(); g.arc(78 + n * 36, h - 58, 13, 0, 7); g.fill(); } }
@@ -204,7 +204,7 @@ function drawTable(t) {
   const slab = (w, d, r, h, material) => { const x = w / 2, y = d / 2, sh = new THREE.Shape(); sh.moveTo(-x + r, -y); sh.lineTo(x - r, -y); sh.absarc(x - r, -y + r, r, -Math.PI / 2, 0, false); sh.lineTo(x, y - r); sh.absarc(x - r, y - r, r, 0, Math.PI / 2, false);
     sh.lineTo(-x + r, y); sh.absarc(-x + r, y - r, r, Math.PI / 2, Math.PI, false); sh.lineTo(-x, -y + r); sh.absarc(-x + r, -y + r, r, Math.PI, Math.PI * 1.5, false);
     const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false, curveSegments: 8 }), material); m.rotation.x = -Math.PI / 2; m.position.set(t.btn.x, 0, t.btn.z); return m; };
-  const rim = slab(2, .6, .11, .06, M.line), well = slab(1.9, .5, .08, .07, M.pt), body = slab(1.76, .4, .06, t.btn.on ? .12 : .075, t.btn.on ? M.line : M.pt); rim.castShadow = body.castShadow = true;
+  const rim = slab(2, .6, .0001, .06, M.line), well = slab(1.9, .5, .0001, .07, M.pt), body = slab(1.76, .4, .0001, t.btn.on ? .12 : .075, t.btn.on ? M.line : M.pt); rim.castShadow = body.castShadow = true;
   const name = flat(1.6, .28, t.btn.on ? .125 : .08, new THREE.MeshBasicMaterial({ map: words(t.btn.label.toUpperCase(), 400, 70, css(t.btn.on ? '--bd' : '--bd-line', '#888'), 46), transparent: true, opacity: t.btn.on ? 1 : .45 })); name.position.x = t.btn.x; name.position.z = t.btn.z;
   extras.add(rim, well, body, name); hit(2, .3, .6, t.btn.x, t.btn.z, 'main');
 }
