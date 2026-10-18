@@ -69,12 +69,13 @@
 <nav id="nav"><h1>3D STORYBOOK</h1><p>Every state the 3D table can draw. <a href="./">Play in 3D</a></p></nav>
 <main><header><div><b id="title"></b><div id="note"></div></div><nav class="paths" aria-label="Pages"><a href="./" title="Back to the game">Game</a><a href="storybook/" class="on" aria-current="page">Storybook</a></nav><button id="soundBtn"></button><button id="themeBtn"></button></header><div id="board3d"><div id="evoanim" hidden></div><div id="battle" hidden></div></div><pre id="props"></pre></main>
 <script src="data.js"></script>
+<script src="art.js"></script>
 <script src="board.js"></script>
 <script>
 // Each story is a model for board3d.js, the renderer the 3D client uses, so what is shown here is exactly what a duel draws.
 const D = DUEL_DATA, $ = id => document.getElementById(id), cond = k => (D.conds[k] || k).replace(' {0}', '');
 const fig = D.figures.find(f => f.n === 'Pikachu') || D.figures[0];
-const art = f => f.dex <= 1025 ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${f.dex}.png` : '';
+const art = f => { const own = FIG_ART[f.n], d = own ? own[0] : f.dex <= 1025 ? f.dex : 0; return d ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${own && own[1] ? 'shiny/' : ''}${d}.png` : ''; };
 const tok = (over = {}, f) => {   // prefer over.f so row([{ f: Regigigas, … }]) is not painted as the default Pikachu
   const who = f || over.f || fig, { f: _drop, ...rest } = over;
   return { team: 0, img: art(who), name: who.n, mp: String(who.mp), badge: '', status: '', wait: false, mpd: 0, sel: false, atk: false, dim: false, ...rest };

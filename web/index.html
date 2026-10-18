@@ -572,6 +572,7 @@
 <div id="modal" hidden><div class="box" id="box"></div></div>
 
 <script src="data.js"></script>
+<script src="art.js"></script>
 <script src="board.js"></script>
 <script>
 'use strict';
@@ -581,7 +582,9 @@ const SEG_COL = ['#c8322b', '#eef1f4', '#9050c8', '#f2c230', '#3d8fe8'], RAR = {
 // figure pictures are linked from the PokeAPI sprite set (not copied here); forms without a national dex number borrow the base figure's picture
 const dexByName = new Map(D.figures.filter(f => f.dex <= 1025).map(f => [f.n, f.dex]));
 const PIC_SET = 'other/official-artwork/';
-const sprite = f => { const d = f.dex <= 1025 ? f.dex : dexByName.get(f.n.replace(/^(Alolan|Shiny|Mega) /, '').replace(/ [XY]$/, '')); return d ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${PIC_SET}${d}.png` : ''; };
+const sprite = f => {   // a form, Mega, Alolan or Shiny figure has its own picture (art.js); the rest are their Dex number's
+  const own = FIG_ART[f.n], d = own ? own[0] : f.dex <= 1025 ? f.dex : dexByName.get(f.n.replace(/^(Alolan|Shiny|Mega) /, '').replace(/ [XY]$/, ''));
+  return d ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${PIC_SET}${own && own[1] ? 'shiny/' : ''}${d}.png` : ''; };
 const byId = new Map(D.figures.map(f => [f.id, f])), byRule = new Map(), byGroup = new Map(), plateById = new Map(D.plates.map(p => [p.id, p]));
 for (const f of D.figures) { if (!byRule.has(f.rule)) byRule.set(f.rule, f); (byGroup.get(f.g) || byGroup.set(f.g, []).get(f.g)).push(f); }
 const typeNames = f => f.t.map(t => D.types[t]).join(' / ');
