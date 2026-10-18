@@ -57,8 +57,8 @@
      and clock (the clock sits on the inner side); the turns left in a badge where the panels meet; under them one Z gauge each, out of 100,
      reading MAX and glowing when full. The side that is not to act is masked black at 35% over 0.3 s (TurnChangeUi). */
   .hud { position:relative; display:grid; grid-template-columns:1fr 1fr; background:var(--bar); }
-  .hud .pl { position:relative; display:flex; align-items:center; gap:8px; min-width:0; height:44px; padding:0 34px 0 0; color:#fff; background:linear-gradient(90deg, var(--p0d), var(--p0)); }
-  .hud .pl.right { justify-content:flex-end; padding:0 0 0 34px; background:linear-gradient(90deg, var(--p1), var(--p1d)); }
+  .hud .pl { position:relative; display:flex; align-items:center; gap:8px; min-width:0; height:44px; padding:0 34px 0 0; color:#fff; background:linear-gradient(90deg, var(--p0), var(--p0d)); }   /* bright where it meets the avatar, darker toward the middle */
+  .hud .pl.right { justify-content:flex-end; padding:0 0 0 34px; background:linear-gradient(90deg, var(--p1d), var(--p1)); }
   .hud .pl::after { content:""; position:absolute; inset:0; background:#000; opacity:.35; transition:opacity .3s; pointer-events:none; } .hud .pl.turn::after { opacity:0; }
   .hud .av { flex:none; align-self:stretch; width:44px; display:grid; place-items:center; font-weight:800; font-size:16px; line-height:1; color:#fff; border-right:1px solid var(--line); } .hud .pl.right .av { border-right:0; border-left:1px solid var(--line); }   /* flush with the bar's outer edge, its full height; one 1px divider on the inner side */
   .hud .who { min-width:0; font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 2px rgba(0,0,0,.4); }
