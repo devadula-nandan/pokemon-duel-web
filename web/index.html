@@ -47,7 +47,7 @@
   html.mview:has(#game:not([hidden])) body > .top { display:none; }   /* only the chrome bar — not #first .half.top */
   html.mview #game .arena { --fit:100cqh; height:100%; width:100%; aspect-ratio:auto; margin:0; align-self:stretch; justify-self:stretch; }   /* the whole screen, not the table's shape */
   html.mview .arena, html.mview .side, html.mview #board3d button, html.mview .hud .z, html.mview .clock { border:0 !important; border-radius:0 !important; outline:0 !important; }
-  html.mview .side.open { transform:none; } html.mview .side .panel { box-shadow:none; }   /* flat drawer: its 1px edge line, no shadows */
+  html.mview .side.open { transform:none; } html.mview .side .panel { box-shadow:none; } html.mview .side { border-left:1px solid var(--line) !important; }   /* flat drawer: the HUD's 1px theme line on its left edge, no shadows */
   html.mview .side::before { content:''; position:fixed; top:var(--side-top,0); bottom:var(--side-bottom,0); left:0; right:min(88vw,380px); background:color-mix(in srgb, var(--bg) 60%, transparent); opacity:0; transition:opacity .2s; pointer-events:none; }
   html.mview .side.open::before { opacity:1; }   /* the board beside the open drawer is tinted (a tap there still closes it) */
   #fsGame { display:none; } #fsBtn[aria-pressed=true], #fsGame[aria-pressed=true] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
