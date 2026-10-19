@@ -1,6 +1,6 @@
 // Cache-first for assets the gate has stored and for figure sprites (kept on first use); everything else goes to the network.
 const CACHE = 'pdw-assets-v1';
-const SPRITES = 'pdw-sprites-e81a856398';   // stamped by tools/build_sprites.py from the sprite files: a rebuild changes it, this worker updates and drops the old sprites
+const SPRITES = 'pdw-sprites-f5ecfc673a';   // stamped by tools/build_sprites.py from the sprite files: a rebuild changes it, this worker updates and drops the old sprites
 
 self.addEventListener('install', event => {
   self.skipWaiting();
