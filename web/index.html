@@ -113,6 +113,7 @@
   .chip { display:inline-block; padding:0 8px; font-size:11px; font-weight:700; background:var(--ctl2); color:var(--ink); margin-right:4px; } .chip.w { background:var(--ink); color:var(--bg); }
   .sw { border-radius:50%; width:12px; height:12px; margin-top:4px; border:1px solid rgba(255,255,255,.4); } .desc { color:var(--dim); font-size:12px; grid-column:2 / 4; }
   #log { height:160px; overflow:auto; display:grid; align-content:start; border-top:1px solid var(--line); } #log > div { padding:10px 14px; border-bottom:1px solid var(--line); font-weight:600; }   /* rows drawn like the action list's, on the dark panel; a player's rows are tinted with their colour, mixed into the theme's panel */ #log > .me { background:color-mix(in srgb, var(--p0) 11%, var(--panel)); } #log > .op { background:color-mix(in srgb, var(--p1) 11%, var(--panel)); } #log b, .ink { color:var(--ink); font-weight:700; }
+  #log > div { content-visibility:auto; contain-intrinsic-size:auto 41px; }   /* rows out of view are skipped (layout and paint) */ #log > div:has(> .lpic) { position:relative; padding-left:calc(var(--row-h) + 10px); min-height:var(--row-h); } #log .lpic { position:absolute; left:0; top:0; width:var(--row-h); height:100%; object-fit:cover; object-position:50% 30%; }   /* flush to the row's start and edges, the body in view */
   #list, #plist { height:300px; overflow:auto; } .row { display:flex; gap:8px; padding:6px 8px; cursor:pointer; align-items:center; }
   .row:hover { background:var(--ctl2); } .row .n { flex:1; } .team .row { background:var(--ctl); }
   .chip.rar1 { background:#8a8f98; color:#fff; } .chip.rar2 { background:#2e9e5b; color:#fff; } .chip.rar3 { background:#2f7fe0; color:#fff; } .chip.rar4 { background:#d9a514; color:#111; } .chip.rar5 { background:#c0392b; color:#fff; }   /* rarity: C, UC, R, EX, UX */
@@ -1684,7 +1685,7 @@ const figOf = i => { const p = pk(i); return (p && byRule.get(p.id)) || { n: 'Fi
 const evoRoot = i => { let cur = i; for (let n = 0; n < 8 && st; n++) { const parent = st.players.flatMap(p => p.pokemons).find(x => x.evolution === cur); if (!parent) return cur; cur = parent.pokemon_index; } return cur; };
 const fieldForm = (i, s = st) => { let cur = i; for (let n = 0; n < 8 && s; n++) { if (s.pokemon_conditions.some(c => c.pokemon_index === cur)) return cur; const x = s.players.flatMap(p => p.pokemons).find(x => x.pokemon_index === cur); if (!x || x.evolution < 0) break; cur = x.evolution; } return i; };   // the stage of i's line that is on the table (stages in between may never have been)
 const sameLine = (a, b) => a === b || evoRoot(a) === evoRoot(b);
-const nameOf = i => `<b style="color:${P_COL[colorOf(i)]}">${esc(figOf(fieldForm(i)).n)}</b>`;
+const nameOf = i => { const f = figOf(fieldForm(i)), pic = FIG_SPRITE[f.n] ? `sprites/${FIG_SPRITE[f.n][1]}.webp` : ''; return `<b style="color:${P_COL[colorOf(i)]}"${pic ? ` data-pic="${pic}"` : ''}>${esc(f.n)}</b>`; };   // data-pic: the still picture, which a log row shows for the first figure it names
 const condName = c => D.conds[c] || String(c).replace(/_/g, ' ');
 const place = p => p < 28 ? 'point ' + p : p < 40 ? 'bench' : p < 44 ? 'P.C.' : 'out of play';
 function badges(c) {
@@ -2262,7 +2263,8 @@ async function tickNext() {
   }
   el.hidden = true; el.textContent = ''; tickQ.shift(); tickNext();
 }
-function log(html) { const cls = P_COL[logSide] ? (logSide === (flip ? 'white' : 'black') ? 'me' : 'op') : ''; logLines.push(`<div class="${cls}">${html}</div>`); $('log').innerHTML = logLines.slice(-120).join(''); $('log').scrollTop = 1e6; }
+function log(html) { const cls = P_COL[logSide] ? (logSide === (flip ? 'white' : 'black') ? 'me' : 'op') : '', pic = (String(html).match(/data-pic="([^"]+)"/) || [])[1];
+  logLines.push(`<div class="${cls}">${pic ? `<img class="lpic" src="${pic}" alt="" loading="lazy">` : ''}${html}</div>`); $('log').innerHTML = logLines.slice(-120).join(''); $('log').scrollTop = 1e6; }   // the row shows the still picture of the first figure it names (one decoded copy per figure, no animation to repaint), flush at its start
 const ask = (q, yes) => modal(`<h2 style="margin-top:0">${esc(q)}</h2><div class="rbtns"><button data-v="">Cancel</button><button data-v="1" class="dangerbtn">${esc(yes)}</button></div>`).then(Boolean);
 function modal(html) { $('box').innerHTML = html; $('modal').hidden = false; return new Promise(res => { $('box').onclick = e => { const b = e.target.closest('[data-v]'); if (b) { $('modal').hidden = true; res(b.dataset.v); } }; }); }
 // The battle screen. It covers the whole arena (HUD and board), with no dialog around it, and is laid out as the original lays it out: two large disks on a dark stage, the opponent's above and to the right and
