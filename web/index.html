@@ -1404,7 +1404,7 @@ async function start(opts) {
   leagueGame = lgMode ? { done: false } : null; sealed.clear(); zMoves.clear(); boardSt = null; battleView = null; deferredSfx = null; const btl = $('battle'); if (btl) { btl.hidden = true; btl.innerHTML = ''; } $('home').hidden = true; states = []; rewinds = 0;
   sel = null; busy = false; over = null; logLines = []; clock = { black: 300, white: 300 }; gameId++;
   $('setupErr').textContent = ''; $('setup').hidden = true; $('game').hidden = false; $('log').innerHTML = '';
-  sfx('duel_start'); introDue = true; window.Board3D?.newDuel();
+  sfx('duel_start'); introDue = true; st = null; window.Board3D?.newDuel();   // st = null: no redraw uses the last duel's state, so the opening drops the figures onto this duel's benches
   if (window.bgm) bgm.play('duel');
   if (net) net.conn.send({ t: 'first', side: rec.first_player });
   await firstSpin(rec.first_player);

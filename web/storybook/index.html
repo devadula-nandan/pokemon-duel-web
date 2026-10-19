@@ -477,7 +477,7 @@ function show(group, name) {
   (show.timers || []).forEach(clearTimeout); show.timers = [];
   const draw = x => { window.board3dModel = x; if (window.Board3D) Board3D.draw(x); };
   const job = ++demoJob;
-  const oldGal = $('gal'); if (oldGal) oldGal.remove(); $('sizes')?.remove(); document.onkeydown = null; window.onhashchange = null;
+  const oldGal = $('gal'); if (oldGal) oldGal.remove(); $('sizes')?.remove(); window.Board3D?.clearGoal();   // a goal story leaves the MP markers hidden; the next story shows them again document.onkeydown = null; window.onhashchange = null;
   if (m.demo === 'goal') {   // replay a goal: the figure hops node by node along a route onto the goal (as a duel move does), and the goal plays out
     const t = m.toks[0], route = (m.near ? [0, 1, 2, 3] : [21, 22, 23, 24]).map(P), go = () => { if (job !== demoJob) return;
       draw({ ...m, toks: [{ ...t, x: route[0][0], z: route[0][1] }], snap: true });

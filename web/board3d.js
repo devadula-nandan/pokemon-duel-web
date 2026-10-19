@@ -181,7 +181,7 @@ function label(text, mpd) {   // MP puck top: face colour, ring/digit in route c
   });
 }
 function paintTag(u, text, mpd) {   // swap the digit sprite; dispose the previous map so a count-up does not leak
-  const empty = text === '' || text == null; u.tag.visible = !empty; if (empty) return;
+  const empty = text === '' || text == null; u.hasMp = !empty; if (empty) { u.tag.visible = false; return; }
   const { face } = mpColors(mpd); u.tagSide.color.set(face);
   const old = u.tagFace.material.map; u.tagFace.material.map = label(text, mpd); u.tagFace.material.needsUpdate = true; if (old) old.dispose();
 }
@@ -209,7 +209,7 @@ function token(t) {
   const tagBody = new THREE.Mesh(G.tagBody, tagSide); tagBody.castShadow = true;   // 3D puck thickness (tipped to face the camera)
   const tagFace = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false, alphaTest: .05 }));   // digit: sprite, not rotated with the body
   tagFace.scale.set(TAG_R * 2.05, TAG_R * 2.05, 1);
-  const tag = new THREE.Group(); tag.add(tagBody, tagFace); tag.position.set(.26, .12, .38);   // group only moves/scales — never rolls
+  const tag = new THREE.Group(); tag.add(tagBody, tagFace); tag.position.set(.24, .4, .56);   // group only moves/scales — never rolls. Where the original floats it (FigureMP: (0.3, 0.5, -0.7) on a base turned to face its owner = 0.3 aside, 0.5 up, 0.7 towards the near side; x mirrored here), scaled to this base (0.4 / 0.5)
   base.position.y = BASE_H / 2; base.castShadow = true; cap.position.y = BASE_H - .002; cap.castShadow = true;   // lid sinks a hair into the cylinder top so the shared rim is seamless
   ring.rotation.x = Math.PI / 2; ring.position.y = .05; aura.rotation.x = Math.PI / 2; aura.position.y = AURA_H / 2; aura.castShadow = true;
   art.center.set(.5, 0); art.position.y = .04; art.scale.set(1.05, 1.05, 1); art.renderOrder = 1;
@@ -329,7 +329,9 @@ function stepBursts(dt) {
     if (!live) { scene.remove(b.grp); b.grp.traverse(o => { o.geometry?.dispose(); o.material?.dispose(); }); bursts.splice(i, 1); }
   }
 }
+let goalShown = false;   // GoalCloseMpView: once a goal is under way no MP marker shows (until the next duel)
 function goal(near) {   // near: the near side (blue) scored on the far goal
+  goalShown = false;
   const far = [...points.values()].find(g => g.userData.goal && g.userData.side === 1), moving = () => [...tokens.values()].filter(g => g.userData.hop || g.userData.drop);
   const cut = () => {   // GoolCamera: the shot, and back after 3 s
     const keep = { pos: camera.position.clone(), at: controls.target.clone(), up: camera.up.clone(), fov: camera.fov, on: controls.enabled };
@@ -339,14 +341,15 @@ function goal(near) {   // near: the near side (blue) scored on the far goal
   const landed = () => new Promise(go => { const w = () => moving().length ? setTimeout(w, 30) : go(); w(); });   // GameSet waits for the figure to land
   const fall = () => {   // GameSet / GoalProduction: Se212, the burst, and GoalCalc (the fallen goal takes the winner's colour; the other its own)
     for (const g of points.values()) if (g.userData.goal) { const u = g.userData; u.plain = u.side === (near ? 1 : 0) ? (near ? M.blue : M.red) : u.side === 0 ? M.blue : M.red; u.mark.material = u.plain; }
-    window.sfx?.('goal'); burst(new THREE.Vector3(0, .06, near ? -3 : 3), BURST[near ? 'red' : 'blue']);
+    goalShown = true; window.sfx?.('goal'); burst(new THREE.Vector3(0, .06, near ? -3 : 3), BURST[near ? 'red' : 'blue']);
   };
-  if (!near) return landed().then(fall);
+  if (!near) { goalShown = true; return landed().then(fall); }   // their goal: the duel is over, no marker comes back as the figure lands
   // FigureAction: GoolAction fires as the scoring figure comes within 0.5 of the goal, so the shot opens with it still sliding on
   const close = () => new Promise(go => { const w = () => { const g = moving(); if (!g.length || !far || g.some(x => x.position.distanceTo(far.position) < .5)) go(); else setTimeout(w, 16); }; w(); });
-  return close().then(() => { const back = cut(); return landed().then(fall).then(() => back); });
+  return close().then(() => { goalShown = true; const back = cut(); return landed().then(fall).then(() => back); });
 }
 function newDuel() {   // a new duel is starting: the last one's figures leave the table (the opening drops the new ones), goals their own colours
+  goalShown = false;
   for (const g of tokens.values()) { g.visible = false; g.userData.hop = null; }
   for (const g of points.values()) if (g.userData.goal) { const u = g.userData; u.plain = u.side === 0 ? M.blue : M.red; u.mark.material = u.plain; }
   for (const b of bursts.splice(0)) scene.remove(b.grp);
@@ -500,6 +503,7 @@ renderer.setAnimationLoop(() => {
       else { const s = h.segs[h.i], k = Math.min(1, h.t / s.dur); g.position.lerpVectors(h.pts[h.i], h.pts[h.i + 1], k); g.position.y = Math.sin(k * Math.PI) * (s.leap ? 1.15 : .45); }
     }
     else if (u.to) g.position.lerp(u.to, 1 - Math.pow(.001, dt)); if (u.ring.visible) u.ring.scale.setScalar(.95 + .08 * pulse);
+    u.tag.visible = !!u.hasMp && !u.hop && !u.drop && !goalShown;   // the MP marker shows on a figure standing still that can move (no number in the P.C. or out of play); hidden while it moves
     if (u.tag.visible) faceTag(u);
     if (u.mpAnim) {   // roll the MP digit and pop the puck while it changes colour
       const a = u.mpAnim, k = Math.min(1, (a.t += dt) / a.dur), n = Math.round(a.from + (a.to - a.from) * k), pop = TAG_S * (1 + .28 * Math.sin(k * Math.PI));
@@ -515,8 +519,13 @@ renderer.setAnimationLoop(() => {
   // Each figure is drawn whole, from the farthest to the nearest: its base, then its picture (which ignores depth, so its own base cannot
   // cut it off), then its MP badge. A nearer figure's base and picture therefore cover whatever stands behind them. The bases are marked
   // transparent only so that they take part in this ordering; they are fully opaque.
+  const TAGW = new THREE.Vector3();
   [...tokens.values()].sort((p, q) => q.position.distanceToSquared(camera.position) - p.position.distanceToSquared(camera.position)).forEach((g, i) => {
-    const u = g.userData, n = 5 * i; u.base.renderOrder = n + 1; u.cap.renderOrder = n + 2; u.shade.renderOrder = n + 3; u.art.renderOrder = n + 4; u.tagBody.renderOrder = n + 5; u.tagFace.renderOrder = n + 6; if (u.evo) u.evo.renderOrder = n + 7;
+    const u = g.userData, n = 5 * i; u.base.renderOrder = n + 1; u.cap.renderOrder = n + 2; u.shade.renderOrder = n + 3; u.art.renderOrder = n + 4; if (u.evo) u.evo.renderOrder = n + 7;
+    // the MP badge sits on the front edge of the base: seen from behind (the goal shot, a turned camera) it is farther than the figure, so it goes
+    // first and the base and picture cover it; seen from the front it goes last
+    const behind = u.tag.getWorldPosition(TAGW).distanceToSquared(camera.position) > g.position.distanceToSquared(camera.position);
+    u.tagBody.renderOrder = behind ? n + .3 : n + 5; u.tagFace.renderOrder = behind ? n + .6 : n + 6;
   });
   M.mv.emissiveIntensity = pulse;
   renderer.render(scene, camera);
@@ -709,5 +718,5 @@ function project(i) {   // where a figure sits on the arena, so the evolution fl
   const rect = renderer.domElement.getBoundingClientRect(), host = (document.querySelector('.arena') || renderer.domElement.parentElement).getBoundingClientRect();
   return { x: (v.x * .5 + .5) * rect.width + rect.left - host.left, y: (-v.y * .5 + .5) * rect.height + rect.top - host.top };
 }
-window.Board3D = { draw, goal, newDuel, controls, tokens, project, blast, clearBlasts, ability, clearAbilities, plate, fieldSpin, info: () => ({ ...renderer.info.memory, objects: (() => { let n = 0; scene.traverse(() => n++); return n; })() }) };   // controls and tokens are exposed for inspection
+window.Board3D = { draw, goal, newDuel, clearGoal: () => { goalShown = false; }, controls, tokens, project, blast, clearBlasts, ability, clearAbilities, plate, fieldSpin, info: () => ({ ...renderer.info.memory, objects: (() => { let n = 0; scene.traverse(() => n++); return n; })() }) };   // controls and tokens are exposed for inspection
 if (window.board3dModel) draw(window.board3dModel);
