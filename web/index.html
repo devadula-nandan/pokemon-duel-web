@@ -1379,7 +1379,7 @@ async function joinRoom(code) {
 }
 
 // ---------- engine access ----------
-let hudSide = null, me = 'black', flip = false, states = [], rewinds = 0, rec, st, legal = [], sel = null, routeChoice = null, busy = false, over = null, ctrl = {}, ai = null, clock = {}, timer = 0, logLines = [], gameId = 0;
+let hudSide = null, me = 'black', flip = false, states = [], rewinds = 0, rec, st, legal = [], sel = null, routeChoice = null, busy = false, over = null, ctrl = {}, ai = null, clock = {}, timer = 0, logLines = [], gameId = 0, introDue = false;   // introDue: the next board drawn is a new duel's, so its figures come onto the benches (board3d dropIn)
 async function api(cmd, extra) {
   const j = JSON.parse(await engineCmd(JSON.stringify(Object.assign({ cmd, record: rec }, extra))));
   if (j.error) throw new Error('engine: ' + j.error);
@@ -1403,7 +1403,7 @@ async function start(opts) {
   leagueGame = lgMode ? { done: false } : null; sealed.clear(); zMoves.clear(); boardSt = null; battleView = null; deferredSfx = null; const btl = $('battle'); if (btl) { btl.hidden = true; btl.innerHTML = ''; } $('home').hidden = true; states = []; rewinds = 0;
   sel = null; busy = false; over = null; logLines = []; clock = { black: 300, white: 300 }; gameId++;
   $('setupErr').textContent = ''; $('setup').hidden = true; $('game').hidden = false; $('log').innerHTML = '';
-  sfx('duel_start');
+  sfx('duel_start'); introDue = true; window.Board3D?.newDuel();
   if (window.bgm) bgm.play('duel');
   if (net) net.conn.send({ t: 'first', side: rec.first_player });
   await firstSpin(rec.first_player);
@@ -1581,7 +1581,10 @@ $('result').onclick = e => { const b = e.target.closest('[data-r]'); if (!b) ret
   if (b.dataset.r === 'again') return start().catch(x => { showHome(); drawHome.msg = x.message; drawHome(); });
   showHome(); };
 function settle() {   // after the effects: the end-of-duel or your-turn sound; true when the duel is over
-  if (over) { if (!over.sung) { over.sung = 1; if (window.bgm) bgm.stop(); if (/goal/i.test(String(over.reason || ''))) sfx('goal'); const lost = ctrl[me] === 'human' && over.winner && over.winner !== me; if (lost && !/knock|faint|goal|surround/i.test(String(over.reason || ''))) sfx('lose_alt'); sfx(lost ? 'lose' : 'win'); if (!lost) sfx('cheer'); showResult(); } return true; }
+  if (over) { if (!over.sung) { over.sung = 1; if (window.bgm) bgm.stop(); const goal = /goal/i.test(String(over.reason || '')), lost = ctrl[me] === 'human' && over.winner && over.winner !== me;
+      const end = () => { if (lost && !/knock|faint|goal|surround/i.test(String(over.reason || ''))) sfx('lose_alt'); sfx(lost ? 'lose' : 'win'); if (!lost) sfx('cheer'); showResult(); };
+      if (goal && VIEW3D && window.Board3D) Board3D.goal(over.winner === (flip ? 'white' : 'black')).then(end);   // the goal plays out on the table (Se212, burst, goal camera) before the result
+      else { if (goal) sfx('goal'); end(); } } return true; }
   const side = st.selective_side; if (ctrl[side] === 'human' && settle.last !== side) sfx('turn'); settle.last = side;
 }
 // One step of the original client's loop (Engine.CurrentState): effects of the last move, new status, next legal moves.
@@ -1890,7 +1893,8 @@ function render() {
   if (VIEW3D) {
     const pts = []; for (let p = 0; p < 28; p++) { const [x, z] = U(xy(p)); pts.push({ k: flip ? 27 - p : p, p, x, z, goal: p === (flip ? 3 : 24) ? 0 : p === (flip ? 24 : 3) ? 1 : null, mv: routes.has(p) }); }
     const slots = []; for (let p = 28; p < 44; p++) slots.push(U(xy(p)));
-    window.board3dModel = { pts, slots, toks, edges: EDGES.map(([a, b]) => [U(xy(a)), U(xy(b))]), table: tm }; if (window.Board3D) Board3D.draw(board3dModel);
+    const intro = introDue && toks.length > 0; if (intro) introDue = false;
+    window.board3dModel = { pts, slots, toks, edges: EDGES.map(([a, b]) => [U(xy(a)), U(xy(b))]), table: tm, intro }; if (window.Board3D) Board3D.draw(board3dModel);
   }
   $('status').innerHTML = over ? `<b>${over.winner && P_COL[over.winner] ? wins(over.winner) : 'Draw'}</b> — ${esc(String(over.reason).replace(/_/g, ' '))}` : ''; $('turns').textContent = st.remaining_turns;   // no "to act": the player bars show the turn
   // every engine legal move, including ones also playable on the board — easier to spot UI / index bugs than hiding the "on-board" set

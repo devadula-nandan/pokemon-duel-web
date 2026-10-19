@@ -306,6 +306,9 @@ const STORIES = {
   Table: {
     'Empty table': ['Field points, routes, both goals, bench rings and P.C. rings.', () => table()],
     'Movable points': ['Points the selected figure can reach glow gold.', () => table([21, 22, 23, 16, 17, 18, 25, 26, 27, 19, 20], [{ at: 28, sel: true }])],
+    'Figures come onto the benches': ['The opening, as the original plays it (MatchMain.StartFigureAnim): each figure comes in from off the table, two at a time in figure order, and rises over its bench and drops on (or takes a low arc where nothing stands near its slot), landing with Se011. Loops.', () => ({ ...table([], some(12).map((f, i) => ({ f, at: i < 6 ? 28 + i : 34 + i - 6, team: i < 6 ? 0 : 1, mp: String(f.mp) }))), demo: 'intro' })],
+    'Goal: you score': ['Your figure lands on the opponent’s goal (MatchMain.GameSet, MatchCamera.GoolCamera): Se212, the red goal bursts and turns your colour, and the camera cuts to the goal shot for 3 s, then back. Loops.', () => ({ ...table([], [{ f: some(1)[0], at: 3, team: 0, mp: '2' }]), demo: 'goal', near: true })],
+    'Goal: the opponent scores': ['An opponent’s figure lands on your goal (MatchMain.GoalProduction): Se212, your blue goal bursts and turns their colour. The camera stays. Loops.', () => ({ ...table([], [{ f: some(2)[1], at: 24, team: 1, mp: '2' }]), demo: 'goal', near: false })],
     'Opening position': ['Six figures on each bench.', () => table([], some(12).map((f, i) => ({ f, at: i < 6 ? 28 + i : 34 + i - 6, team: i < 6 ? 0 : 1, mp: String(f.mp) })))],
     'Excluded figures': ['Figures removed from the duel sit in a row past their side\'s bench: yours along the near edge, the opponent\'s along the far edge.', () => table([], some(10).map((f, i) => i < 3 ? { f, out: i, team: 0, dim: true, mp: '' } : i < 5 ? { f, out: i - 3, team: 1, dim: true, mp: '' } : { f, at: [28, 29, 34, 35, 18][i - 5], team: i < 7 || i === 9 ? 0 : 1, mp: String(f.mp) }))],
     'Tall and wide figures': ['Figures are sized by how much of them is visible, not by their outline: a compact one (Snorunt) is not blown up, a spread-out one (Mega Charizard X / Y) is not shrunk, and no picture is clipped. On the bench and on the field.', () => table([], ['Snorunt', 'Mega Charizard X', 'Mega Charizard Y'].flatMap((n, i) => [{ f: named(n), at: 28 + i, mp: String(named(n).mp) }, { f: named(n), at: [21, 22, 23][i], mp: String(named(n).mp) }]))],
@@ -475,6 +478,13 @@ function show(group, name) {
   const draw = x => { window.board3dModel = x; if (window.Board3D) Board3D.draw(x); };
   const job = ++demoJob;
   const oldGal = $('gal'); if (oldGal) oldGal.remove(); $('sizes')?.remove(); document.onkeydown = null; window.onhashchange = null;
+  if (m.demo === 'goal') {   // replay a goal: the figure hops node by node along a route onto the goal (as a duel move does), and the goal plays out
+    const t = m.toks[0], route = (m.near ? [0, 1, 2, 3] : [21, 22, 23, 24]).map(P), go = () => { if (job !== demoJob) return;
+      draw({ ...m, toks: [{ ...t, x: route[0][0], z: route[0][1] }], snap: true });
+      setTimeout(() => { if (job !== demoJob) return; draw({ ...m, snap: false, toks: [{ ...t, moveId: Date.now(), path: route }] }); Board3D.goal(m.near).then(() => setTimeout(go, 1500)); }, 900); };
+    go(); return;
+  }
+  if (m.demo === 'intro') { const go = () => { if (job !== demoJob) return; draw({ ...m, intro: true }); setTimeout(go, 3500); }; go(); return; }   // replay the opening drop
   if (m.demo === 'sizes') {   // every figure at one scale: a picture's px are drawn the same everywhere (tools/build_sprites.py), feet on one line
     draw(m); const box = document.createElement('div'); box.id = 'sizes'; $('board3d').appendChild(box);
     box.innerHTML = [...D.figures].sort((a, b) => a.no - b.no || a.id - b.id).map(f => `<figure><img loading="lazy" src="${art(f)}" alt="" onload="this.style.height = this.naturalHeight * .75 + 'px'"><figcaption>${esc(f.n)}</figcaption></figure>`).join('');

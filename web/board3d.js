@@ -96,7 +96,7 @@ function build(m) {   // routes, spots and slots never move during a duel (the f
     if (p.goal == null) { mark = new THREE.Mesh(G.dot, M.line); mark.position.y = .025; mark.castShadow = true; g.add(mark);
       if ([0, 6, 21, 27].includes(p.k)) { const ring = new THREE.Mesh(G.entry, M.line); ring.rotation.x = Math.PI / 2; ring.position.y = .025; ring.castShadow = true; g.add(ring); } }
     else { mark = new THREE.Mesh(G.goalDisc, p.goal === 0 ? M.blue : M.red); mark.rotation.x = -Math.PI / 2; mark.position.y = .054; const rim = new THREE.Mesh(G.ring2, M.line); rim.rotation.x = Math.PI / 2; rim.position.y = .025; rim.castShadow = true; g.add(mark, rim); }
-    g.position.set(p.x, 0, p.z); g.userData = { mark, plain: mark.material, goal: p.goal != null }; mark.userData.pick = g.userData; statics.add(g); points.set(p.k, g); pickable.push(mark);
+    g.position.set(p.x, 0, p.z); g.userData = { mark, plain: mark.material, goal: p.goal != null, side: p.goal }; mark.userData.pick = g.userData; statics.add(g); points.set(p.k, g); pickable.push(mark);
   }
   built = m.pts.length + ':' + m.slots.length + ':' + m.edges.length;
 }
@@ -270,6 +270,87 @@ function drawTable(t) {
   const name = flat(1.6, .28, t.btn.on ? .125 : .08, new THREE.MeshBasicMaterial({ map: words(t.btn.label.toUpperCase(), 400, 70, css(t.btn.on ? '--bd' : '--bd-line', '#888'), 46), transparent: true, opacity: t.btn.on ? 1 : .45 })); name.position.x = t.btn.x; name.position.z = t.btn.z;
   extras.add(rim, well, body, name); hit(2, .3, .6, t.btn.x, t.btn.z, 'main');
 }
+// The opening (MatchMain.StartFigureAnim + FigureAction): every figure comes onto its bench from (-7.5, 0, 16) less its bench point (the
+// opponent's mirrored; x is mirrored on this board), two at a time 0.2 s apart in figure order, along the original's Bezier for that path
+// (FigureAction.GetMoveType: a box cast of 0.1 against the 0.5 spheres of points that hold a figure; one near the bench makes it rise over
+// the bench and drop on, else a low arc) in 0.3 s + distance / 50, landing with Se011. Hidden until its turn, as the original keeps it inactive.
+const segDist = (q, a, b) => { const ab = b.clone().sub(a), k = Math.max(0, Math.min(1, q.clone().sub(a).dot(ab) / ab.lengthSq())); return a.clone().addScaledVector(ab, k).distanceTo(q); };
+function bezier(pts, k, out) {   // MyMath.BezierCurve: Bernstein form over every control point
+  const n = pts.length - 1; out.set(0, 0, 0); let c = 1;
+  for (let i = 0; i <= n; i++) { out.addScaledVector(pts[i], c * Math.pow(1 - k, n - i) * Math.pow(k, i)); c = c * (n - i) / (i + 1); }
+  return out;
+}
+function dropIn(toks) {
+  for (const g of points.values()) if (g.userData.goal) g.userData.plain = g.userData.side === 0 ? M.blue : M.red;   // a new duel: both goals their own colour again (goal() may have swapped one)
+  const V = (x, z, y = 0) => new THREE.Vector3(x, y, z), at = toks.map(t => V(t.x, t.z));
+  [...toks].sort((a, b) => a.i - b.i).forEach((t, n) => {
+    const g = tokens.get(t.i), B = V(t.x, t.z), S = t.team ? V(-7.5 - t.x, -16 - t.z) : V(7.5 - t.x, 16 - t.z), mid = S.clone().lerp(B, .5);
+    let any = false, nearS = false, nearB = false;
+    for (const q of at) { const d1 = q.distanceTo(S), d2 = q.distanceTo(B); if (d1 < .2 || d2 < .2 || segDist(q, S, B) > .6) continue; any = true; nearS ||= d1 < 1.7; nearB ||= d2 < 1.7; }
+    const pts = nearS === nearB ? (nearS || any ? [S, V(S.x, S.z, 2), V(mid.x, mid.z, 4), V(B.x, B.z, 2), B] : [S, V(mid.x, mid.z, 1), B])   // FromUpToUp / Liner
+      : nearS ? [S, V(S.x, S.z, 3), B] : [S, V(B.x, B.z, 3), B];   // FromUp / ToUp
+    g.visible = false; g.position.copy(S); g.userData.hop = null; g.userData.drop = { pts, t: -(.5 + .2 * (n >> 1)), dur: .3 + S.distanceTo(B) / 50 };
+  });
+}
+// A goal (MatchMain.GameSet / GoalProduction, Stage.GoalCalc, MatchCamera.GoolCamera). Once the figure has landed: Se212 and the goal that
+// fell bursts (homepoint_red_dead / _blue_dead at (0, 0, -3) / (0, 0, 3)) and its disc turns the winner's colour. When the near side scored,
+// the camera has already cut (as the figure came within 0.5 of the goal, so it slides on in the shot; an instant cut, no pan) for 3 s to the goal shot (rig dolly (0, 0, -.4), rotY 165, rotX 52, zoom (.7, 4.5, 1.3), camera (89.21, 0, 180),
+// fov 60; x mirrored on this board) and then back. Resolves when it is over, so the result can follow.
+// ponytail: the burst is drawn here (the original's textures are not copied): its two flashes, two dust rings and spark spray on the original's
+// lifetimes, counts, size curves and colour keys, with sizes picked for this table; read the prefab's mesh scales if they need matching.
+const BURST = { red: { flash: [0xff6f00, 0xffffff, 0xeaaa00, 0x474203], ring: [0xffb900, 0xffffff, 0x943a00], spark: [0xff8400, 0xffffff, 0xffe300], life: 3 },
+  blue: { flash: [0x5d00ff, 0xffffff, 0x0089ea, 0x031247], ring: [0x00b5ff, 0xffffff, 0x0089ea], spark: [0x00b5ff, 0xffffff, 0x00f4ff], life: 2 } };
+const glowTex = tex(64, 64, (g, w) => { const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.55)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, w); });
+const bursts = [], CC = new THREE.Color();
+const keys = (list, k) => { const f = Math.min(.999, Math.max(0, k)) * (list.length - 1), i = Math.floor(f); return CC.setHex(list[i]).lerp(new THREE.Color(list[i + 1]), f - i); };   // a colour key list, evenly spread
+const curve = (pts, k) => { for (let i = 1; i < pts.length; i++) if (k <= pts[i][0]) { const [a, va] = pts[i - 1], [b, vb] = pts[i]; return va + (vb - va) * (k - a) / (b - a); } return pts[pts.length - 1][1]; };
+function burst(at, pal) {
+  const grp = new THREE.Group(), parts = []; grp.position.copy(at); scene.add(grp);
+  const glow = () => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending })); s.renderOrder = 60; grp.add(s); return s; };
+  for (const [life, from, size] of [[.85, .47, 3.4], [.35, .3, 5]]) {   // main_flash01 / 02: one glow each, growing from `from` to full
+    const s = glow(); parts.push({ o: s, life, at: 0, fn: k => { s.scale.setScalar(size * (from + (1 - from) * k)); s.material.color.copy(keys(pal.flash, k)); s.material.opacity = 1 - k; } });
+  }
+  for (const life of [1.25, 1]) {   // flash_ring_dust1 / 2: a ring on the table, size 1.3 by its curve, turning 45° between 0.45 and 0.56 of its life
+    const r = new THREE.Mesh(new THREE.RingGeometry(.4, .5, 48), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide })); r.rotation.x = -Math.PI / 2; r.renderOrder = 59; grp.add(r);
+    parts.push({ o: r, life, at: 0, fn: k => { r.scale.setScalar(1.3 * 2 * curve([[0, .43], [.1, .7], [.55, .7], [.58, 1], [.6, .85], [1, .85]], k)); r.rotation.z = .785 * Math.min(1, Math.max(0, (k - .45) / .11)); r.material.color.copy(keys(pal.ring, k)); r.material.opacity = 1 - k * k; } });
+  }
+  for (let i = 0; i < 40; i++) {   // sud_flash01: 40 sparks thrown up and out in an 80° cone from a 0.3 circle, at up to 0.5 / s, growing as they fade
+    const s = glow(), a = Math.random() * Math.PI * 2, tilt = Math.random() * 80 * Math.PI / 180, sp = Math.random() * .5, size = Math.random() * .35, life = Math.random() * pal.life, delay = .03;
+    const v = new THREE.Vector3(Math.cos(a) * Math.sin(tilt), Math.cos(tilt), Math.sin(a) * Math.sin(tilt)).multiplyScalar(sp), o = new THREE.Vector3(Math.cos(a) * .3, 0, Math.sin(a) * .3);
+    parts.push({ o: s, life, at: delay, fn: (k, t) => { s.position.copy(o).addScaledVector(v, t).y += .1; s.scale.setScalar(size * 2 * curve([[0, .13], [.09, .72], [1, 1]], k)); s.material.color.copy(keys(pal.spark, k)); s.material.opacity = 1 - k; } });
+  }
+  for (const p of parts) p.o.visible = false;
+  bursts.push({ grp, parts, t: 0 });
+}
+function stepBursts(dt) {
+  for (let i = bursts.length - 1; i >= 0; i--) {
+    const b = bursts[i]; b.t += dt; let live = false;
+    for (const p of b.parts) { const t = b.t - p.at, k = t / p.life; p.o.visible = k >= 0 && k < 1; if (p.o.visible) { p.fn(k, t); live = true; } else if (k < 0) live = true; }
+    if (!live) { scene.remove(b.grp); b.grp.traverse(o => { o.geometry?.dispose(); o.material?.dispose(); }); bursts.splice(i, 1); }
+  }
+}
+function goal(near) {   // near: the near side (blue) scored on the far goal
+  const far = [...points.values()].find(g => g.userData.goal && g.userData.side === 1), moving = () => [...tokens.values()].filter(g => g.userData.hop || g.userData.drop);
+  const cut = () => {   // GoolCamera: the shot, and back after 3 s
+    const keep = { pos: camera.position.clone(), at: controls.target.clone(), up: camera.up.clone(), fov: camera.fov, on: controls.enabled };
+    controls.enabled = false; camera.fov = 60; camera.up.set(.162, .779, .605); camera.position.set(-.449, 1.746, -4.779); camera.lookAt(.113, 0, -2.681); camera.updateProjectionMatrix();
+    return new Promise(back => setTimeout(() => { camera.fov = keep.fov; camera.up.copy(keep.up); camera.position.copy(keep.pos); controls.target.copy(keep.at); controls.enabled = keep.on; camera.updateProjectionMatrix(); controls.update(); back(); }, 3000));
+  };
+  const landed = () => new Promise(go => { const w = () => moving().length ? setTimeout(w, 30) : go(); w(); });   // GameSet waits for the figure to land
+  const fall = () => {   // GameSet / GoalProduction: Se212, the burst, and GoalCalc (the fallen goal takes the winner's colour; the other its own)
+    for (const g of points.values()) if (g.userData.goal) { const u = g.userData; u.plain = u.side === (near ? 1 : 0) ? (near ? M.blue : M.red) : u.side === 0 ? M.blue : M.red; u.mark.material = u.plain; }
+    window.sfx?.('goal'); burst(new THREE.Vector3(0, .06, near ? -3 : 3), BURST[near ? 'red' : 'blue']);
+  };
+  if (!near) return landed().then(fall);
+  // FigureAction: GoolAction fires as the scoring figure comes within 0.5 of the goal, so the shot opens with it still sliding on
+  const close = () => new Promise(go => { const w = () => { const g = moving(); if (!g.length || !far || g.some(x => x.position.distanceTo(far.position) < .5)) go(); else setTimeout(w, 16); }; w(); });
+  return close().then(() => { const back = cut(); return landed().then(fall).then(() => back); });
+}
+function newDuel() {   // a new duel is starting: the last one's figures leave the table (the opening drops the new ones), goals their own colours
+  for (const g of tokens.values()) { g.visible = false; g.userData.hop = null; }
+  for (const g of points.values()) if (g.userData.goal) { const u = g.userData; u.plain = u.side === 0 ? M.blue : M.red; u.mark.material = u.plain; }
+  for (const b of bursts.splice(0)) scene.remove(b.grp);
+}
 function draw(m) {
   if (m.table) drawTable(m.table);
   const cam = JSON.stringify(m.cam) !== JSON.stringify(last && last.cam); last = m; if (built !== m.pts.length + ':' + m.slots.length + ':' + m.edges.length) build(m); if (cam) home();
@@ -303,6 +384,7 @@ function draw(m) {
     } else if (u.evo) { g.remove(u.evo); const k = pickable.indexOf(u.evo); if (k >= 0) pickable.splice(k, 1); u.evo.material.dispose(); u.evo = null; }
   }
   for (const [i, g] of tokens) if (seen.has(i) && m.snap) g.position.copy(g.userData.to);
+  if (m.intro) dropIn(m.toks);   // a new duel: the figures come onto the benches
   for (const [i, g] of tokens) if (!seen.has(i)) { scene.remove(g); tokens.delete(i); for (const m of [g.userData.base, g.userData.art, g.userData.tagBody, g.userData.tagFace, g.userData.evo]) { if (!m) continue; const k = pickable.indexOf(m); if (k >= 0) pickable.splice(k, 1); } }
 }
 
@@ -401,12 +483,17 @@ const clock = new THREE.Clock(), TILT = .3, STEP = .17;   // TILT: how far (radi
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), .05), pulse = .6 + .4 * Math.sin(clock.elapsedTime * 5), now = performance.now();
   for (const p of playing) step(p, now);
+  stepBursts(dt);
   // Seen from the side a figure stands on its base; seen from above a standing picture would hang off the far edge of the base, so as the
   // camera rises from the lowest side view the picture slides down, and after a slight tilt it sits centred on the base like a token.
   // It is lifted clear of the base as it centres, or the base would hide it.
   const rise = Math.min(1, Math.max(0, (controls.maxPolarAngle - controls.getPolarAngle()) / TILT)), lie = rise * rise * (3 - 2 * rise) * .45;
-  for (const g of tokens.values()) { const u = g.userData; const px = u.art.material.map?.userData.px || [FRAME, FRAME]; u.art.scale.set(1.05 * px[0] / FRAME, 1.05 * px[1] / FRAME, 1);   // every picture at one scale u.art.center.y = lie; u.art.position.y = .04 + lie * .6 + (u.boostPop || 0); if (u.evoBlast) u.art.material.opacity = 0; if (u.aura.visible) u.aura.material.opacity = .6 + .3 * pulse; if (u.words.visible) u.words.rotation.z -= dt * .5;
-    if (u.hop) {
+  for (const g of tokens.values()) { const u = g.userData; const px = u.art.material.map?.userData.px || [FRAME, FRAME]; u.art.scale.set(1.05 * px[0] / FRAME, 1.05 * px[1] / FRAME, 1); /* every picture at one scale */ u.art.center.y = lie; u.art.position.y = .04 + lie * .6 + (u.boostPop || 0); if (u.evoBlast) u.art.material.opacity = 0; if (u.aura.visible) u.aura.material.opacity = .6 + .3 * pulse; if (u.words.visible) u.words.rotation.z -= dt * .5;
+    if (u.drop) {   // the opening drop onto the bench (dropIn)
+      const d = u.drop; d.t += dt; g.visible = d.t >= 0;
+      if (g.visible) { const k = Math.min(1, d.t / d.dur); bezier(d.pts, k, g.position); if (k >= 1) { u.drop = null; window.sfx?.('land'); } }
+    }
+    else if (u.hop) {
       const h = u.hop; h.t += dt;
       while (h.i < h.segs.length && h.t >= h.segs[h.i].dur) { h.t -= h.segs[h.i].dur; h.i++; }
       if (h.i >= h.segs.length) { g.position.copy(h.pts[h.pts.length - 1]); u.hop = null; }
@@ -622,5 +709,5 @@ function project(i) {   // where a figure sits on the arena, so the evolution fl
   const rect = renderer.domElement.getBoundingClientRect(), host = (document.querySelector('.arena') || renderer.domElement.parentElement).getBoundingClientRect();
   return { x: (v.x * .5 + .5) * rect.width + rect.left - host.left, y: (-v.y * .5 + .5) * rect.height + rect.top - host.top };
 }
-window.Board3D = { draw, controls, tokens, project, blast, clearBlasts, ability, clearAbilities, plate, fieldSpin, info: () => ({ ...renderer.info.memory, objects: (() => { let n = 0; scene.traverse(() => n++); return n; })() }) };   // controls and tokens are exposed for inspection
+window.Board3D = { draw, goal, newDuel, controls, tokens, project, blast, clearBlasts, ability, clearAbilities, plate, fieldSpin, info: () => ({ ...renderer.info.memory, objects: (() => { let n = 0; scene.traverse(() => n++); return n; })() }) };   // controls and tokens are exposed for inspection
 if (window.board3dModel) draw(window.board3dModel);
