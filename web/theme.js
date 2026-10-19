@@ -23,19 +23,16 @@
     dark: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>' };
   const UPDATE_ICON = '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/><path d="M12 8v4l2.5 1.5"/>';
   // The button shows the current selection (Auto / Light / Dark); click cycles to the next.
-  const NEXT = { auto: 'light', light: 'dark', dark: 'auto' }, LOOK = { light: ['#fff', '#111', '#cfcfcf'], dark: ['#000', '#f2f2f2', '#333'] };
+  const NEXT = { auto: 'light', light: 'dark', dark: 'auto' };
   const themeBtns = () => {
     const seen = new Set(), out = [];
     for (const b of document.querySelectorAll('[data-theme-btn], #themeBtn')) { if (seen.has(b)) continue; seen.add(b); out.push(b); }
     return out;
   };
   const label = () => {
-    const look = mode === 'auto' ? (sysLight.matches ? 'light' : 'dark') : mode;
-    const [bg, ink, line] = LOOK[look];
     const title = 'Theme: ' + mode + (mode === 'auto' ? ' (follows device)' : '') + ' — click for ' + NEXT[mode];
     for (const b of themeBtns()) {
       b.innerHTML = icon(ICONS[mode]); b.title = title; b.setAttribute('aria-label', title); b.classList.add('iconbtn');
-      Object.assign(b.style, { background: bg, color: ink, borderColor: line });
       if (!b._themeBound) { b._themeBound = 1; b.onclick = () => setTheme(NEXT[mode]); }
     }
   };

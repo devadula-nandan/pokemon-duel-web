@@ -1,6 +1,7 @@
 """pokemon duel web: serves the UI and runs the original game's rule engine behind it.
 
     python play.py            ->  http://localhost:8765
+    python play.py --lan      ->  also on this computer's network address, to open on a phone on the same Wi-Fi
 
 The rules are not re-implemented: every legal move, spin, effect and AI move comes from libTFG.so, read at start-up
 straight out of the original APK in this folder and executed under an ARM emulator (tools/tfg.py).
@@ -131,7 +132,7 @@ if __name__ == "__main__":
         ours, theirs = multiprocessing.Pipe()
         multiprocessing.Process(target=engine_worker, args=(theirs, lib), daemon=True).start()
         Handler.pool.put(ours)
-    srv = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    srv = http.server.ThreadingHTTPServer(("0.0.0.0" if "--lan" in sys.argv else "127.0.0.1", PORT), Handler)
     print("pokemon duel web: http://localhost:%d   (rule engine from %s, UI clicks %s)" % (PORT, os.path.basename(apk), ", ".join(sorted(Handler.sfx)) or "unavailable"), flush=True)
     if "--no-browser" not in sys.argv:
         threading.Timer(1.5, webbrowser.open, ["http://localhost:%d" % PORT]).start()

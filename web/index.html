@@ -19,7 +19,7 @@
   /* in a duel the top bar is hidden: no strip there, the player bars reach 16px higher instead, so the smear falls on flat colour */
   html.ios-app.mview:has(#game:not([hidden])) body { padding-top:0; } html.ios-app.mview:has(#game:not([hidden])) #sbTint { display:none; }
   html.ios-app.mview .hud { --lt-h:32px; } input, button, select, textarea, a, label { touch-action:manipulation; }   /* no double-tap zoom on controls */
-  .top { display:flex; align-items:stretch; gap:0; padding:0; background:var(--bar); border-bottom:1px solid var(--line); } .top button { margin:0; } .top > .iconbtn, .top .paths a { width:auto; min-width:var(--row-h); height:var(--row-h); border:0; border-left:1px solid var(--line); background:var(--bar); }   /* flush: full-height blocks split by 1px lines */ .top .ticker { flex:1; min-width:0; border-bottom:0; display:flex; align-items:center; padding:0; -webkit-mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); }   /* the scrolling text fades in and out at both ends instead of being cut off */
+  /* the top bar itself is in theme.css (every page shares it) */ .top .ticker { flex:1; min-width:0; border-bottom:0; display:flex; align-items:center; padding:0; -webkit-mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); mask-image:linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); }   /* the scrolling text fades in and out at both ends instead of being cut off */
   .ticker { overflow:hidden; white-space:nowrap; background:var(--bar); color:var(--accent); font-size:12px; padding:5px 0; border-bottom:1px solid var(--line); }
   .ticker span { display:inline-block; padding-left:100%; animation:tick 70s linear infinite; } .ticker:hover span { animation-play-state:paused; }
   @keyframes tick { to { transform:translateX(-100%); } }
@@ -30,8 +30,7 @@
   #sideBtn, #sideHome { display:none; } #camBar { margin-bottom:14px; flex-wrap:nowrap; } #camBar:empty { display:none; }
   html:not(.mview) #camBar :is(#camUpdate, #camSound, #camTheme, #camMotion, #camView, #camHome) { display:none !important; }   /* the top bar has these; the duel row repeats them only when the top bar is hidden (narrow screen) */
   #camBar .camGrow { flex:1 1 auto; min-width:4px; display:flex; align-items:center; justify-content:center; }
-  .sidever { display:none; font:600 10px/1.2 "Segoe UI",system-ui,sans-serif; color:var(--dim); letter-spacing:.04em; } html.mview .sidever { display:block; }
-  html.mview:has(#game:not([hidden])) .appver { display:none; }   /* phone duel: the version sits in the side panel instead of over the board */ #camBar a.iconbtn { margin:0; border:1px solid var(--line); background:var(--ctl); display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; text-decoration:none; color:inherit; } #camBar a.iconbtn:hover { background:var(--ctl2); }
+  html.mview:has(#game:not([hidden])) .appver { display:none; }   /* phone duel: no version over the board */ #camBar a.iconbtn { margin:0; border:1px solid var(--line); background:var(--ctl); display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; text-decoration:none; color:inherit; } #camBar a.iconbtn:hover { background:var(--ctl2); }
   @media (max-width:860px) {
     html, body { height:100dvh; max-height:100dvh; overflow:hidden; }   /* home / setup / game fill the screen; no document scroll */
     #setup, #home { grid-template-columns:1fr !important; flex:1 1 0; min-height:0; max-width:none; width:100%; overflow-x:hidden; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; align-content:start; }
@@ -46,7 +45,7 @@
   html.mview .side { position:fixed; top:var(--side-top,0); right:0; bottom:var(--side-bottom,0); z-index:3; width:min(88vw,380px); padding:0; border-left:1px solid var(--line); transform:translateX(100%); transition:transform .2s; }
   html.mview:has(#game:not([hidden])) body > .top { display:none; }   /* only the chrome bar — not #first .half.top */
   html.mview #game .arena { --fit:100cqh; height:100%; width:100%; aspect-ratio:auto; margin:0; align-self:stretch; justify-self:stretch; }   /* the whole screen, not the table's shape */
-  html.mview .arena, html.mview .side, html.mview #board3d button, html.mview .hud .z, html.mview .clock { border:0 !important; outline:0 !important; }
+  html.mview .arena, html.mview .side, html.mview #board3d button:not(:focus-visible), html.mview .hud .z, html.mview .clock { border:0 !important; outline:0 !important; }
   html.mview .side.open { transform:none; } html.mview .side .panel { box-shadow:none; } html.mview .side { border-left:1px solid var(--line) !important; }   /* flat drawer: the HUD's 1px theme line on its left edge, no shadows */
   html.mview .arena .table { position:relative; } html.mview .arena .table::after { content:''; position:absolute; inset:0; z-index:2; background:color-mix(in srgb, var(--bg) 60%, transparent); opacity:0; transition:opacity .2s; pointer-events:none; }
   html.mview:has(.side.open) .arena .table::after { opacity:1; }   /* the board under the open drawer is tinted in place and fades; a tap there still closes the drawer */
@@ -56,13 +55,13 @@
   /* builder panels: grids, the filter row and the duel row touch the panel's edges; only headings and notes are inset */
   #setup .panel:is(:has(> #team), #savedPanel, #figPanel, #pltPanel, .gobar) { padding:0; }
   #setup .panel > .hhead, #home .panel > .hhead { margin:0; padding:0 0 0 14px; min-height:var(--row-h); align-items:stretch; } #setup .panel > .hhead > :is(h2, label) { align-self:center; } #setup .panel > .hhead > label:last-child { padding-right:14px; }   /* header rows: one row tall; their field and buttons fill the right end */
-  #setup .panel > .hhead .tsave { margin-left:auto; height:auto; } #setup .panel > .hhead .tsave > * { height:auto; border:0; border-left:1px solid var(--line); margin:0; }
+  #setup .panel > .hhead .tsave { margin-left:auto; height:auto; } #setup .tsave input { flex:1; min-width:0; } #setup .panel > .hhead .tsave > * { height:auto; border:0; border-left:1px solid var(--line); margin:0; }
   #setup .panel > .hhead .hbtns { align-self:stretch; align-items:stretch; } #setup .panel > .hhead .hbtns > .iconbtn { width:44px; height:auto; margin:0; border:0; border-left:1px solid var(--line); }   /* the heading's buttons fill its corner */ @media (max-width:860px) { #setup .panel > .hhead .hbtns > .iconbtn { width:34px; } }
   /* home: the deck and booster grids run to the panel's edges; headings and notes are inset; Edit deck fills the heading's corner */
   #home .panel:has(> .hfig, > .hpl, > .boosters) { padding:0; } #home .panel > h2 { margin:0; padding:0 14px; min-height:var(--row-h); display:flex; align-items:center; } #home .panel > :is(p.note, #homeMsg) { padding:6px 14px; } #home .panel > #homeMsg:empty { display:none; }
   #home .panel > :is(.hfig, .hpl, .boosters) { border-left:0; border-right:0; } #home .panel > :is(.hfig, .hpl):last-child { border-bottom:0; }   /* a grid at the panel's foot uses the panel's own line */ #home .panel > .hhead > h2 { align-self:center; } #home .panel > .hhead > button { align-self:stretch; height:auto; margin-left:auto; border:0; border-left:1px solid var(--line); } #setup .panel > #tmsg { padding:4px 14px; } #setup .panel > #tmsg:empty { display:none; }
   #setup .panel > :is(#team, #myplates, #tlist) { border-left:0; border-right:0; border-bottom:0; } #setup .panel > #team { border-bottom:1px solid var(--line); }   /* the team grid: a line before the plates heading under it */
-  #setup :is(#list, #plist) { border:0; } #setup .pbody > .bar > * { border-width:0 1px 1px 0; } #setup .pbody > .bar + * { margin-top:0; }
+  #setup :is(#list, #plist) { border:0; } #setup .pbody > .bar > * { border-width:0 1px 1px 0; margin-left:0; }   /* each field draws its own right line, so none overlaps the one before */ #setup .pbody > .bar + * { margin-top:0; }
   .gobar #mode, .gobar #room { border:0; } .gobar #go { border:0; border-left:1px solid var(--line); margin-left:0; }
   .panel h2 { font:800 12px/1 "Segoe UI",system-ui,sans-serif; text-transform:uppercase; letter-spacing:.14em; color:var(--accent); margin:0 0 10px; }
   /* HUD and table are one card */
@@ -112,19 +111,15 @@
   .pics { display:flex; align-items:center; gap:8px; flex-wrap:wrap; } .row img { width:32px; height:32px; margin:-6px 0; }
   .bar { display:flex; gap:0; align-items:stretch; margin-bottom:0; flex-wrap:wrap; } .bar:not(#camBar) > * + * { margin-left:-1px; }   /* filters joined edge to edge */
   .chip { display:inline-block; padding:0 8px; font-size:11px; font-weight:700; background:var(--ctl2); color:var(--ink); margin-right:4px; } .chip.w { background:var(--ink); color:var(--bg); }
-  .atkrow { display:grid; grid-template-columns:14px 1fr auto; gap:6px; padding:5px 0; border-top:1px solid var(--line); align-items:start; }
   .sw { border-radius:50%; width:12px; height:12px; margin-top:4px; border:1px solid rgba(255,255,255,.4); } .desc { color:var(--dim); font-size:12px; grid-column:2 / 4; }
-  #log { height:160px; overflow:auto; font-size:12px; color:var(--dim); } #log > div { padding:3px 8px; background:color-mix(in srgb, var(--dim) 12%, transparent); }   /* neutral lines are grey; the two below tint a player's lines */ #log > .me { background:color-mix(in srgb, var(--p0) 11%, transparent); } #log > .op { background:color-mix(in srgb, var(--p1) 11%, transparent); } #log b, .ink { color:var(--ink); font-weight:700; }
-  #log > div + div { border-top:1px solid var(--line); }   /* flush rows split by 1px lines */
+  #log { height:160px; overflow:auto; display:grid; align-content:start; border-top:1px solid var(--line); } #log > div { padding:10px 14px; border-bottom:1px solid var(--line); font-weight:600; }   /* rows drawn like the action list's, on the dark panel; a player's rows are tinted with their colour, mixed into the theme's panel */ #log > .me { background:color-mix(in srgb, var(--p0) 11%, var(--panel)); } #log > .op { background:color-mix(in srgb, var(--p1) 11%, var(--panel)); } #log b, .ink { color:var(--ink); font-weight:700; }
   #list, #plist { height:300px; overflow:auto; } .row { display:flex; gap:8px; padding:6px 8px; cursor:pointer; align-items:center; }
   .row:hover { background:var(--ctl2); } .row .n { flex:1; } .team .row { background:var(--ctl); }
   .chip.rar1 { background:#8a8f98; color:#fff; } .chip.rar2 { background:#2e9e5b; color:#fff; } .chip.rar3 { background:#2f7fe0; color:#fff; } .chip.rar4 { background:#d9a514; color:#111; } .chip.rar5 { background:#c0392b; color:#fff; }   /* rarity: C, UC, R, EX, UX */
   /* soft shadow under every figure picture (cards, lists, saved teams, home, popups, evolve, battle SVG) */
   .tok image, .card img, .row img, .dot img, .tcard .tp img, .hfig img, .evo-fig img, .pics img,
   #figpop img, #evolve img, #result img, #battle img { filter:drop-shadow(0 2px 3px rgba(0,0,0,.45)); }
-  .paths { display:none; }
-  @media (min-width:861px) { .paths { display:flex; gap:0; margin:0; } .top .paths a { margin:0; display:inline-flex; align-items:center; height:var(--row-h); padding:0 10px; font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap; }
-    .top .paths a.on { background:var(--ink); border-color:var(--ink); color:var(--bg); } .top #viewLink { display:none; } }
+  @media (min-width:861px) { .top #viewLink { display:none; } }
   /* deck builder: figures, plates and the team as cards */
   #setup { grid-template-columns:minmax(0,1.7fr) minmax(320px,1fr); background:var(--line); border-left:1px solid var(--line); border-right:1px solid var(--line); }
   #list > .card { content-visibility:auto; contain-intrinsic-size:auto 170px; }   /* off-screen cards are not laid out or painted */
@@ -132,7 +127,7 @@
   #list.cards { height:min(58dvh,560px); } #plist.cards { height:250px; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); }
   .card { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:8px; padding:34px 8px 8px; margin:0 !important; background:var(--ctl); cursor:pointer; text-align:center; transition:transform .1s,background .12s,border-color .12s; }
   .card:hover { background:var(--ctl2); }   /* flush grids: hover shades, nothing moves */
-  .card img { width:84px; height:84px; margin:0; } .card .nopic { height:84px; display:grid; place-items:center; color:var(--dim); font-size:12px; }
+  .card img { width:84px; height:84px; margin:0; } img[src*="sprites/"] { object-fit:contain; }   /* a wide figure's picture is wider than tall: fitted, never squashed */ .card .nopic { height:84px; display:grid; place-items:center; color:var(--dim); font-size:12px; }
   .card .chip { position:absolute; top:8px; left:8px; margin:0; height:18px; line-height:18px; padding:0 6px; } .card .chip.r { left:auto; right:8px; min-width:18px; text-align:center; background:var(--ink); color:var(--bg); }
   .card .nm { font-weight:700; font-size:13px; line-height:1.2; } .card .note { line-height:1.25; }
   .card.plate .info { position:absolute; right:0; top:0; }   /* fills the plate card's corner */
@@ -148,8 +143,8 @@
   #team .card.fig { cursor:pointer; } #team .card.fig.sel { border-color:var(--ink); box-shadow:0 0 0 2px var(--ink); }   /* selected slot: next list pick replaces it */
   .card .foot > .txt { flex:1; min-width:0; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; } .card .txt > * { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .teamcards .foot > span:last-child { flex-direction:column; }
   .card .foot { display:flex; justify-content:space-between; align-items:flex-end; gap:8px; width:100%; min-height:24px; margin-top:auto; padding-right:22px; } .card .foot > span:has(> button) { position:absolute; right:0; bottom:0; flex-direction:column; gap:0; }    /* the buttons fill the card's bottom-right corner */ .card .foot > span { display:flex; align-items:center; gap:4px; } .card .own { font-size:12px; color:var(--dim); }
-  .card .info, .card .x, #figpop > .x { flex:none; width:28px; height:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:0; background:none; color:var(--dim); cursor:pointer; } .card .info { background:var(--p0); color:#fff; }   /* details: filled with the theme's blue; remove: red (below) */ .card .info svg, .card .x svg, #figpop > .x svg { width:14px; height:14px; } .card .x { background:var(--danger); color:#fff; }
-  .card .info:hover { background:var(--p0); color:#fff; opacity:.85; } .card .x:hover { background:var(--danger); color:#fff; opacity:.85; }   /* remove: the theme's red */
+  .card .info, .card .x, #figpop > .x { flex:none; width:28px; height:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:0; background:none; color:var(--dim); cursor:pointer; } /* neutral at rest; blue (details) or red (remove) only on hover / keyboard focus (below) */ .card .info svg, .card .x svg, #figpop > .x svg { width:14px; height:14px; }
+  .card .info:is(:hover, :focus-visible) { background:var(--p0); color:#fff; } .card .x:is(:hover, :focus-visible) { background:var(--danger); color:#fff; }   /* remove: the theme's red */
   /* the details panel of a figure card */
   #figpop { position:fixed; z-index:8; width:420px; max-height:calc(100dvh - 16px); overflow:auto; padding:16px; border:1px solid var(--line); background:var(--panel); box-shadow:0 10px 30px rgba(0,0,0,.5); pointer-events:none; }
   #figpop.pl { width:300px; } #figpop.pin { pointer-events:auto; } #figpop > .x, #figpop .fp-bar .x { flex:none; width:24px; height:24px; padding:0; display:none; align-items:center; justify-content:center; border:1px solid var(--line); background:var(--danger); color:#fff; cursor:pointer; } #figpop > .x:hover, #figpop .fp-bar .x:hover { background:var(--danger); color:#fff; opacity:.85; }   /* danger buttons are always filled with the theme's red */ #figpop.pin > .x { display:inline-flex; position:absolute; top:12px; right:12px; }
@@ -188,8 +183,8 @@
   #tlist { display:flex; gap:0; overflow-x:auto; overflow-y:hidden; border:1px solid var(--line); padding:0 !important; -webkit-mask-image:none !important; mask-image:none !important; scroll-snap-type:x proximity; }
   .tcard { flex:0 0 196px; min-width:0; scroll-snap-align:start; display:flex; flex-direction:column; gap:4px; padding:6px 8px; background:var(--ctl); border-right:1px solid var(--line); cursor:pointer; transition:background .12s, border-color .12s; }
   .tcard:hover { background:var(--ctl2); } .tcard .th { display:flex; align-items:center; gap:6px; min-width:0; } .tcard .th b { flex:1; min-width:0; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .tcard .th .chip { margin:0; flex:none; } .tcard .x { flex:none; width:22px; height:22px; padding:0; display:grid; place-items:center; border:1px solid transparent; background:var(--danger); color:#fff; } .tcard .x svg { width:13px; height:13px; }
-  .tcard .x:hover { background:var(--danger); color:#fff; opacity:.85; }
+  .tcard .th .chip { margin:0; flex:none; } .tcard .x { flex:none; width:22px; height:22px; padding:0; display:grid; place-items:center; border:1px solid transparent; background:none; color:var(--dim); } .tcard .x svg { width:13px; height:13px; }
+  .tcard .x:is(:hover, :focus-visible) { background:var(--danger); color:#fff; }
   .tcard.on { background:var(--ink); color:var(--bg); } .tcard.on .chip { background:var(--bg); color:var(--ink); }  .tcard.on .x:hover { color:#fff; } .tcard.on .tp .ph { background:color-mix(in srgb, var(--bg) 22%, var(--ink)); color:var(--bg); }
   .tcard .tp { display:grid; grid-template-columns:repeat(6,1fr); gap:2px; } .tcard .tp img, .tcard .tp .ph { width:100%; aspect-ratio:1; object-fit:contain; } .tcard .tp .ph { display:grid; place-items:center; background:var(--ctl2); color:var(--dim); font-size:9px; font-weight:700; }
   .tsave { display:flex; align-items:stretch; gap:0; flex:1; min-width:0; max-width:260px; height:var(--ctl-h, 30px); }
@@ -202,7 +197,6 @@
   .teamcards.cards.six { margin:0; }   /* the deck on Home: three to a row, like the team in the builder, so names have room */
   .boosters { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); } .booster { background:var(--ctl); padding:12px 8px; text-align:center; min-height:86px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; } .booster.empty { background:var(--panel); color:var(--dim); font-size:12px; }
   #home .cards { max-height:min(62dvh,560px); } #home .card { cursor:default; } #home .card:hover { background:var(--ctl); } #home [data-act] .card { cursor:pointer; }
-  #card:empty { display:none; }
   /* Home is laid out as the original's league lobby is (RatingMatchPrefab, a 750-wide portrait screen): rating at the top, the deck (here a
      plain row of six cards, not the original's fan round a lead figure), the row of time boosters under it, and the League match button at the bottom, flanked by
      two smaller ones. One centred column, nothing stretched. */
@@ -230,9 +224,9 @@
   #myplates .mpl { min-width:0; height:var(--slot-h, 146px); box-sizing:border-box; }   /* same height as #team cards */
   #myplates .mpl .mhd { display:flex; align-items:flex-start; gap:0; flex:none; min-height:24px; margin:-8px -10px 0 0; }   /* rarity · spacer · i · x, the buttons in the corner */ #myplates .mpl .mhd .chip { position:static; margin:8px auto 0 0; }
   #myplates .mpl .ct { display:flex; gap:3px; flex:none; } #myplates .mpl .ct:empty { display:none; }   /* cost dots under the name */
-  #myplates .mpl .info, #myplates .mpl .x { position:static; flex:none; width:28px; height:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; background:none; color:var(--bg); border:0; cursor:pointer; } #myplates .mpl .info { background:var(--p0); color:#fff; }   /* flush in the plate's top-right corner */   /* same 24px box as #team .card .info / .x */
-  #myplates .mpl .info svg, #myplates .mpl .x svg { width:14px; height:14px; } #myplates .mpl .x { background:var(--danger); color:#fff; }
-  #myplates .mpl .info:hover { background:var(--p0); color:#fff; opacity:.85; } #myplates .mpl .x:hover { background:var(--danger); color:#fff; opacity:.85; }
+  #myplates .mpl .info, #myplates .mpl .x { position:static; flex:none; width:28px; height:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; background:none; color:color-mix(in srgb, var(--bg) 60%, var(--ink)); border:0; cursor:pointer; }   /* flush in the plate's top-right corner */   /* same 24px box as #team .card .info / .x */
+  #myplates .mpl .info svg, #myplates .mpl .x svg { width:14px; height:14px; }
+  #myplates .mpl .info:is(:hover, :focus-visible) { background:var(--p0); color:#fff; } #myplates .mpl .x:is(:hover, :focus-visible) { background:var(--danger); color:#fff; }
   #myplates .mpl > b { flex:none; min-width:0; } #myplates .mpl > .note { flex:1 1 0; min-height:0; min-width:0; display:block; -webkit-line-clamp:unset; overflow:hidden; -webkit-mask-image:linear-gradient(to bottom, #000 55%, transparent); mask-image:linear-gradient(to bottom, #000 55%, transparent); }   /* soft fade instead of a hard clamp */
   #pcost .pc { color:var(--gold); font-weight:700; } #pcost .auto { display:block; margin-top:2px; text-transform:none; letter-spacing:0; font-weight:600; }   /* Mega Stones: outside the six slots */   /* same gold as the cost dots on .mpl */
   #myplates .mpl.empty { background:var(--ink); color:var(--bg); font-size:22px; font-weight:700; align-items:center; justify-content:center; cursor:pointer; opacity:1; padding:8px 10px; }
@@ -262,7 +256,8 @@
   #pickSide.pick-collapsed #figPanel, #pickSide.pick-collapsed #pltPanel { display:none !important; }   /* desktop: tabs only when both sides are full and collapsed */
   #pickSide #figPanel > .pbody, #pickSide #pltPanel > .pbody { flex:1 1 0; min-height:0; }
   /* opponent and Start on one line: the picker, then the button */
-  .gobar { display:flex; flex-wrap:wrap; align-items:stretch; gap:0; } .gobar #oppPanel { display:contents; } .gobar #mode { flex:1 1 150px; min-width:0; } .gobar #room { flex:0 1 96px; min-width:0; } .gobar #go { order:1; min-width:8.5em; text-align:center; } .gobar #setupErr { order:3; flex:1 1 100%; } .gobar #setupErr:empty { display:none; }
+  .gobar { display:flex; flex-wrap:wrap; align-items:stretch; gap:0; } .gobar #oppPanel { display:contents; } .gobar #mode { flex:1 1 150px; min-width:0; } .gobar #room { flex:0 1 96px; min-width:0; } .gobar #go { order:1; min-width:8.5em; text-align:center; } .gobar #oppPanel[hidden] ~ #go { flex:1; border-left:0; }   /* alone in the bar (deck editing): it fills it */
+  :is(#go, #tsave):is(:hover, :focus-visible):not(:disabled) { background:var(--ok); border-color:var(--ok); color:var(--bg); opacity:1; }   /* save: the theme's green */ .gobar #setupErr { order:3; flex:1 1 100%; } .gobar #setupErr:empty { display:none; }
   #setup > section:last-child > .panel:last-child { padding:10px 12px; } #setup > section:last-child > .panel:last-child p.note { display:none; }
   @media (min-width:861px) {
     #setup { grid-template-rows:minmax(0,1fr); align-content:stretch; overflow:hidden; }
@@ -329,12 +324,17 @@
   }
   #acts { display:grid; gap:0; border-top:1px solid var(--line); max-height:34dvh; overflow:auto; align-content:start; scrollbar-color:color-mix(in srgb, var(--bg) 25%, var(--ink)) var(--ink); } #acts::-webkit-scrollbar-thumb { background-color:color-mix(in srgb, var(--bg) 25%, var(--ink)); } #acts::-webkit-scrollbar-track { background:var(--ink); }   /* a light thumb on the light panel */ #acts button { width:100%; padding:10px 14px; background:var(--ink); border:0; border-bottom:1px solid var(--line); color:var(--bg); }
   #acts button:hover:not(:disabled) { background:var(--ink); opacity:.85; } #acts button .ink { color:inherit; }
-  #game .side > .panel:has(#acts) { background:var(--ink); color:var(--bg); padding:0; } #game .side > .panel > h2 { margin:0; padding:0 14px; min-height:var(--row-h); display:flex; align-items:center; } #game .side > .panel:has(#log) { padding:0; } #game .side > .panel:has(#log) #log { margin:0 14px; } #game .side > .panel:has(#acts) #acts:empty { padding:0 14px 12px; }   /* the list runs to the panel's edges */ #game .side > .panel:has(#acts) h2 { color:var(--bg); }
+  #game .side > .panel:has(#acts) { background:var(--ink); color:var(--bg); padding:0; } #game .side > .panel > h2 { margin:0; padding:0 14px; min-height:var(--row-h); display:flex; align-items:center; } #game .side > .panel:has(#log) { padding:0; } #game .side > .panel:has(#acts) #acts:empty { padding:0 14px 12px; }   /* the list runs to the panel's edges */ #game .side > .panel:has(#acts) h2 { color:var(--bg); }
+  /* Log / Actions headings: a button one layer up from its panel (control on panel); it folds the panel to its heading and the other takes the space */
+  #game .side > .panel > h2:has(.fold) { padding:0; } .fold { flex:1; align-self:stretch; display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0; padding:0 14px; border:0; background:var(--ctl); color:inherit; font:inherit; letter-spacing:inherit; text-transform:inherit; }
+  .fold:hover:not(:disabled) { background:var(--ctl2); } #game .side > .panel:has(#acts) .fold { background:color-mix(in srgb, var(--bg) 8%, var(--ink)); } #game .side > .panel:has(#acts) .fold:hover { background:color-mix(in srgb, var(--bg) 16%, var(--ink)); }
+  .fold svg { flex:none; transition:transform .15s; } .fold[aria-expanded=false] svg { transform:rotate(-90deg); }
+  #game .side > .panel:has(.fold) { flex:1 1 0 !important; min-height:var(--row-h) !important; overflow:hidden; transition:flex-grow .2s ease; } #game .side > .panel.folded { flex-grow:0 !important; }   /* folding slides: the panel gives its share to the others, down to its heading */
+  #game .side::after { content:''; flex:0 1 0; background:var(--panel); transition:flex-grow .2s ease; } #game .side:not(:has(> .panel:not(.folded) > h2 > .fold))::after { flex-grow:1; }   /* with every panel folded, the space below is panel, not divider */
+  @media (prefers-reduced-motion: reduce) { #game .side > .panel:has(.fold), #game .side::after, .fold svg { transition:none; } }
   #acts button:first-child { } #acts button:last-child { } #acts button:only-child { }
   #acts:empty:before { content:"Nothing to choose right now."; color:var(--bg); font-size:12px; }
-  /* the fade sits in the padding, so the first and last rows are fully there and only the overflow softens */
-  #log { padding:14px 0; -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%); mask-image:linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%); }
-  #game .side { display:flex; flex-direction:column; gap:1px; background:var(--line); border-right:1px solid var(--line); overflow:hidden; } #game .side > .panel, #game #camBar, #game #sideHome { margin:0; } #game #camBar { gap:1px; background:var(--line); } #game #camBar .iconbtn, #game #camBar a.iconbtn { width:44px; height:44px; border:0; background:var(--bar); } #game #camBar .camGrow { align-self:stretch; background:var(--bar); } #game .side > .panel:has(#log), #game .side > .panel:has(#acts) { flex:1 1 0; min-height:0; display:flex; flex-direction:column; } #game .side > #card { flex:0 1 auto; max-height:40%; min-height:0; overflow:auto; }
+  #game .side { display:flex; flex-direction:column; gap:1px; background:var(--line); border-right:1px solid var(--line); overflow:hidden; } #game .side > .panel, #game #camBar, #game #sideHome { margin:0; } #game #camBar { gap:1px; background:var(--line); } #game #camBar .iconbtn, #game #camBar a.iconbtn { width:44px; height:44px; border:0; background:var(--bar); } #game #camBar .camGrow { align-self:stretch; background:var(--bar); } #game .side > .panel:has(#log), #game .side > .panel:has(#acts) { flex:1 1 0; min-height:0; display:flex; flex-direction:column; }
   #game .side > .panel:has(#log) #log, #game .side > .panel:has(#acts) #acts { flex:1 1 0; height:auto; max-height:none; min-height:0; }
   #modal { position:fixed; inset:0; background:color-mix(in srgb, var(--bg) 60%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); display:grid; place-items:center; padding:16px; z-index:5; }
   /* the team slot editor */
@@ -586,12 +586,11 @@
       <button type="button" id="camMotion" class="iconbtn" data-motion-btn title="Figure pictures" aria-label="Figure pictures"></button>
       <a id="camView" class="iconbtn"></a>
       <button type="button" id="camHome" class="iconbtn" title="Home" aria-label="Home"></button>
-      <span class="camGrow"><span class="sidever" id="sideVer"></span></span>
+      <span class="camGrow"></span>
       <button id="fsBtn" class="iconbtn" title="Fullscreen" aria-label="Fullscreen" aria-pressed="false"></button>
     </div>
-    <div class="panel"><h2>Log</h2><div id="log"></div></div>
-    <div class="panel"><h2>Actions</h2><div id="acts"></div></div>
-    <div class="panel" id="card"></div>
+    <div class="panel"><h2><button class="fold" aria-expanded="true" aria-controls="log">Log<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="log"></div></div>
+    <div class="panel"><h2><button class="fold" aria-expanded="true" aria-controls="acts">Actions<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="acts"></div></div>
   </section>
 </main>
 <div id="figpop" hidden></div>
@@ -903,6 +902,7 @@ function drawSaved(msg) {
   $('tlist').innerHTML = savedTeams.map((t, i) => `<div class="tcard" data-i="${i}" title="Load ${esc(t.name)}"><div class="th"><b>${esc(t.name)}</b><span class="chip" title="${t.plates.length} plate${t.plates.length === 1 ? '' : 's'}">${t.plates.length}P</span><button class="x" data-x="${i}" title="Delete" aria-label="Delete ${esc(t.name)}">${icon('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12h10l1-12M9 7V4h6v3"/>')}</button></div><div class="tp">${t.team.map(thumb).join('')}</div></div>`).join('') || '<p class="note" style="margin:0">No saved teams yet.</p>';
   markSaved();
 }
+for (const b of document.querySelectorAll('.fold')) b.onclick = () => { const open = b.getAttribute('aria-expanded') !== 'true'; b.setAttribute('aria-expanded', open); b.closest('.panel').classList.toggle('folded', !open); $(b.getAttribute('aria-controls')).inert = !open; };   // fold / unfold a side panel
 $('tsave').onclick = () => {
   if (team.length !== 6) return drawSaved('Pick six figures before saving.');
   const now = teamSig(team, myPlates), same = savedTeams.find(t => teamSig(t.team, t.plates) === now && t.name !== $('tname').value.trim());
@@ -1897,7 +1897,7 @@ function render() {
   $('acts').innerHTML = (!mine ? [] : legal).map((m, i) => `<button data-m="${i}"${m.value.type === 'resign' ? ' class="note"' : ''}>${describe(m.value)}</button>`).join('') +
     (rewindTarget() >= 0 ? `<button data-rw="1">Rewind to the start of your turn (${REWIND_MAX - rewinds} left)</button>` : '') +
     (mine && canHint() ? '<button data-ai="1">Let the AI choose this move</button>' : '');
-  drawClock(); drawCard(me); drawPrompt(mine, stage); drawBar(mine); drawPlates(mine);
+  drawClock(); drawPrompt(mine, stage); drawBar(mine); drawPlates(mine);
 }
 // ---------- the original's duel controls ----------
 // What MatchMain has: on the table, a fanned stack of plates per player (a table button that opens the plate list; the opponent's to look
@@ -2137,16 +2137,6 @@ function badgeTips(c) {
         (why.length ? 'In this duel it could come from: ' + why.join('; ') + '. A plate used this turn can also do it.' : 'Nothing on the board explains it by itself, so it most likely comes from a plate or a lasting attack effect.'));
   }
   return out;
-}
-function drawCard(c) {
-  if (!c) { $('card').innerHTML = ''; return; }   // nothing selected: the panel is not shown at all
-  const i = c.pokemon_index, p0 = pk(i), z = zWheel(i), p = z ? Object.assign({}, p0, { skills: z }) : p0, f = figOf(i), ab = D.abilities[p.pokepower];
-  $('card').innerHTML = `<div style="display:flex;gap:12px;align-items:center">${wheelSvg(p.skills, 96)}<div>
-      <div style="font-size:16px">${nameOf(i)} <span class="chip rar${f.r}">${RAR[f.r] || ''}</span></div>
-      <div class="note">MP ${p.mp}${c.effect && c.effect.mp ? ' (' + (c.effect.mp > 0 ? '+' : '') + c.effect.mp + ')' : ''} · ${typeNames(f)} · ${place(c.index)}</div>
-      <div>${badges(c).map((b, k) => `<span class="chip w" title="${esc(badgeTips(c)[k] || '')}" style="cursor:help">${esc(b)}</span>`).join('')}</div></div></div>
-    ${ab ? `<div style="margin:8px 0">Ability: <b>${esc(ab[0])}</b><div class="desc">${esc(ab[1])}</div></div>` : ''}
-    ${p.skills.map(s => { const k = D.skills[s.id] || ['Attack ' + s.id, '', 0]; return `<div class="atkrow"><span class="sw" style="background:${SEG_COL[k[2]]}"></span><span>${esc(k[0])}</span><span>${power(s)} <span class="note">${s.range}</span></span>${k[2] && k[1] ? `<span class="desc">${esc(k[1])}</span>` : ''}</div>`; }).join('')}${zBox(f)}`;
 }
 
 // ---------- input: every action is one of the engine's legal moves ----------
@@ -2552,7 +2542,6 @@ const figAt = route => { const c = st.pokemon_conditions.find(c => c.index === r
 $('mode').onchange = () => { $('room').hidden = $('mode').value !== 'join'; $('go').disabled = false; $('go').textContent = $('mode').value === 'join' ? 'Join duel' : $('mode').value === 'host' ? 'Open room' : 'Start duel'; };
 $('ticker').firstElementChild.textContent = `pokemon duel web ◆ ${D.figures.length} figures · ${D.plates.length} plates · ${Object.keys(D.skills).length} attacks · ${Object.keys(D.abilities).length} abilities ◆ Parity: every legal move, spin, attack effect, ability, plate, evolution and AI decision is computed by the original game's own rule engine, not re-implemented ◆ Deck rules, levels, chain boosts, Rewind, league thresholds and booster odds follow the original client and its master data ◆ Not original: the look, the league opponent (the original AI with a random deck), fixed rating points, the starter set ◆ Missing because their data did not survive: quests, shop, level-up costs ◆ Everything runs in this page: no install, no server ◆ Online: one player opens a room and shares the code, the other joins with it`;
 { const free = loadFree(); if (free) { team = free.team; myPlates = free.plates; syncMegaPlates(); } loadUi(); loadUi.done = true; document.getElementById('setup').addEventListener('change', e => { if (UI_IDS.includes(e.target.id)) storeUi(); }); }
-$('sideVer').textContent = 'v' + window.APP_VER;
 drawList(); drawTeam(); drawSaved(); { let last = null; try { last = localStorage.getItem(LAST_KEY); } catch (e) {} const i = savedTeams.findIndex(t => t.name === last); if (i >= 0 && !team.length) { $('tlist').querySelector(`.tcard[data-i="${i}"]`).click(); drawSaved(); } } viewHref(); if (/^#g=\d+$/.test(location.hash)) resumeGame().catch(x => { showHome(); drawHome.msg = x.message; drawHome(); }); else showHome();
 </script>
 </body>

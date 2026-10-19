@@ -102,32 +102,68 @@ function build(m) {   // routes, spots and slots never move during a duel (the f
 }
 
 const images = new Map(), loader = new THREE.TextureLoader().setCrossOrigin('anonymous');
-const still = url => loader.load(url, t => { t.colorSpace = THREE.SRGBColorSpace; });
-const picture = url => images.get(url) || images.set(url, /\/anim\/.*\.webp$/.test(url) && 'ImageDecoder' in window ? animated(url) : still(url)).get(url);
-// An animated sprite (the Scarlet / Violet .webp): WebGL only ever uploads an animated image's first frame, so its frames are decoded
-// once with ImageDecoder, kept at FRAME px (about 3.5 MB for a 36-frame sprite), and played on a canvas texture at their own pace.
-// Without ImageDecoder (or if decoding fails) it shows its first frame.
-const FRAME = 160, playing = [];   // the hosted sprites are 160px
+const still = url => loader.load(url, t => { t.colorSpace = THREE.SRGBColorSpace; t.userData.px = [t.image.width, t.image.height]; });   // px: drawn at its own size (FRAME px = one figure height)
+const picture = url => images.get(url) || images.set(url, /\/anim\/.*\.webp$/.test(url) ? animated(url) : still(url)).get(url);
+// An animated sprite (.webp): WebGL only ever uploads an animated image's first frame, and Safari has no ImageDecoder to get the rest.
+// So the file is unpacked here: each ANMF frame (ALPH + VP8 at an offset) is rewrapped as a still WebP, which every browser decodes,
+// and composed in order like a player would. Up to MAXF frames go on one atlas canvas that is uploaded once; playing it only moves the
+// texture's window (offset): no drawing and no upload per frame. A longer sprite keeps only its small compressed frames and decodes each
+// one just before it is due onto its own canvas (one small upload per frame), so every frame plays in little memory.
+// If anything fails it shows the still first frame.
+const FRAME = 160, GAP = 8, MAXF = 64, playing = [];   // FRAME: the px of a picture drawn as one figure height (tools/build_sprites.py SIZE); the clear gap keeps a frame's neighbours out of its mipmaps; MAXF: an 8x8 atlas, ~1344px, ~7 MB
+const u24 = (d, i) => d[i] | d[i + 1] << 8 | d[i + 2] << 16;
+function chunks(d, i, end) {   // RIFF chunks between i and end: { t: fourcc, i: start, n: payload size }
+  const out = [];
+  for (; i + 8 <= end; ) { const n = (u24(d, i + 4) | d[i + 7] << 24) >>> 0; out.push({ t: String.fromCharCode(d[i], d[i + 1], d[i + 2], d[i + 3]), i, n }); i += 8 + n + (n & 1); }
+  return out;
+}
+function stillWebp(d, parts, w, h) {   // RIFF WEBP [+ VP8X with the alpha flag when there is an ALPH chunk] + the frame's own chunks
+  const body = parts.map(c => d.subarray(c.i, c.i + 8 + c.n + (c.n & 1)));
+  if (parts.some(c => c.t === 'ALPH')) { const x = new Uint8Array(18); x.set([86, 80, 56, 88, 10, 0, 0, 0, 16]); x.set([w - 1, w - 1 >> 8, w - 1 >> 16, h - 1, h - 1 >> 8, h - 1 >> 16], 12); body.unshift(x); }
+  const size = body.reduce((s, b) => s + b.length, 4), head = new Uint8Array(12); head.set([82, 73, 70, 70, size, size >> 8, size >> 16, size >> 24, 87, 69, 66, 80]);
+  return new Blob([head, ...body], { type: 'image/webp' });
+}
+function frameOf(d, f) {   // an ANMF chunk: where it goes, how it is laid over the last one, how long it shows, and its still picture
+  const p = f.i + 8, w = u24(d, p + 6) + 1, h = u24(d, p + 9) + 1;
+  return { x: u24(d, p) * 2, y: u24(d, p + 3) * 2, w, h, flags: d[p + 15], ms: Math.max(20, u24(d, p + 12) || 50), webp: stillWebp(d, chunks(d, p + 16, p + f.n), w, h) };
+}
+function compose(a, k, bmp) {   // lay frame k over the picture so far, as the WebP rules say
+  const f = a.frames[k], g = a.g;
+  if (k === 0) g.clearRect(0, 0, a.work.width, a.work.height); else if (a.prev) g.clearRect(...a.prev);   // a new loop / the previous frame asked to be disposed
+  if (f.flags & 2) g.clearRect(f.x, f.y, f.w, f.h);   // no blending: the frame replaces what is under it
+  g.drawImage(bmp, f.x, f.y); bmp.close?.(); a.prev = f.flags & 1 ? [f.x, f.y, f.w, f.h] : null;
+}
 function animated(url) {
-  const cv = document.createElement('canvas'); cv.width = cv.height = FRAME;
-  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace;
+  const t = new THREE.CanvasTexture(document.createElement('canvas')); t.colorSpace = THREE.SRGBColorSpace;   // clear until the frames are ready
   (async () => {
-    const buf = await (await fetch(url)).arrayBuffer(), dec = new ImageDecoder({ data: buf, type: 'image/webp' });
-    await dec.tracks.ready; const n = dec.tracks.selectedTrack.frameCount, frames = [];
-    for (let k = 0; k < n; k++) {
-      const { image } = await dec.decode({ frameIndex: k });
-      frames.push({ bmp: await createImageBitmap(image, { resizeWidth: FRAME, resizeHeight: FRAME }), ms: Math.max(20, (image.duration || 50000) / 1000) });
-      image.close();
+    const d = new Uint8Array(await (await fetch(url)).arrayBuffer()), top = chunks(d, 12, d.length), x = top.find(c => c.t === 'VP8X');
+    const work = document.createElement('canvas'); work.width = u24(d, x.i + 12) + 1; work.height = u24(d, x.i + 15) + 1;
+    const a = { t, work, g: work.getContext('2d'), frames: top.filter(c => c.t === 'ANMF').map(f => frameOf(d, f)), prev: null, k: -1, due: 0 }, n = a.frames.length;
+    if (n > MAXF) {   // too long for an atlas: the texture is the composed picture itself, and the next frame decodes while this one shows
+      a.next = await createImageBitmap(a.frames[0].webp); t.image = work;
+    } else {
+      const fw = work.width, fh = work.height, cols = Math.ceil(Math.sqrt(n)), cw = fw + GAP, ch = fh + GAP, atlas = document.createElement('canvas'); atlas.width = cols * cw; atlas.height = Math.ceil(n / cols) * ch;
+      const ag = atlas.getContext('2d');
+      for (let k = 0; k < n; k++) {
+        compose(a, k, await createImageBitmap(a.frames[k].webp));
+        const cx = k % cols * cw, cy = (k / cols | 0) * ch; ag.drawImage(work, cx, cy);
+        Object.assign(a.frames[k], { u: cx / atlas.width, v: 1 - (cy + fh) / atlas.height, webp: null });
+      }
+      a.g = null; t.image = atlas; t.repeat.set(fw / atlas.width, fh / atlas.height);
     }
-    dec.close();
-    const p = { cv, t, frames, k: -1, due: 0 }; playing.push(p); step(p, performance.now());
-  })().catch(() => { const s = still(url); s.image && (t.image = s.image); images.set(url, s); });
+    t.userData.ink = null; t.userData.px = [work.width, work.height]; t.dispose(); t.needsUpdate = true;   // dispose: a GL texture cannot change size
+    playing.push(a); step(a, performance.now());
+  })().catch(() => new THREE.ImageLoader().setCrossOrigin('anonymous').load(url, img => { t.image = img; t.userData.px = [img.width, img.height]; t.dispose(); t.needsUpdate = true; }));
   return t;
 }
-function step(p, now) {   // show the next frame once the current one has had its time
-  if (p.k >= 0 && now < p.due) return;
-  p.k = (p.k + 1) % p.frames.length; const g = p.cv.getContext('2d'); g.clearRect(0, 0, FRAME, FRAME); g.drawImage(p.frames[p.k].bmp, 0, 0);
-  p.t.needsUpdate = true; p.due = now + p.frames[p.k].ms; p.t.userData.ink = null;   // a new frame: the hit test re-reads its opaque pixels
+function step(a, now) {   // the next frame, once the current one has had its time
+  if (a.k >= 0 && now < a.due) return;
+  if (a.g) {   // streamed: show the decoded frame and start decoding the one after (if it is not ready yet, this frame simply stays)
+    if (!a.next) return;
+    a.k = (a.k + 1) % a.frames.length; compose(a, a.k, a.next); a.next = null; a.t.needsUpdate = true;
+    createImageBitmap(a.frames[(a.k + 1) % a.frames.length].webp).then(b => { a.next = b; });
+  } else { a.k = (a.k + 1) % a.frames.length; a.t.offset.set(a.frames[a.k].u, a.frames[a.k].v); }
+  a.due = now + a.frames[a.k].ms;
 }
 const TAG_S = 1;
 function mpColors(mpd) {
@@ -315,11 +351,13 @@ paintLock();
 
 const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
 function spriteSolid(hit) {   // the clear margin of a picture is not part of the figure; only an opaque pixel is
-  const map = hit.object.material && hit.object.material.map, uv = hit.uv, img = map && map.image;
-  if (!map || !uv || !img || !img.width) return true;
-  let c = map.userData.ink; if (c == null) { c = document.createElement('canvas'); c.width = img.width; c.height = img.height; try { c.getContext('2d', { willReadFrequently: true }).drawImage(img, 0, 0); } catch (e) { c = false; } map.userData.ink = c; }
+  const map = hit.object.material && hit.object.material.map, img = map && map.image;
+  if (!map || !hit.uv || !img || !img.width) return true;
+  const uv = map.transformUv(hit.uv.clone());   // through the texture's window (an animated sprite's current frame in its atlas)
+  let c = map.userData.ink; if (c == null && img.getContext) c = map.userData.ink = img;   // a canvas is read directly
+  if (c == null) { c = document.createElement('canvas'); c.width = img.width; c.height = img.height; try { c.getContext('2d', { willReadFrequently: true }).drawImage(img, 0, 0); } catch (e) { c = false; } map.userData.ink = c; }
   if (!c) return true;
-  try { const a = c.getContext('2d').getImageData(Math.min(c.width - 1, uv.x * c.width | 0), Math.min(c.height - 1, (1 - uv.y) * c.height | 0), 1, 1).data[3]; return a > 13; }
+  try { const a = c.getContext('2d').getImageData(Math.min(c.width - 1, uv.x * c.width | 0), Math.min(c.height - 1, uv.y * c.height | 0), 1, 1).data[3]; return a > 13; }
   catch (e) { map.userData.ink = false; return true; }
 }
 function tapTarget(cx, cy) {   // the ray hits the picture, the stand, the badge or the node that is actually there
@@ -367,7 +405,7 @@ renderer.setAnimationLoop(() => {
   // camera rises from the lowest side view the picture slides down, and after a slight tilt it sits centred on the base like a token.
   // It is lifted clear of the base as it centres, or the base would hide it.
   const rise = Math.min(1, Math.max(0, (controls.maxPolarAngle - controls.getPolarAngle()) / TILT)), lie = rise * rise * (3 - 2 * rise) * .45;
-  for (const g of tokens.values()) { const u = g.userData; u.art.center.y = lie; u.art.position.y = .04 + lie * .6 + (u.boostPop || 0); if (u.evoBlast) u.art.material.opacity = 0; if (u.aura.visible) u.aura.material.opacity = .6 + .3 * pulse; if (u.words.visible) u.words.rotation.z -= dt * .5;
+  for (const g of tokens.values()) { const u = g.userData; const px = u.art.material.map?.userData.px || [FRAME, FRAME]; u.art.scale.set(1.05 * px[0] / FRAME, 1.05 * px[1] / FRAME, 1);   // every picture at one scale u.art.center.y = lie; u.art.position.y = .04 + lie * .6 + (u.boostPop || 0); if (u.evoBlast) u.art.material.opacity = 0; if (u.aura.visible) u.aura.material.opacity = .6 + .3 * pulse; if (u.words.visible) u.words.rotation.z -= dt * .5;
     if (u.hop) {
       const h = u.hop; h.t += dt;
       while (h.i < h.segs.length && h.t >= h.segs[h.i].dur) { h.t -= h.segs[h.i].dur; h.i++; }

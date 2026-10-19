@@ -8,20 +8,22 @@ The player picks which set the game shows (the Animated / Still setting).
                       (other/showdown/[shiny/]<id>.gif, pixel art) only for a figure none of those has.
 <id> is the figure's PokeAPI pokemon id: its form / Mega / Alolan id from web/art.js FIG_ART, else its National Dex number.
 
-Every picture is normalised: cropped to the model (over all frames), scaled so a typical frame's longest side fills the box (an animation's
-widest moment may run up to OVERFLOW past it and is clipped there) and stood bottom-centre on a SIZE x SIZE square, so no figure looks too big or too small next
-to another. Every frame is kept, with its timing (MAX_FRAMES can cap a long animation). Downloads and folder listings are cached in
+Every picture is normalised by how big the figure looks, not by its outline: scaled so a typical frame's visible (opaque) area is TARGET x TARGET px,
+within H_RANGE / W_MAX for extreme shapes (a long thin figure has little area for its size, a round one a lot). A compact figure (Snorunt) is not
+blown up to fill a box and a spread-out one (Mega Charizard's wings) is not shrunk to fit one. The canvas is the outline of every frame plus PAD, so
+nothing is ever clipped; pictures are as big as they need to be and all share one scale (the board draws SIZE px as one figure height). Every frame is kept, with its timing (MAX_FRAMES can cap a long animation). Downloads and folder listings are cached in
 tools/.sprite-cache (not committed). Writes web/sprites/{anim,still}/<key>.webp and web/sprites.js (figure name -> [animated, still]).
 
     GITHUB_TOKEN=<token> python tools/build_sprites.py      (the token is optional; it lifts GitHub's 60-an-hour API limit)
 """
-import concurrent.futures as cf, io, json, os, re, sys, urllib.request
+import concurrent.futures as cf, hashlib, io, json, os, re, sys, urllib.request
 from PIL import Image, ImageSequence
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEB, CACHE, OUT = os.path.join(ROOT, 'web'), os.path.join(ROOT, 'tools', '.sprite-cache'), os.path.join(ROOT, 'web', 'sprites')
-SIZE, FILL, QUALITY, MAX_FRAMES = 160, .94, 65, 0   # output square, share of it the model's longest side fills, WebP quality, frame cap (0: every frame, as the source has them)
-OVERFLOW = 1.35   # an animation's widest moment (a flap, a puff of gas) may reach this far past the box and be clipped there, so the model is not tiny the rest of the time
+SIZE, QUALITY, MAX_FRAMES = 160, 65, 0   # px the board draws as one figure height, WebP quality, frame cap (0: every frame, as the source has them)
+TARGET, PAD = 92, 5   # a typical frame's visible area is TARGET² px (the median of the old box-fitted set, so an average figure keeps its size); clear margin
+H_RANGE, W_MAX = (110, 185), 330   # limits on the usual height and width (px) for extreme shapes
 ANIM = [('ch', 'versions/generation-ix/champions', 'webp'), ('za', 'versions/generation-ix/legends-za', 'webp'), ('sv', 'versions/generation-ix/scarlet-violet', 'webp'),
         ('ss', 'versions/generation-viii/sword-shield', 'webp'), ('bd', 'versions/generation-viii/brilliant-diamond-shining-pearl', 'webp'),
         ('la', 'versions/generation-viii/legends-arceus', 'webp'), ('sd', 'other/showdown', 'gif')]
@@ -74,20 +76,30 @@ def normalise(data):
     if MAX_FRAMES and len(frames) > MAX_FRAMES:   # evenly spaced frames; each takes the time of the frames it stands for, so the speed is unchanged
         cut = [round(i * len(frames) / MAX_FRAMES) for i in range(MAX_FRAMES + 1)]
         durs = [sum(durs[cut[i]:cut[i + 1]]) for i in range(MAX_FRAMES)]; frames = [frames[c] for c in cut[:-1]]
-    boxes = [b for b in (fr.getchannel('A').point(lambda a: 255 if a > 16 else 0).getbbox() for fr in frames) if b]
-    if not boxes: boxes = [(0, 0, frames[0].width, frames[0].height)]
-    box = (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes))   # the whole animation: the model never jumps
+    masks = [fr.getchannel('A').point(lambda a: 255 if a > 16 else 0) for fr in frames]
+    seen = [(m.getbbox(), m.histogram()[255]) for m in masks]; seen = [(b, n) for b, n in seen if b] or [((0, 0, frames[0].width, frames[0].height), frames[0].width * frames[0].height)]
+    box = (min(b[0] for b, _ in seen), min(b[1] for b, _ in seen), max(b[2] for b, _ in seen), max(b[3] for b, _ in seen))   # the whole animation: the model never jumps
     w, h = box[2] - box[0], box[3] - box[1]
-    typical = sorted(max(b[2] - b[0], b[3] - b[1]) for b in boxes)[len(boxes) // 2]   # a flapping or bobbing model is sized by its usual pose
-    k = min(SIZE * FILL / typical, SIZE * OVERFLOW / max(w, h)); nw, nh = max(1, round(w * k)), max(1, round(h * k))
+    mid = lambda xs: sorted(xs)[len(xs) // 2]   # a flapping or bobbing model is sized by its usual pose
+    area, tall, wide = mid([n for _, n in seen]), mid([b[3] - b[1] for b, _ in seen]), mid([b[2] - b[0] for b, _ in seen])
+    k = min(max(TARGET / area ** .5, H_RANGE[0] / tall), H_RANGE[1] / tall, W_MAX / wide); nw, nh = max(1, round(w * k)), max(1, round(h * k))
+    cw, ch = nw + 2 * PAD + nw % 2, nh + 2 * PAD   # the canvas fits every frame: nothing is clipped
     out = []
     for fr in frames:
-        c = Image.new('RGBA', (SIZE, SIZE), (0, 0, 0, 0))
-        c.alpha_composite(fr.crop(box).resize((nw, nh), Image.LANCZOS), ((SIZE - nw) // 2, SIZE - nh - round(SIZE * (1 - FILL) / 2)))   # past the edge is clipped
+        c = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
+        c.alpha_composite(fr.crop(box).resize((nw, nh), Image.LANCZOS), (PAD, PAD))
         out.append(c)
     buf = io.BytesIO()
     out[0].save(buf, 'WEBP', save_all=len(out) > 1, append_images=out[1:], duration=durs, loop=0, quality=QUALITY, method=4)
     return buf.getvalue()
+
+
+def stamp():   # the service worker keeps sprites in a cache named after their contents, so a rebuild reaches every device that played before
+    h = hashlib.sha1()
+    for root, _, files in sorted(os.walk(OUT)):
+        for f in sorted(files): h.update(f.encode()); h.update(open(os.path.join(root, f), 'rb').read())
+    sw = os.path.join(WEB, 'sw.js'); s = open(sw, encoding='utf-8', newline='').read()
+    open(sw, 'w', encoding='utf-8', newline='').write(re.sub(r"pdw-sprites-\w+", 'pdw-sprites-' + h.hexdigest()[:10], s, count=1))
 
 
 def build(item):
@@ -121,8 +133,9 @@ def main():
     open(os.path.join(WEB, 'sprites.js'), 'w', encoding='utf-8').write(
         '// GENERATED by tools/build_sprites.py: figure name -> [animated picture, still picture], each web/sprites/<key>.webp. Tags: ch Champions,\n'
         '// za Legends Z-A, sv Scarlet / Violet, ss Sword / Shield, bd Brilliant Diamond / Shining Pearl, la Legends Arceus, sd Showdown, hm HOME;\n'
-        '// -s = shiny; then the PokeAPI pokemon id. All normalised to the same size.\n'
+        '// -s = shiny; then the PokeAPI pokemon id. All drawn at one scale, sized by visible area (see the script).\n'
         'var FIG_SPRITE = ' + json.dumps(pick, ensure_ascii=False, separators=(',', ':')) + ';\n')
+    stamp()
     from collections import Counter
     src = Counter(k.split('/')[0] + ':' + k.split('/')[1].split('-')[0] for k in todo)
     print(f"{len(pick)} figures, {len(todo)} pictures, {total / 1e6:.1f} MB; sources {dict(src)}; missing: {missing or 'none'}")

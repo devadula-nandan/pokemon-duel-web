@@ -17,10 +17,7 @@
   #nav button { display:block; width:100%; background:none; border:0; border-left:3px solid transparent; padding:5px 14px; font-weight:400; }
   #nav button:hover:not(:disabled) { background:var(--ctl2); } #nav button.on, #nav button.on:hover:not(:disabled) { background:var(--ctl2); border-left-color:var(--ink); font-weight:700; }
   main { display:flex; flex-direction:column; min-width:0; min-height:0; }
-  header { display:flex; align-items:center; padding:0 8px 0 16px; border-bottom:1px solid var(--line); background:var(--bar); } header > div { flex:1; min-width:0; display:flex; align-items:baseline; gap:10px; white-space:nowrap; overflow:hidden; } header b { font-size:14px; } #note { color:var(--dim); font-size:12px; overflow:hidden; text-overflow:ellipsis; } header button { margin:3px 3px; }
-  .paths { display:none; }
-  @media (min-width:861px) { .paths { display:flex; gap:4px; margin:0 6px; } .paths a { padding:4px 10px; font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap; border:1px solid var(--line); background:var(--ctl); }
-    .paths a:hover { background:var(--ctl2); } .paths a.on { background:var(--ink); border-color:var(--ink); color:var(--bg); } }
+  header > div { flex:1; min-width:0; display:flex; align-items:center; gap:10px; padding:0 16px; white-space:nowrap; overflow:hidden; } header b { font-size:14px; } #note { color:var(--dim); font-size:12px; overflow:hidden; text-overflow:ellipsis; }   /* the bar itself is theme.css .top, as on the game */
   #board3d { position:relative; flex:1; min-height:0; background:var(--bd); } #board3d canvas { display:block; }
   /* the same evolution moment the duel plays: a glowing ball blasts open, then the figure on the table is the new form */
   #evoanim { position:absolute; z-index:8; width:120px; height:120px; margin:-60px 0 0 -60px; pointer-events:none; }
@@ -61,6 +58,8 @@
   .cap b { font-size:17px; } .cap .val { font-size:40px; font-weight:900; line-height:1; font-variant-numeric:tabular-nums; } .cap .val.up { color:#39d98a; } .cap .why { font-size:11px; color:#fff; opacity:.85; font-weight:600; }
   .verdict { position:absolute; left:50%; top:50%; z-index:6; translate:-50% -50%; max-width:92%; padding:10px 22px; background:#000d; color:#fff; text-align:center; font:900 26px/1.2 "Segoe UI",system-ui,sans-serif; font-style:italic; box-shadow:0 8px 30px #000; }
   .verdict:empty { display:none; }
+  #sizes { position:absolute; inset:0; z-index:6; overflow:auto; display:flex; flex-wrap:wrap; align-items:flex-end; align-content:flex-start; gap:18px 6px; padding:16px; background:var(--bg); }
+  #sizes figure { margin:0; display:flex; flex-direction:column; align-items:center; gap:4px; width:max-content; border-bottom:1px solid var(--line); } #sizes img { display:block; max-width:none; } #sizes figcaption { font:11px/1.2 "Segoe UI",system-ui,sans-serif; color:var(--dim); max-width:110px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }   /* one line, so every figure's feet share the line */
   #gal { position:absolute; right:0; top:50%; translate:0 -50%; z-index:5; display:flex; flex-direction:column; align-items:stretch; width:150px; gap:1px; background:var(--line); border:1px solid var(--line); border-right:0; }   /* flush to the edge, parts split by 1px lines */
   #board3d > div > .iconbtn { width:44px; height:44px; border:0; background:var(--bar); }   /* the camera buttons in the table's corner: flush blocks */
   #gal button { height:44px; border:0; background:var(--bar); display:grid; place-items:center; color:inherit; font-size:18px; cursor:pointer; }
@@ -72,7 +71,7 @@
 </head>
 <body>
 <nav id="nav"><h1>3D STORYBOOK</h1><p>Every state the 3D table can draw. <a href="./">Play in 3D</a></p></nav>
-<main><header><div><b id="title"></b><div id="note"></div></div><nav class="paths" aria-label="Pages"><a href="./" title="Back to the game">Game</a><a href="storybook/" class="on" aria-current="page">Storybook</a></nav><button id="soundBtn"></button><button id="themeBtn"></button><button id="motionBtn" data-motion-btn></button></header><div id="board3d"><div id="evoanim" hidden></div><div id="battle" hidden></div></div><pre id="props"></pre></main>
+<main><header class="top"><div><b id="title"></b><div id="note"></div></div><nav class="paths" aria-label="Pages"><a href="./" title="Back to the game">Game</a><a href="storybook/" class="on" aria-current="page">Storybook</a></nav><button id="soundBtn"></button><button id="themeBtn"></button><button id="motionBtn" data-motion-btn></button></header><div id="board3d"><div id="evoanim" hidden></div><div id="battle" hidden></div></div><pre id="props"></pre></main>
 <script src="data.js"></script>
 <script src="art.js"></script>
 <script src="sprites.js"></script>
@@ -288,6 +287,7 @@ const STORIES = {
     'Selected': ['Gold ring: the figure you picked.', () => row([{ sel: true }])],
     'Attack target': ['Red ring: a figure the selected one can battle.', () => row([{ team: 1, atk: true }])],
     'In the P.C.': ['Faded while it waits in the P.C.', () => row([{ dim: true, mp: '' }])],
+    'All figures at one scale': ['Every figure side by side at the scale the board draws them, standing on one line, so a figure that looks too big or too small stands out. Scroll; Animated / Still switches the pictures.', () => ({ ...row([]), demo: 'sizes' })],
     'Every figure': ['Every figure in the game, one at a time, by its figure number. ▲ / ▼ (or the arrow keys) step through them.', () => ({ ...row([{}]), demo: 'gallery' })],
     'No picture': ['Figures without a picture show their name.', () => row([{ img: '', name: 'Wash Rotom' }])],
     'Interaction states': ['', () => row([{ badge: 'idle' }, { sel: true, badge: 'selected' }, { team: 1, atk: true, badge: 'target' }, { dim: true, mp: '', badge: 'P.C.' }])],
@@ -308,6 +308,7 @@ const STORIES = {
     'Movable points': ['Points the selected figure can reach glow gold.', () => table([21, 22, 23, 16, 17, 18, 25, 26, 27, 19, 20], [{ at: 28, sel: true }])],
     'Opening position': ['Six figures on each bench.', () => table([], some(12).map((f, i) => ({ f, at: i < 6 ? 28 + i : 34 + i - 6, team: i < 6 ? 0 : 1, mp: String(f.mp) })))],
     'Excluded figures': ['Figures removed from the duel sit in a row past their side\'s bench: yours along the near edge, the opponent\'s along the far edge.', () => table([], some(10).map((f, i) => i < 3 ? { f, out: i, team: 0, dim: true, mp: '' } : i < 5 ? { f, out: i - 3, team: 1, dim: true, mp: '' } : { f, at: [28, 29, 34, 35, 18][i - 5], team: i < 7 || i === 9 ? 0 : 1, mp: String(f.mp) }))],
+    'Tall and wide figures': ['Figures are sized by how much of them is visible, not by their outline: a compact one (Snorunt) is not blown up, a spread-out one (Mega Charizard X / Y) is not shrunk, and no picture is clipped. On the bench and on the field.', () => table([], ['Snorunt', 'Mega Charizard X', 'Mega Charizard Y'].flatMap((n, i) => [{ f: named(n), at: 28 + i, mp: String(named(n).mp) }, { f: named(n), at: [21, 22, 23][i], mp: String(named(n).mp) }]))],
     'Mid duel': ['', () => table([], some(8).map((f, i) => ({ f, at: [24, 18, 13, 29, 3, 9, 14, 35][i], team: i < 4 ? 0 : 1, mp: String(f.mp), status: i === 1 ? 'burn' : i === 5 ? 'freeze' : '', badge: i === 1 ? 'burned' : i === 5 ? 'frozen' : '' })))],
   },
   Evolution: {
@@ -473,7 +474,12 @@ function show(group, name) {
   (show.timers || []).forEach(clearTimeout); show.timers = [];
   const draw = x => { window.board3dModel = x; if (window.Board3D) Board3D.draw(x); };
   const job = ++demoJob;
-  const oldGal = $('gal'); if (oldGal) oldGal.remove(); document.onkeydown = null; window.onhashchange = null;
+  const oldGal = $('gal'); if (oldGal) oldGal.remove(); $('sizes')?.remove(); document.onkeydown = null; window.onhashchange = null;
+  if (m.demo === 'sizes') {   // every figure at one scale: a picture's px are drawn the same everywhere (tools/build_sprites.py), feet on one line
+    draw(m); const box = document.createElement('div'); box.id = 'sizes'; $('board3d').appendChild(box);
+    box.innerHTML = [...D.figures].sort((a, b) => a.no - b.no || a.id - b.id).map(f => `<figure><img loading="lazy" src="${art(f)}" alt="" onload="this.style.height = this.naturalHeight * .75 + 'px'"><figcaption>${esc(f.n)}</figcaption></figure>`).join('');
+    return;
+  }
   if (m.demo === 'gallery') {   // every figure by its number, stepped with ▲ / ▼
     const all = [...D.figures].sort((a, b) => a.no - b.no || a.id - b.id);
     const fromUrl = (p = decodeURIComponent(location.hash.slice(1)).split('/')[2]) => p == null || p === '' ? -1 : all.findIndex(f => f.no === +p);   // #Figure/Every figure/25 opens No. 25
