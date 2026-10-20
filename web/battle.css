@@ -67,3 +67,5 @@
 #battle.staged::before { animation:bunveil .3s linear forwards; } #battle.close::after { animation:bveil .3s linear forwards; } @keyframes bunveil { to { opacity:0; } } @keyframes bveil { from { opacity:0; } }
 #battle.staged .stage.fight { background:transparent; } .stage.fight .bdisk, .stage.fight .gem, .stage.fight .sdp { opacity:0; transition:opacity .1s linear, translate .1s linear; }
 .stage.fight .bdisk.dn { translate:calc(var(--u) * -.87) calc(var(--u) * 1.8); } .stage.fight .bdisk.up { translate:calc(var(--u) * .87) calc(var(--u) * -1.8); }
+/* the gem is the two frames' red pointers: it comes with the wheels (BattleStartMove), never before them */
+.stage:has(.bdisk.wait) .gem { opacity:0; } .gem { transition:opacity .2s ease-in; }
