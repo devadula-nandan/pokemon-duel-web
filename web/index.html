@@ -358,6 +358,7 @@
   .stepper button { flex:none; display:inline-flex; align-items:center; justify-content:center; gap:2px; min-width:28px; height:28px; padding:0; line-height:1; border:0; background:none; } .stepper button:first-child { } .stepper button:last-child { } .stepper button:hover:not(:disabled) { background:var(--ctl2); } .stepper button:disabled { opacity:.3; cursor:default; } .stepper b { flex:1; min-width:36px; text-align:center; } .stepper.pair { min-width:0; width:auto !important; } .stepper.pair button { min-width:28px; padding:0 6px; font-size:10px; } .stepper.pair button + button { border-left:1px solid var(--line); }
   .fp-atk .stepper { margin:2px 0; }
   .ed-ab { margin-top:12px; padding-top:12px; border-top:1px solid var(--line); } .ed-ab .desc { margin-top:4px; }
+  #modal.dock { position:absolute; inset:0 0 auto; bottom:calc(var(--row-h) + 1px); padding:0; place-items:end stretch; z-index:8; } #modal.dock .box { width:100%; height:calc(var(--row-h) + 1px); max-height:none; padding:0 0 0 14px; display:flex; flex-direction:row; align-items:stretch; gap:8px; overflow:hidden; border:0; border-top:1px solid var(--line); outline:0; box-shadow:0 -10px 28px rgba(0,0,0,.4); } #modal.dock .box h2 { flex:1; min-width:0; margin:0 !important; align-self:center; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } #modal.dock .rbtns { flex:none; flex-wrap:nowrap; } #modal.dock .rbtns button { min-width:0; height:100%; padding:0 18px; border-width:0 0 0 1px; }   /* docked on the duel's bottom bar, over the arena: one row as tall as the bar, the question and its two buttons */
   #modal .box { background:var(--panel); border:1px solid var(--line); outline:1px solid var(--line); --pad:20px; padding:var(--pad); width:min(700px,100%); max-height:92vh; overflow:auto; box-shadow:0 20px 60px rgba(0,0,0,.6); }
   /* narrow screen: the editor fills the screen; the wheel sits above the controls; each attack is its name on one line and its steppers,
      stretched to equal columns, on the next */
@@ -420,7 +421,7 @@
   /* the bar along the bottom: the original's three places (Give up left, the one centre button, Wait right), slim like the top bar */
   .ibar { flex:none; display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:stretch; gap:0; padding:0; min-height:44px; background:var(--bar); border-top:1px solid var(--line); }   /* Resign · the main action filling the rest · status; flush, no empty stretches */
   .ibar button { padding:5px 14px; font-size:13px; text-align:center; white-space:nowrap; }
-  #ibGive { justify-self:start; background:var(--danger); color:#fff; } #ibGive:hover:not(:disabled) { background:var(--danger); color:#fff; opacity:.85; }   /* the theme's red, as on the remove buttons */ #ibWait { grid-column:3; display:inline-flex; align-items:center; gap:8px; padding:0 14px; border-left:1px solid var(--line); color:var(--dim); }
+  #ibGive { justify-self:start; background:var(--danger); color:#fff; } #ibGive:hover:not(:disabled) { background:var(--danger); color:#fff; opacity:.85; } #ibGive.cancel, #ibGive.cancel:hover:not(:disabled) { background:var(--ctl); color:var(--ink); opacity:1; } #ibGive.cancel:hover:not(:disabled) { background:var(--ctl2); }   /* while its question is open it is the Cancel */   /* the theme's red, as on the remove buttons */ #ibWait { grid-column:3; display:inline-flex; align-items:center; gap:8px; padding:0 14px; border-left:1px solid var(--line); color:var(--dim); }
   #ibMid { grid-column:2; min-width:0; background:var(--ink); border-color:var(--ink); color:var(--bg); } #ibMid:hover:not(:disabled) { opacity:.85; } #ibMid:disabled { background:var(--ctl); border-color:var(--line); color:var(--dim); }
   @media (max-width:860px) { #ibMid { min-width:0; overflow:hidden; text-overflow:ellipsis; } }
   /* flush, like the HUD above the board: full-height square segments split by 1px theme lines, no gaps or rounding */
@@ -2012,14 +2013,17 @@ function drawBar(mine) {
   const give = mine ? legal.findIndex(m => m.value.type === 'resign') : -1, own = sel != null && pk(sel) ? pk(sel).pokepower : null, all = mine ? legal.filter(m => m.value.type === 'declare_pokepower' && !isEvolve(m)) : [];
   const abil = all.some(m => m.value.pokepower_id === own) ? all.filter(m => m.value.pokepower_id === own) : all, name = abil.length && D.abilities[abil[0].value.pokepower_id] ? D.abilities[abil[0].value.pokepower_id][0] : 'Use Ability';
   drawBar.mid = pick || routeChoice ? () => { plateView = (pick && pick.back) || null; pick = null; routeChoice = null; render(); } : abil.length ? () => startPick(name, abil) : null;
-  $('ibar').innerHTML = `<button id="ibGive" data-m="${give}" ${give < 0 ? 'disabled' : ''}>Resign</button><button id="ibMid" ${drawBar.mid ? '' : 'disabled'}>${pick || routeChoice ? 'Cancel' : 'Use Ability'}</button>` +
+  const asking = !!modal.cancel;   // a resign waiting for its answer: this button is its Cancel
+  $('ibar').innerHTML = `<button id="ibGive" data-m="${give}" ${give < 0 && !asking ? 'disabled' : ''}${asking ? ' class="cancel"' : ''}>${asking ? 'Cancel' : 'Resign'}</button><button id="ibMid" ${drawBar.mid ? '' : 'disabled'}>${pick || routeChoice ? 'Cancel' : 'Use Ability'}</button>` +
     (missionDuel() ? `<button id="ibWait" ${rewindTarget() >= 0 ? '' : 'disabled'}>Take Back<i>${REWIND_MAX - rewinds}</i></button>` : '');   // OnlineStartInit hides Wait outside duels against the AI
 }
 $('ibar').onclick = e => {
-  const b = e.target.closest('button'); if (!b || b.disabled || busy) return;
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  if (b.id === 'ibGive' && modal.cancel) return modal.cancel();
+  if (busy) return;
   if (b.id === 'ibWait') return rewind();
   if (b.id === 'ibMid') return drawBar.mid && drawBar.mid();
-  const m = legal[+b.dataset.m]; ask('Resign this duel?', 'Resign').then(ok => { if (ok) play(m); });
+  const m = legal[+b.dataset.m]; ask('Resign this duel?', 'Resign', true).then(ok => { if (ok) play(m); });
 };
 // The plate list (MatchPlateChoices): plates still in hand first, spent ones after and greyed; the one at the centre is the selected one,
 // shown large, and Use is offered only for a plate of the player to act that the engine allows now.
@@ -2186,7 +2190,7 @@ $('acts').onclick = $('tbl').onclick = e => {
   const t = e.target.closest('[data-c]'); if (t) return choose([drawPrompt.opts[+t.dataset.c]]);
   if (e.target.closest('[data-rw]')) return rewind();
   if (e.target.closest('[data-ai]')) return askAi();
-  const b = e.target.closest('[data-m]'); if (b && !busy) { const m = legal[+b.dataset.m]; if (m.value.type !== 'resign') play(m); else ask('Resign this duel?', 'Resign').then(ok => { if (ok) play(m); }); } };
+  const b = e.target.closest('[data-m]'); if (b && !busy) { const m = legal[+b.dataset.m]; if (m.value.type !== 'resign') play(m); else ask('Resign this duel?', 'Resign', true).then(ok => { if (ok) play(m); }); } };
 
 // ---------- playing back the engine's effect list ----------
 // Each line is tinted with the colour of the player whose turn it happened in (logSide, set while a move's effects are played back): blue for
@@ -2211,8 +2215,18 @@ async function tickNext() {
 }
 function log(html) { const cls = P_COL[logSide] ? (logSide === (flip ? 'white' : 'black') ? 'me' : 'op') : '', pic = (String(html).match(/data-pic="([^"]+)"/) || [])[1];
   logLines.push(`<div class="${cls}">${pic ? `<img class="lpic" src="${pic}" alt="" loading="lazy">` : ''}${html}</div>`); $('log').innerHTML = logLines.slice(-120).join(''); $('log').scrollTop = 1e6; }   // the row shows the still picture of the first figure it names (one decoded copy per figure, no animation to repaint), flush at its start
-const ask = (q, yes) => modal(`<h2 style="margin-top:0">${esc(q)}</h2><div class="rbtns"><button data-v="">Cancel</button><button data-v="1" class="dangerbtn">${esc(yes)}</button></div>`).then(Boolean);
-function modal(html) { $('box').innerHTML = html; $('modal').hidden = false; return new Promise(res => { $('box').onclick = e => { const b = e.target.closest('[data-v]'); if (b) { $('modal').hidden = true; res(b.dataset.v); } }; }); }
+const ask = (q, yes, dock) => modal(`<h2 style="margin-top:0">${esc(q)}</h2><div class="rbtns">${dock ? '' : '<button data-v="">Cancel</button>'}<button data-v="1" class="dangerbtn">${esc(yes)}</button></div>`, dock).then(Boolean);   // docked, the bar's Resign turns into its Cancel
+function modal(html, dock) {   // dock: the duel's bottom bar; the box stands on it, over the arena only, instead of in the middle of the page
+  const m = $('modal'), bar = dock && document.querySelector('#game .ibar'); $('box').innerHTML = html; m.hidden = false; m.classList.toggle('dock', !!bar);
+  if (bar) bar.parentNode.insertBefore(m, bar); else if (m.parentNode !== document.body) document.body.appendChild(m);
+  const give = () => { const g = $('ibGive'); if (g) { g.textContent = bar && !m.hidden ? 'Cancel' : 'Resign'; g.classList.toggle('cancel', !!bar && !m.hidden); } };
+  give();
+  return new Promise(res => {
+    const done = v => { m.hidden = true; m.classList.remove('dock'); if (m.parentNode !== document.body) document.body.appendChild(m); modal.cancel = null; give(); res(v); };
+    modal.cancel = bar ? () => done('') : null;   // the bar's Resign, now Cancel, closes it
+    $('box').onclick = e => { const b = e.target.closest('[data-v]'); if (b) done(b.dataset.v); };
+  });
+}
 const sealed = new Map();   // figure -> attack ids the engine has sealed (disable_skill), kept until its conditions are removed
 function wheelSnap(src, battler, spin) {   // the disk is drawn from the figure the spin names (results[0].figure), and from the status the wheel started with
   const s = src || st, first = (spin.results || [])[0] || {}, figId = fieldForm(first.figure != null && first.figure >= 0 ? first.figure : battler, s);   // spins name the pre-evolution root; draw the form on the board
