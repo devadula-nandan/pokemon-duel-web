@@ -61,6 +61,7 @@
   #home .panel:has(> .hfig, > .hpl, > .boosters) { padding:0; } #home .panel > h2 { margin:0; padding:0 14px; min-height:var(--row-h); display:flex; align-items:center; } #home .panel > :is(p.note, #homeMsg) { padding:6px 14px; } #home .panel > #homeMsg:empty { display:none; }
   #home .panel > :is(.hfig, .hpl, .boosters) { border-left:0; border-right:0; } #home .panel > :is(.hfig, .hpl):last-child { border-bottom:0; }   /* a grid at the panel's foot uses the panel's own line */ #home .panel > .hhead > h2 { align-self:center; } #home .panel > .hhead > button { align-self:stretch; height:auto; margin-left:auto; border:0; border-left:1px solid var(--line); } #setup .panel > #tmsg { padding:4px 14px; } #setup .panel > #tmsg:empty { display:none; }
   #setup .panel > :is(#team, #myplates, #tlist) { border-left:0; border-right:0; border-bottom:0; } #setup .panel > #team { border-bottom:1px solid var(--line); }   /* the team grid: a line before the plates heading under it */
+  main#setup > section { background-image:linear-gradient(var(--line), var(--line)); background-size:100% 1px; background-position:bottom; background-repeat:no-repeat; }   /* both columns end on a line, drawn under the panels so it takes no room (a border would make each column scroll by 1px); a panel that reaches the foot covers it with its own line */
   #setup :is(#list, #plist) { border:0; } #setup .pbody > .bar > * { border-width:0 1px 1px 0; margin-left:0; }   /* each field draws its own right line, so none overlaps the one before */ #setup .pbody > .bar + * { margin-top:0; }
   .gobar #mode, .gobar #room { border:0; } .gobar #go { border:0; border-left:1px solid var(--line); margin-left:0; }
   .panel h2 { font:800 12px/1 "Segoe UI",system-ui,sans-serif; text-transform:uppercase; letter-spacing:.14em; color:var(--accent); margin:0 0 10px; }
@@ -113,7 +114,8 @@
   .chip { display:inline-block; padding:0 8px; font-size:11px; font-weight:700; background:var(--ctl2); color:var(--ink); margin-right:4px; } .chip.w { background:var(--ink); color:var(--bg); }
   .sw { border-radius:50%; width:12px; height:12px; margin-top:4px; border:1px solid rgba(255,255,255,.4); } .desc { color:var(--dim); font-size:12px; grid-column:2 / 4; }
   #log { height:160px; overflow:auto; border-top:1px solid var(--line); }   /* a plain stack of rows (a grid squeezed rows that wrap) */ #log > div { padding:10px 14px; border-bottom:1px solid var(--line); font-weight:600; }   /* rows drawn like the action list's, on the dark panel; a player's rows are tinted with their colour, mixed into the theme's panel */ #log > .me { background:color-mix(in srgb, var(--p0) 11%, var(--panel)); } #log > .op { background:color-mix(in srgb, var(--p1) 11%, var(--panel)); } #log b, .ink { color:var(--ink); font-weight:700; }
-  #log > div { content-visibility:auto; contain-intrinsic-size:auto 41px; }   /* rows out of view are skipped (layout and paint) */ #log > div:has(> .lpic) { position:relative; padding-left:calc(var(--row-h) + 10px); min-height:var(--row-h); } #log .lpic { position:absolute; left:0; top:0; box-sizing:border-box; width:var(--row-h); height:var(--row-h); background:var(--ctl); border:0 solid var(--line); border-width:0 1px 1px 0; object-fit:cover; object-position:50% 30%; }   /* a square on the control layer, flush to the row's top-left corner; lines only right and below, the bottom one landing on the row's own line in a one-line row (no double lines) */
+  @property --slide { syntax:'<length>'; inherits:true; initial-value:0px; } #log > div { translate:0 var(--slide); }   /* the log's rows slide together when new ones come in on top (flushLog) */
+#log > div:has(> .lpic) { position:relative; padding-left:calc(var(--row-h) + 10px); min-height:var(--row-h); } #log .lpic { position:absolute; left:0; top:0; box-sizing:border-box; width:var(--row-h); height:var(--row-h); background:var(--ctl); border:0 solid var(--line); border-width:0 1px 1px 0; object-fit:cover; object-position:50% 30%; }   /* a square on the control layer, flush to the row's top-left corner; lines only right and below, the bottom one landing on the row's own line in a one-line row (no double lines) */
   #list, #plist { height:300px; overflow:auto; } .row { display:flex; gap:8px; padding:6px 8px; cursor:pointer; align-items:center; }
   .row:hover { background:var(--ctl2); } .row .n { flex:1; } .team .row { background:var(--ctl); }
   .chip.rar1 { background:#8a8f98; color:#fff; } .chip.rar2 { background:#2e9e5b; color:#fff; } .chip.rar3 { background:#2f7fe0; color:#fff; } .chip.rar4 { background:#d9a514; color:#111; } .chip.rar5 { background:#c0392b; color:#fff; }   /* rarity: C, UC, R, EX, UX */
@@ -177,7 +179,7 @@
   .fp-z { margin-top:12px; } .fp-z .zr + .zr { margin-top:8px; } .fp-z .zr .sw { display:inline-block; vertical-align:-1px; margin:0; } .fp-z .zr b { margin-left:6px; } .fp-z .zr .desc { margin-top:2px; }   /* Z-Moves, as MiniDetailFigure's SkillZ list: name and colour, then what it does */
   .fp-body + .fp-ab { margin-top:12px; } .fp-ab { justify-self:stretch; padding:12px 0 0; border-top:1px solid var(--line); }   /* a section under a 1px line, not a box */ .fp-ab .h { margin-bottom:4px; } .fp-ab .desc { margin-top:4px; }
   @media (max-width:860px) { #figpop:not(.duel):not(.sheet) { left:0; right:0; bottom:0; transform:none; width:auto; max-height:72dvh; border-width:1px 0 0; } #figpop.duel { max-height:78%; } .fp-body { grid-template-columns:minmax(0,1fr); } .fp-side { display:contents; } .fp-wheel { justify-self:center; } .fp-ab { order:3; } }
-  #figPanel > .pbody, #pltPanel > .pbody { flex:1 1 0; min-height:0; display:flex; flex-direction:column; overflow:hidden; gap:0; padding:0; } #figPanel > .pbody > .bar + *, #pltPanel > .pbody > .bar + * { margin-top:-1px; }   /* the filters sit flush on the list */
+  #figPanel > .pbody, #pltPanel > .pbody { flex:1 1 0; min-height:0; display:flex; flex-direction:column; overflow:hidden; gap:0; padding:0; } #figPanel > .pbody > .bar + *, #pltPanel > .pbody > .bar + * { margin-top:0; }   /* the filters sit flush on the list, their own bottom lines between the two (the list draws none) */
   #figPanel > .pbody > .bar, #pltPanel > .pbody > .bar { margin-bottom:0; }
   @media (max-width:860px) { .cards { grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); } .card img { width:68px; height:68px; } }
   /* Saved teams: a strip of small cards that scrolls sideways (name, plate count and delete on one line, the six figures under it), so the
@@ -230,7 +232,7 @@
   #myplates .mpl .info svg, #myplates .mpl .x svg { width:14px; height:14px; }
   #myplates .mpl .info:is(:hover, :focus-visible) { background:var(--p0); color:#fff; } #myplates .mpl .x:is(:hover, :focus-visible) { background:var(--danger); color:#fff; }
   #myplates .mpl > b { flex:none; min-width:0; } #myplates .mpl > .note { flex:1 1 0; min-height:0; min-width:0; display:block; -webkit-line-clamp:unset; overflow:hidden; -webkit-mask-image:linear-gradient(to bottom, #000 55%, transparent); mask-image:linear-gradient(to bottom, #000 55%, transparent); }   /* soft fade instead of a hard clamp */
-  #pcost .pc { color:var(--gold); font-weight:700; } #pcost .auto { display:block; margin-top:2px; text-transform:none; letter-spacing:0; font-weight:600; }   /* Mega Stones: outside the six slots */   /* same gold as the cost dots on .mpl */
+  #pcost .pc { color:var(--gold); font-weight:700; } #pcost .auto { display:block; margin-top:2px; text-transform:none; letter-spacing:0; font-weight:600; white-space:normal; } .hhead h2:has(#pcost) { flex:1 1 auto; min-width:0; white-space:normal; } .hhead:has(#pcost) > label { flex:none; }   /* the heading and its stone list wrap inside the column instead of widening it; the checkbox label stays whole */   /* Mega Stones: outside the six slots */   /* same gold as the cost dots on .mpl */
   #myplates .mpl.empty { background:var(--ink); color:var(--bg); font-size:22px; font-weight:700; align-items:center; justify-content:center; cursor:pointer; opacity:1; padding:8px 10px; }
   #myplates .mpl.empty:hover { opacity:.88; }
   /* Deck builder layout. Wide screen: saved teams, then tabbed figures/plates on the left; team + Start on the right.
@@ -332,13 +334,14 @@
   .fold:hover:not(:disabled) { background:var(--ctl2); } #game .side > .panel:has(#acts) .fold { background:color-mix(in srgb, var(--bg) 8%, var(--ink)); } #game .side > .panel:has(#acts) .fold:hover { background:color-mix(in srgb, var(--bg) 16%, var(--ink)); }
   .fold svg { flex:none; transition:transform .15s; } .fold[aria-expanded=false] svg { transform:rotate(-90deg); }
   #game .side > .panel:has(.fold) { flex:1 1 0 !important; min-height:var(--row-h) !important; overflow:hidden; transition:flex-grow .2s ease; } #game .side > .panel.folded { flex-grow:0 !important; }   /* folding slides: the panel gives its share to the others, down to its heading */
-  #game .side::after { content:''; flex:0 1 0; background:var(--panel); transition:flex-grow .2s ease; } #game .side:not(:has(> .panel:not(.folded) > h2 > .fold))::after { flex-grow:1; }   /* with every panel folded, the space below is panel, not divider */
+  #game .side::after { content:''; flex:0 1 0; background:var(--panel); }   /* no transition: the panels' own heights animate, and Actions measures the room it will take */ #game .side:not(:has(> .panel:not(.folded) > h2 > .fold))::after { flex-grow:1; }   /* with every panel folded, the space below is panel, not divider */
   @media (prefers-reduced-motion: reduce) { #game .side > .panel:has(.fold), #game .side::after, .fold svg { transition:none; } }
   #acts button:first-child { } #acts button:last-child { } #acts button:only-child { }
   #acts:empty:before { content:"Nothing to choose right now."; color:var(--bg); font-size:12px; }
   #game .side { display:flex; flex-direction:column; gap:1px; background:var(--line); border-right:1px solid var(--line); overflow:hidden; } #game .side > .panel, #game #camBar, #game #sideHome { margin:0; } #game #camBar { gap:1px; background:var(--line); } #game #camBar .iconbtn, #game #camBar a.iconbtn { width:44px; height:44px; border:0; background:var(--bar); } #game #camBar .camGrow { align-self:stretch; background:var(--bar); } #game .side > .panel:has(#log), #game .side > .panel:has(#acts) { flex:1 1 0; min-height:0; display:flex; flex-direction:column; }
   #game .side > .panel:has(#log) #log, #game .side > .panel:has(#acts) #acts { flex:1 1 0; height:auto; max-height:none; min-height:0; }
   #game .side > .panel:has(#acts) { flex:0 1 auto !important; max-height:50%; transition:max-height .2s ease; } #game .side > .panel.folded:has(#acts) { max-height:var(--row-h); }   /* Actions: as tall as its buttons, at most half the column (then it scrolls); the log takes the rest */
+  #game .side:has(> .panel.folded #log) > .panel:not(.folded):has(#acts) { flex:1 1 0 !important; max-height:none; } #game .side:has(> .panel.folded #log) > .panel:not(.folded) > #acts { flex:1 1 0; }   /* with the log folded, Actions takes all the room */
   #game .side > .panel:has(#acts) #acts { flex:0 1 auto; overflow:auto; }
   #modal { position:fixed; inset:0; background:color-mix(in srgb, var(--bg) 60%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); display:grid; place-items:center; padding:16px; z-index:5; }
   /* the team slot editor */
@@ -878,7 +881,20 @@ function drawSaved(msg) {
   $('tlist').innerHTML = savedTeams.map((t, i) => `<div class="tcard" data-i="${i}" title="Load ${esc(t.name)}"><div class="th"><b>${esc(t.name)}</b><span class="chip" title="${t.plates.length} plate${t.plates.length === 1 ? '' : 's'}">${t.plates.length}P</span><button class="x" data-x="${i}" title="Delete" aria-label="Delete ${esc(t.name)}">${icon('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12h10l1-12M9 7V4h6v3"/>')}</button></div><div class="tp">${t.team.map(thumb).join('')}</div></div>`).join('') || '<p class="note" style="margin:0">No saved teams yet.</p>';
   markSaved();
 }
-const setFold = (b, open) => { b.setAttribute('aria-expanded', open); b.closest('.panel').classList.toggle('folded', !open); $(b.getAttribute('aria-controls')).inert = !open; };
+const setFold = (b, open) => {   // fold / unfold a side panel; Log and Actions both glide from their old heights to their new ones, together
+  const panels = [...document.querySelectorAll('#game .side > .panel:has(> h2 > .fold)')], from = panels.map(p => p.getBoundingClientRect().height);
+  const clear = () => panels.forEach(p => { for (const k of ['transition', 'min-height', 'max-height']) p.style.removeProperty(k); });
+  const size = (p, h) => { p.style.setProperty('min-height', h + 'px', 'important'); p.style.setProperty('max-height', h + 'px', 'important'); };   // important: the panels' own min-height and flex rules are
+  clearTimeout(setFold.t); clear();
+  b.setAttribute('aria-expanded', open); b.closest('.panel').classList.toggle('folded', !open); $(b.getAttribute('aria-controls')).inert = !open;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || !panels.includes(b.closest('.panel'))) return;
+  panels.forEach(p => { p.style.transition = 'none'; });
+  const to = panels.map(p => p.getBoundingClientRect().height);   // where each settles under the new state (Actions as tall as its buttons up to its cap, the Log the rest)
+  panels.forEach((p, i) => size(p, from[i]));
+  void document.body.offsetHeight;
+  panels.forEach((p, i) => { p.style.setProperty('transition', 'min-height .2s ease, max-height .2s ease', 'important'); size(p, to[i]); });
+  setFold.t = setTimeout(clear, 230);
+};
 for (const b of document.querySelectorAll('.fold')) b.onclick = () => setFold(b, b.getAttribute('aria-expanded') !== 'true');   // fold / unfold a side panel
 $('tsave').onclick = () => {
   if (team.length !== 6) return drawSaved('Pick six figures before saving.');
@@ -2247,7 +2263,22 @@ async function tickNext() {
   el.hidden = true; el.textContent = ''; tickQ.shift(); tickNext();
 }
 function log(html) { const cls = P_COL[logSide] ? (logSide === (flip ? 'white' : 'black') ? 'me' : 'op') : '', pic = (String(html).match(/data-pic="([^"]+)"/) || [])[1];
-  logLines.push(`<div class="${cls}">${pic ? `<img class="lpic" src="${pic}" alt="" loading="lazy">` : ''}${html}</div>`); $('log').innerHTML = logLines.slice(-120).join(''); $('log').scrollTop = 1e6; }   // the row shows the still picture of the first figure it names (one decoded copy per figure, no animation to repaint), flush at its start
+  const row = `<div class="${cls}">${pic ? `<img class="lpic" src="${pic}" alt="" loading="lazy">` : ''}${html}</div>`;
+  logLines.push(row); if (logLines.length > 120) logLines.shift();
+  (log.queue = log.queue || []).push(row); if (!log.raf) log.raf = requestAnimationFrame(flushLog); }
+// Newest at the top. The rows written in one frame go in together and slide down as one block from above the top edge, pushing the rest;
+// a block that arrives while the last one is still sliding carries its leftover distance, so the motion never restarts.
+function flushLog() {   // FLIP: where the old first row stood (mid-slide included), where it stands now; every row slides by the difference
+  log.raf = 0; const el = $('log'), rows = log.queue.splice(0); if (!rows.length) return;
+  const ref = el.firstElementChild, before = ref && ref.getBoundingClientRect().top;
+  if (log.anim) { log.anim.cancel(); log.anim = null; }
+  el.insertAdjacentHTML('afterbegin', rows.reverse().join('')); while (el.children.length > 120) el.lastElementChild.remove();
+  if (el.scrollTop < 60) el.scrollTop = 0;
+  if (!ref || !ref.isConnected || !el.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const d = before - ref.getBoundingClientRect().top; if (!d) return;
+  const a = log.anim = el.animate([{ '--slide': d + 'px' }, { '--slide': '0px' }], { duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  a.onfinish = () => { if (log.anim === a) log.anim = null; };
+}   // the row shows the still picture of the first figure it names (one decoded copy per figure, no animation to repaint), flush at its start
 const ask = (q, yes, dock) => modal(`<h2 style="margin-top:0">${esc(q)}</h2><div class="rbtns">${dock ? '' : '<button data-v="">Cancel</button>'}<button data-v="1" class="dangerbtn">${esc(yes)}</button></div>`, dock).then(Boolean);   // docked, the bar's Resign turns into its Cancel
 function modal(html, dock) {   // dock: the duel's bottom bar; the box stands on it, over the arena only, instead of in the middle of the page
   const m = $('modal'), bar = dock && document.querySelector('#game .ibar'); $('box').innerHTML = html; m.hidden = false; m.classList.toggle('dock', !!bar);
