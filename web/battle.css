@@ -1,0 +1,62 @@
+/* The battle screen (battle.js), shared by the game and Storybook. Every length is the original's: --u is one roulette-camera unit
+   (the orthographic camera shows 1.4 of them from the middle to the top edge), --p one unit of the 750 x 1334 UI Root; --sh is the
+   height of the screen the stage stands for. Positions are taken from the stage's middle. */
+/* battle screen (MatchMain / Roulette / SpinSkillDataUI). --u is one roulette-camera unit (the orthographic camera shows 1.4 of them from the
+   middle to the top edge), --p one unit of the 750 x 1334 UI Root. A wheel with its frame is 2 x 0.9577 units across; the centres sit
+   0.41615 across and 0.86275 up or down from the middle, so the two frames meet there, on a line leaning 25.75 degrees. */
+#battle { position:absolute; inset:0; z-index:6; container-type:size; background:#000; }
+.stage { --sh:100cqh; --u:calc(var(--sh) / 2.8); --p:calc(var(--sh) / 1334); --d:calc(var(--u) * 1.93); position:relative; width:100cqw; height:var(--sh); overflow:hidden;
+  background:radial-gradient(ellipse at 50% 50%, #1d1f24, #0b0c0e 75%); }   /* the 3D battle stage under RouletteBG, black at 75% */
+.stage.open { animation:bopen .3s linear; } .stage.close { animation:bclose .3s linear forwards; } @keyframes bopen { from { filter:brightness(0); } } @keyframes bclose { to { filter:brightness(0); } }
+.bdisk { position:absolute; width:var(--d); height:var(--d); filter:drop-shadow(0 8px 14px rgba(0,0,0,.55)); } .bdisk svg { width:100%; height:100%; }
+.bdisk.dn { left:calc(50% - var(--u) * .41615 - var(--d) / 2); top:calc(50% + var(--u) * .86275 - var(--d) / 2); }
+.bdisk.up { left:calc(50% + var(--u) * .41615 - var(--d) / 2); top:calc(50% - var(--u) * .86275 - var(--d) / 2); }
+.bdisk.wait { visibility:hidden; } .bdisk.in { animation:bin .2s ease-in both; }   /* BattleStartMove: 1.5 units in along the line, 0.2 s EaseIn */
+.bdisk.dn.in { --from:calc(var(--u) * -.651) calc(var(--u) * 1.351); } .bdisk.up.in { --from:calc(var(--u) * .651) calc(var(--u) * -1.351); } @keyframes bin { from { translate:var(--from); } }
+.stage.solo .bdisk.dn { left:calc(50% - var(--d) / 2); top:calc(50% - var(--d) / 2); } .stage.solo .gem, .stage.solo .flare { display:none; }
+/* a follow-up spin of more than two wheels (an attack that spins several figures) lays them in a row instead of stacking them on one disk */
+.stage.row { display:flex; flex-wrap:wrap; align-content:center; align-items:center; justify-content:center; gap:8px; }
+.stage.row .bdisk { position:relative; left:auto; top:auto; width:min(34cqw, 46cqh); height:auto; }
+.stage.row .spin { width:100%; aspect-ratio:1; } .stage.row .gem, .stage.row .flare, .stage.row .sparks { display:none; }
+.spin { position:relative; width:100%; height:100%; } .spin .dimw { position:absolute; inset:0; pointer-events:none; animation:resin .2s; }
+.bdisk { transition:transform .25s, filter .25s; } .bdisk.won { transform:scale(1.03); filter:drop-shadow(0 0 22px var(--gold)); } .bdisk.lost { filter:brightness(.4) saturate(.5); animation:bshake .4s; }
+@keyframes bshake { 20% { translate:-10px 4px; } 40% { translate:9px -5px; } 60% { translate:-6px 3px; } 80% { translate:4px -2px; } }
+/* effects on a wheel (Effects/AT/Main/Main_*_fx_Roulette; the original's particle art is not copied, these only stand in for it) */
+.bfx { position:absolute; inset:0; border-radius:50%; pointer-events:none; z-index:2; }
+.bfx.more::after, .bfx.respin::after { content:"MORE"; position:absolute; left:50%; top:50%; translate:-50% -50%; rotate:-22deg; padding:0 .15em .08em; border-bottom:calc(var(--p) * 10) solid #fff8d0; color:#ffb400; white-space:pre; text-align:center;
+  font:900 italic calc(var(--p) * 120)/1 "Segoe UI",system-ui,sans-serif; -webkit-text-stroke:calc(var(--p) * 3) #fff3a0; text-shadow:0 0 calc(var(--p) * 18) #ffd000, 0 0 calc(var(--p) * 40) #ff9a00; animation:more .5s ease-out forwards; }
+.bfx.respin::after { content:"MORE\ARESPIN"; border:0; }
+@keyframes more { from { scale:.4; opacity:0; } 40% { scale:1.15; opacity:1; } to { scale:1; opacity:1; } }
+.bfx.spark { box-shadow:0 0 0 2px rgba(255,220,120,.9), 0 0 30px 6px rgba(255,190,60,.6); animation:bspark 1s ease-out forwards; } @keyframes bspark { to { box-shadow:0 0 0 2px rgba(255,220,120,0), 0 0 60px 20px rgba(255,190,60,0); } }
+
+.bfx.frozen { background:radial-gradient(circle, rgba(200,245,255,.12) 45%, rgba(150,225,255,.5) 75%, rgba(225,250,255,.8)); }
+.bfx.burn { box-shadow:inset 0 0 calc(var(--d) * .1) rgba(255,110,20,.9); animation:bflick .4s infinite alternate; } .bfx.paralyze { box-shadow:inset 0 0 calc(var(--d) * .08) rgba(255,230,40,.9); animation:bflick .15s infinite alternate; }
+@keyframes bflick { to { opacity:.45; } } .bfx.panic { background:conic-gradient(from 0deg, rgba(244,114,182,.0), rgba(244,114,182,.55), rgba(244,114,182,0)); animation:bpanic 1s linear 3 forwards; } @keyframes bpanic { to { rotate:-1turn; opacity:0; } }
+.bfx.seal { background:repeating-linear-gradient(45deg, rgba(0,0,0,.5) 0 5%, rgba(0,0,0,.12) 5% 10%); } .bfx.zseal { background:repeating-linear-gradient(45deg, rgba(255,90,210,.38) 0 5%, rgba(255,90,210,.08) 5% 10%); }
+.gem { position:absolute; left:50%; top:50%; width:calc(var(--u) * .149); height:calc(var(--u) * .265); transform:translate(-50%,-50%) rotate(25.75deg); z-index:3; clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
+  background:linear-gradient(90deg, #fd2c19 0 50%, #890000 50%); filter:drop-shadow(0 1px 2px rgba(0,0,0,.7)); }
+.flare { position:absolute; left:50%; top:50%; width:170%; height:30px; transform:translate(-50%,-50%) rotate(25.75deg) scaleX(0); z-index:2; opacity:0; pointer-events:none;
+  background:radial-gradient(ellipse at center, rgba(255,250,200,1), rgba(255,190,60,.6) 28%, rgba(255,120,20,0) 68%); }
+.flare.on { animation:flare 1s ease-out forwards; } @keyframes flare { 0% { opacity:0; transform:translate(-50%,-50%) rotate(25.75deg) scaleX(0); } 22% { opacity:1; transform:translate(-50%,-50%) rotate(25.75deg) scaleX(1); } 100% { opacity:.6; transform:translate(-50%,-50%) rotate(25.75deg) scale(.75,.4); } }
+.sparks { position:absolute; left:50%; top:50%; z-index:2; pointer-events:none; } .sparks i { position:absolute; left:0; top:0; width:var(--l); height:2px; opacity:0; transform-origin:0 50%; background:linear-gradient(90deg, rgba(255,160,40,0), #ffb347 55%, #fff3c4); }
+.sparks.on i { animation:spark .75s var(--t) ease-out forwards; } @keyframes spark { 0% { opacity:0; transform:rotate(var(--a)) translateX(10px) scaleX(.2); } 18% { opacity:1; } 100% { opacity:0; transform:rotate(var(--a)) translateX(var(--far)) scaleX(1); } }
+/* SpinSkillDataUI: yours along the bottom right (blue #0096ff, text right-aligned), the opponent's along the top left (pink #fa66bd, left-aligned);
+   the name 40, the added part 40 in #ffff40, the damage 106, "Sealed" 136 in white, over an 876 x 368 band */
+.sdp { position:absolute; inset:0; z-index:4; pointer-events:none; font-family:"Segoe UI",system-ui,sans-serif; font-weight:800; } .sdp.dn { color:#0096ff; } .sdp.up { color:#fa66bd; }
+.sdp > * { position:absolute; white-space:nowrap; line-height:1; } .sdp .bg { width:calc(var(--p) * 876); height:calc(var(--p) * 368); }
+.sdp.dn .bg { right:calc(50% - var(--p) * 501.3); top:calc(50% + var(--p) * 300); clip-path:polygon(0 100%, 100% 0, 100% 100%); transform-origin:100% 50%;
+  background:linear-gradient(to right, #00071f 62%, #000a2a 80%, #04208a 97%, #0d36b8); }
+.sdp.up .bg { left:calc(50% - var(--p) * 501); top:calc(50% - var(--p) * 622); clip-path:polygon(0 0, 100% 0, 0 100%); transform-origin:0 50%;
+  background:linear-gradient(to right, #8a1001, #3a0500 6%, #250300 30%, #2b0400); }
+.stage > .lt { position:absolute; left:0; right:0; top:calc(50% - var(--p) * 667.5); height:calc(var(--p) * 47); z-index:5; background:#000;
+  padding:0 calc(var(--p) * 10); font:600 calc(var(--p) * 24)/calc(var(--p) * 47) "Segoe UI",system-ui,sans-serif; color:#fff; white-space:nowrap; overflow:hidden; }   /* LiveTickerRoot: the black ticker strip (0, 644), 47 high, above the opponent's band */
+.sdp.open .bg { animation:sdpin .1s linear; } @keyframes sdpin { from { transform:scaleX(0); } }
+.sdp .nm, .sdp .add { font-size:calc(var(--p) * 40); } .sdp .nm { max-width:calc(var(--p) * 440); overflow:hidden; text-overflow:ellipsis; } .sdp .add { color:#ffff40; }
+.sdp .dmg { font-size:calc(var(--p) * 106); letter-spacing:calc(var(--p) * 1); font-variant-numeric:tabular-nums; } .sdp .imp { font-size:calc(var(--p) * 136); color:#fff; }
+.sdp.dn .nmr { display:contents; } .sdp.dn .nm { position:absolute; right:calc(50% - var(--p) * 271.3); top:calc(50% + var(--p) * 594); }
+.sdp.dn .add { position:absolute; right:calc(50% - var(--p) * 367.3); top:calc(50% + var(--p) * 594); }
+.sdp.dn .dmg { right:calc(50% - var(--p) * 354.3); top:calc(50% + var(--p) * 475); } .sdp.dn .imp { right:calc(50% - var(--p) * 330.3); top:calc(50% + var(--p) * 478); }
+.sdp.up .nmr { display:flex; left:calc(50% - var(--p) * 353); top:calc(50% - var(--p) * 602); }
+.sdp.up .dmg { left:calc(50% - var(--p) * 355); top:calc(50% - var(--p) * 557); } .sdp.up .imp { left:calc(50% - var(--p) * 349); top:calc(50% - var(--p) * 590); }
+.sdp.buff .dmg { animation:sdbuff .6s ease-out; } .sdp.debuff .dmg { animation:sddebuff .6s ease-out; } @keyframes sdbuff { 30% { filter:drop-shadow(0 0 12px #39d98a); scale:1.08; } } @keyframes sddebuff { 30% { filter:drop-shadow(0 0 12px #ff6b7a); scale:.94; } }
+.skip { position:absolute; right:10px; top:10px; z-index:5; padding:3px 12px; font-size:12px; background:rgba(0,0,0,.55); color:#fff; border-color:rgba(255,255,255,.4); } .skip:hover:not(:disabled) { background:rgba(0,0,0,.8); border-color:#fff; }

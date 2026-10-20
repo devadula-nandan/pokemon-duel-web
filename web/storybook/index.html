@@ -5,7 +5,7 @@
 <base href="../">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <title>pokemon duel web · 3D storybook</title>
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="battle.css">
 <script src="theme.js"></script>
 <script src="assets.js"></script>
 <script src="sound.js"></script>
@@ -29,35 +29,9 @@
   #evoanim .ring.b { animation-delay:.08s; border-color:color-mix(in srgb, var(--bd-line) 70%, var(--bd-pt)); }
   @keyframes evoBall { 0% { opacity:0; transform:scale(.15); } 18% { opacity:1; transform:scale(1); } 50% { opacity:1; transform:scale(1.35); } 100% { opacity:0; transform:scale(3.6); } }
   @keyframes evoRing { 0% { opacity:0; transform:scale(.3); } 24% { opacity:1; } 100% { opacity:0; transform:scale(4.6); } }
-  /* battle stage: letterboxed to the original 750×1334 match UI; disk centres match the duel (24° through the gem) */
-  #battle { position:absolute; inset:0; z-index:6; container-type:size; display:grid; place-items:center; background:#0c0d10; }
-  #battle[hidden] { display:none; }
-  .stage {
-    --w:min(100cqw, calc(100cqh * 750 / 1334)); --h:min(100cqh, calc(100cqw * 1334 / 750));
-    --d:min(calc(var(--w) * 1.42), calc(var(--h) * .98));
-    width:var(--w); height:var(--h); position:relative; overflow:hidden;
-    background:radial-gradient(ellipse at 50% 50%, #3a3f47, #15171b 70%);
-    box-shadow:0 0 0 1px #000, 0 12px 40px rgba(0,0,0,.55);
-  }
-  .bdisk { position:absolute; width:var(--d); height:var(--d); filter:drop-shadow(0 8px 14px rgba(0,0,0,.55)); transition:transform .25s, filter .25s; } .bdisk svg { width:100%; height:100%; }
-  .bdisk.up { left:calc(var(--w) / 2 + var(--d) * .2035 - var(--d) / 2); top:calc(var(--h) / 2 - var(--d) * .457 - var(--d) / 2); }
-  .bdisk.dn { left:calc(var(--w) / 2 - var(--d) * .2035 - var(--d) / 2); top:calc(var(--h) / 2 + var(--d) * .457 - var(--d) / 2); }
-  .stage.solo .bdisk.dn { left:calc(var(--w) / 2 - var(--d) / 2); top:calc(var(--h) / 2 + 6px); } .stage.solo .gem, .stage.solo .flare { top:calc(50% + 6px); }
-  .spin { position:relative; width:100%; height:100%; }
-  .bdisk.won { transform:scale(1.03); filter:drop-shadow(0 0 22px var(--gold)); } .bdisk.lost { filter:brightness(.4) saturate(.5); animation:bshake .4s; }
-  @keyframes bshake { 20% { translate:-10px 4px; } 40% { translate:9px -5px; } 60% { translate:-6px 3px; } 80% { translate:4px -2px; } }
-  .gem { position:absolute; left:50%; top:50%; width:32px; height:44px; transform:translate(-50%,-50%) rotate(24deg); z-index:3; clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
-    background:linear-gradient(90deg, rgba(255,255,255,.28) 0 50%, rgba(0,0,0,.18) 50%), linear-gradient(180deg, #ff7b6b 0 50%, #c2140f 50%); background-color:#f0241c; filter:drop-shadow(0 2px 4px rgba(0,0,0,.7)) drop-shadow(0 0 8px rgba(255,170,60,.55)); }
-  .flare { position:absolute; left:50%; top:50%; width:170%; height:30px; transform:translate(-50%,-50%) rotate(24deg) scaleX(0); z-index:2; opacity:0; pointer-events:none;
-    background:radial-gradient(ellipse at center, rgba(255,250,200,1), rgba(255,190,60,.6) 28%, rgba(255,120,20,0) 68%); }
-  .flare.on { animation:flare 1s ease-out forwards; } @keyframes flare { 0% { opacity:0; transform:translate(-50%,-50%) rotate(24deg) scaleX(0); } 22% { opacity:1; transform:translate(-50%,-50%) rotate(24deg) scaleX(1); } 100% { opacity:.6; transform:translate(-50%,-50%) rotate(24deg) scale(.75,.4); } }
-  .sparks { position:absolute; left:50%; top:50%; z-index:2; pointer-events:none; } .sparks i { position:absolute; left:0; top:0; width:var(--l); height:2px; opacity:0; transform-origin:0 50%; background:linear-gradient(90deg, rgba(255,160,40,0), #ffb347 55%, #fff3c4); }
-  .sparks.on i { animation:spark .75s var(--t) ease-out forwards; } @keyframes spark { 0% { opacity:0; transform:rotate(var(--a)) translateX(10px) scaleX(.2); } 18% { opacity:1; } 100% { opacity:0; transform:rotate(var(--a)) translateX(var(--far)) scaleX(1); } }
-  .cap { position:absolute; z-index:4; display:flex; flex-direction:column; gap:1px; max-width:46%; color:var(--c, #4fb9e9); text-shadow:0 2px 3px #000, 0 0 10px #000; font-weight:800; line-height:1.15; }
-  .cap.up { left:12px; top:10px; text-align:left; } .cap.dn { right:12px; bottom:10px; text-align:right; }
-  .cap b { font-size:17px; } .cap .val { font-size:40px; font-weight:900; line-height:1; font-variant-numeric:tabular-nums; } .cap .val.up { color:#39d98a; } .cap .why { font-size:11px; color:#fff; opacity:.85; font-weight:600; }
-  .verdict { position:absolute; left:50%; top:50%; z-index:6; translate:-50% -50%; max-width:92%; padding:10px 22px; background:#000d; color:#fff; text-align:center; font:900 26px/1.2 "Segoe UI",system-ui,sans-serif; font-style:italic; box-shadow:0 8px 30px #000; }
-  .verdict:empty { display:none; }
+  /* the battle screen is the game's own (battle.css); here it is letterboxed to the original's 750 x 1334 screen */
+  #battle { display:grid; place-items:center; }
+  #battle .stage { --sh:min(100cqh, calc(100cqw * 1334 / 750)); width:min(100cqw, calc(100cqh * 750 / 1334)); box-shadow:0 0 0 1px #000, 0 12px 40px rgba(0,0,0,.55); }
   #sizes { position:absolute; inset:0; z-index:6; overflow:auto; display:flex; flex-wrap:wrap; align-items:flex-end; align-content:flex-start; gap:18px 6px; padding:16px; background:var(--bg); }
   #sizes figure { margin:0; display:flex; flex-direction:column; align-items:center; gap:4px; width:max-content; border-bottom:1px solid var(--line); } #sizes img { display:block; max-width:none; } #sizes figcaption { font:11px/1.2 "Segoe UI",system-ui,sans-serif; color:var(--dim); max-width:110px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }   /* one line, so every figure's feet share the line */
   #board3d > div:has(> #camReset) { right:0; }   /* the table's corner bar runs the full width: Reset, Lock, the stepper, then the details toggle at the far end */
@@ -73,7 +47,7 @@
 <body>
 <nav id="nav"><h1>3D STORYBOOK</h1><p>Every state the 3D table can draw. <a href="./">Play in 3D</a></p></nav>
 <main><header class="top"><div><b id="title"></b><div id="note"></div></div><nav class="paths" aria-label="Pages"><a href="./" title="Back to the game">Game</a><a href="storybook/" class="on" aria-current="page">Storybook</a></nav><button id="soundBtn"></button><button id="themeBtn"></button><button id="motionBtn" data-motion-btn></button></header><div id="board3d"><div id="evoanim" hidden></div><div id="battle" hidden></div></div><pre id="props"></pre></main>
-<script src="data.js"></script>
+<script src="data.js"></script><script src="battle.js"></script>
 <script src="art.js"></script>
 <script src="sprites.js"></script>
 <script src="board.js"></script>
@@ -104,31 +78,9 @@ const mpd = d => ({ mp: String(fig.mp + d), mpd: d });
 const some = n => D.figures.filter(f => f.dex <= 1025 && !/ /.test(f.n)).slice(0, n);
 const named = n => D.figures.find(f => f.n === n) || D.figures.find(f => f.n.startsWith(n));
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const DISK_COL = ['#e2494e', '#efefef', '#9a5fd0', '#e8cb4d', '#4fb9e9'];
 const skillsOf = f => (f.w || []).filter(x => x[1] > 0).map(([id, range, val]) => ({ id, range, speed_or_damage: val }));
 const outXZ = (team, n) => [(team ? -120 + n * 48 : 120 - n * 48) / 54.2, team ? -7.01 : 7.01];
 let wheelSeq = 0, demoJob = 0, moveSeq = 0;
-function wheelSvg(skills, size) {
-  const id = 'wh' + (++wheelSeq), names = size >= 130, R = 88, ang = t => t / 96 * 2 * Math.PI, pt = (t, r) => [100 + r * Math.sin(ang(t)), 100 - r * Math.cos(ang(t))];
-  let a = 0, wedges = '', text = '', defs = '', rays = '';
-  for (let k = 0; k < 96; k += 2) { const [x1, y1] = pt(k, R), [x2, y2] = pt(k + 1, R); rays += `M100 100L${x1} ${y1}A${R} ${R} 0 0 1 ${x2} ${y2}Z`; }
-  skills.filter(x => x.range > 0).forEach((x, n) => {
-    const sk = D.skills[x.id] || ['', '', 0], col = sk[2], a2 = a + x.range, mid = (a + a2) / 2, ink = col === 2 ? '#fff' : '#111', big = x.range > 48 ? 1 : 0;
-    const [x1, y1] = pt(a, R), [x2, y2] = pt(a2, R);
-    wedges += x.range >= 96 ? `<circle cx="100" cy="100" r="${R}" fill="${DISK_COL[col]}"/>` : `<path d="M100 100L${x1} ${y1}A${R} ${R} 0 ${big} 1 ${x2} ${y2}Z" fill="${DISK_COL[col]}" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/>`;
-    const val = col === 2 ? '★'.repeat(Math.min(x.speed_or_damage || 0, 5)) : col === 1 || col === 3 ? String(x.speed_or_damage || 0) : '';
-    if (names && x.range >= 4) {
-      const fs = x.range >= 12 ? 9.5 : 7.5, [p1x, p1y] = pt(a2 - .5, 79), [p2x, p2y] = pt(a + .5, 79);
-      defs += `<path id="${id}p${n}" d="M${p1x} ${p1y}A79 79 0 ${big} 0 ${p2x} ${p2y}"/>`;
-      text += `<text font-size="${fs}" font-weight="500" fill="${ink}"><textPath href="#${id}p${n}" startOffset="50%" text-anchor="middle">${esc(sk[0])}</textPath></text>`;
-    }
-    if (val && x.range >= 8) { const [vx, vy] = pt(mid, 52), deg = mid / 96 * 360 + 180; text += `<text x="${vx}" y="${vy}" font-size="22" font-weight="800" fill="${ink}" text-anchor="middle" dominant-baseline="central" transform="rotate(${deg} ${vx} ${vy})">${val}</text>`; }
-    a = a2;
-  });
-  return `<svg viewBox="0 0 200 200" width="${size}" height="${size}" style="display:block"><defs>${defs}</defs><circle cx="100" cy="100" r="99" fill="#0b0b0c"/>${wedges}<path d="${rays}" fill="#000" opacity=".085"/>${text}
-    <circle cx="100" cy="100" r="93.5" fill="none" stroke="#0b0b0c" stroke-width="11"/><circle cx="100" cy="100" r="88.6" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width=".9"/>
-    <circle cx="100" cy="100" r="11.5" fill="#1a1a1c" stroke="#0b0b0c" stroke-width="5.5"/></svg>`;
-}
 function hopPlan(route, occ) {   // same plan as the duel: skip occupied mid-points as landings, mark those stretches as long jumps
   const segs = [], landings = [route[0]];
   let i = 0;
@@ -161,7 +113,7 @@ function sleep(ms, job) { return new Promise(r => { const t = setTimeout(() => r
 function stopDemo() {
   demoJob++; (sleep.timers || []).forEach(clearTimeout); sleep.timers = [];
   if (window.Board3D && Board3D.clearAbilities) Board3D.clearAbilities();
-  const ov = $('battle'); if (ov) { ov.hidden = true; ov.innerHTML = ''; if (window.sfxStop) sfxStop('spin'); }
+  if (window.Battle) Battle.close();
 }
 async function loopAbility(m, job) {
   while (job === demoJob && window.Board3D && Board3D.ability) {
@@ -210,56 +162,68 @@ async function loopMove(m, job) {
     if (!(await sleep(900, job))) return;
   }
 }
-async function playWheel(opts, job) {
-  const ov = $('battle'); if (!ov) return;
-  const fighters = opts.fighters || [{ f: fig, slot: 'dn' }];
-  const duel = fighters.length > 1;
-  ov.hidden = false;
-  const teamCol = t => t === 1 ? 'var(--p1, #e2494e)' : 'var(--p0, #4fb9e9)';
-  ov.innerHTML = `<div class="stage${duel ? '' : ' solo'}">${fighters.map((x, k) => {
-    const slot = x.slot || (k ? 'up' : 'dn');
-    return `<div class="bdisk ${slot}" id="bd${k}"><div class="spin" id="w${k}">${wheelSvg(skillsOf(x.f), 440)}</div></div><div class="cap ${slot}" id="r${k}" style="--c:${teamCol(x.team != null ? x.team : (slot === 'up' ? 1 : 0))}" hidden></div>`;
-  }).join('')}<div class="flare" id="flare"></div><div class="sparks" id="sparks">${Array.from({ length: 12 }, (_, k) => `<i style="--a:${24 + k * 30}deg;--l:${30 + (k % 5) * 12}px;--far:${80 + k * 8}px;--t:${(k % 4) * .05}s"></i>`).join('')}</div><div class="gem"></div><div class="verdict" id="verdict"></div></div>`;
+// Battle stories: the game's own battle screen (battle.js) fed with records shaped as the engine sends them. Your figure is 0 (below), the
+// opponent's 6 (above). A scenario is a list of spins; between two spins a declare (respin / shift) can play, as in a duel.
+const pieceAt = (f, test) => { let a = 0; for (const x of skillsOf(f)) { if (test(x)) return { x, num: a + Math.floor(x.range / 2) }; a += x.range; } return { x: skillsOf(f)[0], num: 1 }; };
+const colOf = x => (D.skills[x.id] || [0, 0, 0])[2];
+const white = f => pieceAt(f, x => colOf(x) === 1 || colOf(x) === 3), miss = f => pieceAt(f, x => colOf(x) === 0);
+const bInfo = (f, marker = {}, skills) => ({ skills: skills || skillsOf(f), frozen: marker.circle === 'freeze' || marker.circle === 'melt', marker });
+const setN = (k, p) => ({ pokemon: k, skill_id: p.x.id, type: 'base_damage_notice', value: { type: 'damage_set_notice', current: p.x.speed_or_damage, result: p.x.speed_or_damage } });
+const side = (k, p, dmg, result) => ({ pokemon: k, skill: p.x.id, speed_or_damage: dmg, result });
+// a battle between two white attacks: the bigger number wins
+function duel(a, b, pa, pb, extra = {}) {
+  const da = extra.da != null ? extra.da : pa.x.speed_or_damage, db = pb.x.speed_or_damage;
+  return { kind: 'battle', a, b, info: extra.info || {}, spins: [{ spins: [{ key: 0, results: extra.ra || [{ num: pa.num, displace: 0, type: 'battle' }] }, { key: 6, results: [{ num: pb.num, displace: 0, type: 'battle' }] }],
+    notices: [setN(0, pa), ...(extra.notices || []), setN(6, pb)], result: { attack: side(0, pa, da, da > db ? 'win_with_effect' : da < db ? 'lose' : 'draw'), defence: side(6, pb, db, db > da ? 'win_with_effect' : db < da ? 'lose' : 'draw') } }] };
+}
+const BATTLES = {
+  basic: () => { const a = named('Pikachu') || fig, b = named('Charmander') || some(2)[1]; return duel(a, b, white(a), white(b)); },
+  multiply: () => {   // Fire Spin: spin again while it lands, the damage multiplied by the landings
+    const a = named('Charizard'), b = named('Charmander') || some(2)[1], fs = pieceAt(a, x => x.id === 1261), other = pieceAt(a, x => x.id !== 1261), pb = white(b), v = fs.x.speed_or_damage;
+    const stops = [{ num: fs.num, displace: 0, type: 'battle' }, { num: fs.num, displace: 0, type: 'probability' }, { num: fs.num, displace: 0, type: 'probability' }, { num: other.num, displace: 0, type: 'probability' }];
+    const r = duel(a, b, fs, pb, { ra: stops, da: v * 3, notices: [{ pokemon: 0, skill_id: 1261, type: 'skill_damage_notice', value: { type: 'damage_product_sum_notice', current: v, multiplicand: v, multiplier: 2, result: v * 3 } }] });
+    return r;
+  },
+  respin: () => {   // a Miss, then a respin (the original declares it itself): only that wheel turns again
+    const a = named('Pikachu') || fig, b = named('Charmander') || some(2)[1], pm = miss(a), pa = white(a), pb = white(b), r = duel(a, b, pa, pb);
+    r.spins.unshift({ spins: [{ key: 0, results: [{ num: pm.num, displace: 0, type: 'battle' }] }, { key: 6, results: [{ num: pb.num, displace: 0, type: 'battle' }] }], notices: [setN(6, pb)], hold: true, declare: { type: 'declare_respin', ids: [0] } });
+    r.spins[1].spins = r.spins[1].spins.filter(s => s.key === 0);
+    return r;
+  },
+  shift: () => {   // confusion: the result moves one piece on
+    const a = named('Pikachu') || fig, b = named('Charmander') || some(2)[1], pa = white(a), pb = white(b), L = skillsOf(a), i = L.indexOf(pa.x), prev = L[(i - 1 + L.length) % L.length];
+    let start = 0; for (const x of L) { if (x === prev) break; start += x.range; }
+    return duel(a, b, pa, pb, { info: { 0: { circle: 'panic' } }, ra: [{ num: start + Math.floor(prev.range / 2), displace: 1, type: 'battle' }] });
+  },
+  frozen: () => { const a = named('Pikachu') || fig, b = named('Charmander') || some(2)[1], pa = white(a), pb = miss(b); return duel(a, b, pa, pb, { info: { 6: { circle: 'freeze' } } }); },
+  zmove: () => {   // a figure in Z-state spins one full wheel: the Z-Move at the power the z_skill move set
+    const a = named('Charizard'), b = named('Charmander') || some(2)[1], zid = (a.z || [])[0], pz = { x: { id: zid, range: 96, speed_or_damage: 160, z: true }, num: 48 }, pb = white(b);
+    const r = duel(a, b, pz, pb, { info: { 0: { z_state: true } } }); r.zSkills = { 0: [pz.x] }; return r;
+  },
+  plate: () => { const a = named('Pikachu') || fig, b = named('Charmander') || some(2)[1], pa = white(a), v = pa.x.speed_or_damage;
+    return duel(a, b, pa, white(b), { da: v + 20, notices: [{ pokemon: 0, plate_id: 0, type: 'plate_damage_notice', value: { type: 'damage_sum_notice', addend: 20, current: v, result: v + 20 } }] }); },
+  poison: () => { const a = named('Pikachu') || fig, b = named('Charmander') || some(2)[1], pa = white(a), v = pa.x.speed_or_damage;
+    return duel(a, b, pa, white(b), { da: Math.max(0, v - 20), info: { 0: { circle: 'poison' } }, notices: [{ pokemon: 0, condition: 'poison', type: 'condition_damage_notice', value: { type: 'damage_sum_notice', addend: -20, current: v, result: Math.max(0, v - 20) } }] }); },
+  sealed: () => { const a = named('Pikachu') || fig, b = named('Charmander') || some(2)[1], pa = white(a), pb = white(b);
+    const r = duel(a, b, pa, pb, { info: { 0: { triangle: 'imprison', skill_id: pa.x.id } }, da: 0, notices: [] }); r.spins[0].notices = [setN(6, pb)]; return r; },
+};
+async function playBattle(m, job) {
+  const sc = m.battle, figs = { 0: sc.a, 6: sc.b };
   while (job === demoJob) {
-    for (const el of ov.querySelectorAll('.bdisk')) el.classList.remove('won', 'lost');
-    const vd = $('verdict'); if (vd) vd.textContent = '';
-    const fl = $('flare'), sp = $('sparks'); if (fl) fl.classList.remove('on'); if (sp) sp.classList.remove('on');
-    if (!(await sleep(400, job))) return;
-    sfx('spin');
-    await Promise.all(fighters.map(async (x, k) => {
-      const el = $('w' + k), segs = skillsOf(x.f); if (!el || !segs.length) return;
-      let a = 0; const starts = segs.map(s => { const p = a; a += s.range; return p; });
-      const land = Math.floor(Math.random() * segs.length), mid = starts[land] + segs[land].range / 2;
-      const base = (x.slot || (k ? 'up' : 'dn')) === 'up' ? 204 : 24;
-      let rot = 0; const spun = /rotate\(([-\d.]+)deg\)/.exec(el.style.transform || ''); if (spun) rot = +spun[1];
-      let to = base - mid / 96 * 360; while (to < rot + 3 * 360) to += 360;
-      el.style.transition = 'transform 1.1s cubic-bezier(.12,.75,.2,1)'; el.style.transform = `rotate(${to}deg)`;
-      if (!(await sleep(1100, job))) return;
-      const sk = D.skills[segs[land].id] || ['Miss', '', 0], col = sk[2];
-      const pow = col === 2 ? '★'.repeat(Math.min(segs[land].speed_or_damage || 0, 5)) : col === 1 || col === 3 ? String(segs[land].speed_or_damage || 0) : '';
-      const cap = $('r' + k); if (cap) { cap.hidden = false; cap.innerHTML = `<b>${esc(sk[0])}</b>${pow ? `<span class="val">${pow}</span>` : ''}`; }
-      x._land = { sk, col, pow, land };
-    }));
-    if (job !== demoJob) return;
-    if (window.sfxStop) sfxStop('spin'); sfx('spin_stop');
-    if (!(await sleep(500, job))) return;
-    if (opts.boost && fighters[0] && fighters[0]._land) {
-      const cap = $('r0'), land = fighters[0]._land; if (cap && land.pow) {
-        sfx('mp_up'); cap.innerHTML = `<b>${esc(land.sk[0])} <span style="color:#ffff40">＋10</span></b><span class="val up">${(+land.pow || 0) + 10}</span><span class="why">X Attack</span>`;
-        if (!(await sleep(900, job))) return;
-      }
+    let view = null;
+    for (const ph of sc.spins) {
+      if (job !== demoJob) return;
+      view = await Battle.run({ host: $('board3d'), view, battle: true, hold: !!ph.hold, human: true, result: ph.result || null, notices: ph.notices,
+        spins: ph.spins.map(s => ({ key: s.key, results: s.results, info: bInfo(figs[s.key], (sc.info || {})[s.key], (sc.zSkills || {})[s.key]) })),
+        slotOf: id => id === 0 ? 'dn' : 'up', mine: sides => sides.find(s => s.pokemon === 0), name: k => figs[k].n, condName: c => cond(c),
+        tick: (k, text) => Battle.say(text, k === 0 ? 'rgb(0,150,255)' : 'rgb(250,102,189)') });
+      if (ph.declare && view) await Battle.declare(view, ph.declare.type, ph.declare.ids);
     }
-    if (duel) {
-      if (fl) fl.classList.add('on'); if (sp) sp.classList.add('on');
-      const win = Math.random() < .5 ? 0 : 1; $('bd' + win)?.classList.add('won'); $('bd' + (1 - win))?.classList.add('lost');
-      sfx(window.strikeSfx ? strikeSfx(fighters[win]._land?.sk?.[0] || '', fighters[win]._land?.col, false) : 'hit');
-      if (vd) vd.textContent = fighters[win].f.n + ' wins';
-    } else { sfx('hit'); if (vd) vd.textContent = (fighters[0]._land?.sk?.[0] || 'Spin') + '!'; }
-    if (!(await sleep(1800, job))) return;
-    for (const k of fighters.keys()) { const cap = $('r' + k); if (cap) cap.hidden = true; }
+    if (!(await sleep(1200, job))) return;
   }
 }
 // one figure per line, on the points given. `branch` means the first form can become any of the later ones, rather than each stage in order.
+function battleStory(kind) { const sc = BATTLES[kind](); return { ...table([], [{ f: sc.a, at: 18, sel: true, team: 0 }, { f: sc.b, at: 9, atk: true, team: 1 }]), demo: 'battle', battle: sc }; }
 function evoTable(lines, ats) {
   const toks = [];
   lines.forEach((spec, i) => {
@@ -339,12 +303,16 @@ const STORIES = {
       ['To the P.C.', 'Knocked out: hops into the P.C. ring and fades.', () => hopStory([14, 19, 27, 40], { dim: true, mp: '' })],
       ['To exclusion', 'Removed from the duel: hops off the field into the exclusion row.', () => hopStory([14, 18, 25, outXZ(0, 0)], { dim: true, mp: '' })],
     ]),
-    'Battle': steps([
-      ['Attack battle', 'Same portrait stage as the match UI: disks meet at the gem on a 24° line, then the strike flare.', () => {
-        const a = named('Pikachu') || fig, b = named('Charmander') || some(2)[1] || fig;
-        return { ...table([], [{ f: a, at: 18, sel: true, team: 0 }, { f: b, at: 9, atk: true, team: 1 }]), demo: 'battle', fighters: [{ f: a, slot: 'dn', team: 0 }, { f: b, slot: 'up', team: 1 }] };
-      }],
-      ['Damage boost on wheel', 'After the wheel stops, a plate boost (+10) rolls the power up.', () => ({ ...table([], [{ at: 14, sel: true, badge: '+10 dmg' }]), demo: 'wheel', boost: true, fighters: [{ f: fig, slot: 'dn', team: 0 }] })],
+    'Battle': steps([   // the game's own battle screen (battle.js) with records shaped as the engine sends them
+      ['A battle', 'The screen fades in (Se233) and the wheels slide in. They turn by themselves until a tap (or 3 s), then ease onto the results; each side\u2019s attack and damage open in its corner (you below in blue, the opponent above in pink). The bigger number wins (Se061). Loops.', () => battleStory('basic')],
+      ['Multiplying attack', 'Fire Spin spins again while it lands: \u201cMORE\u201d, a rising Se059, a faster whirl, and the damage adds up with \u00d72, \u00d73 beside the name, until it lands elsewhere.', () => battleStory('multiply')],
+      ['Respin', 'The first spin lands on a Miss; a respin is declared: that side\u2019s panel closes, its wheel flashes \u201cMORE RESPIN\u201d (Se059) and only that wheel turns again.', () => battleStory('respin')],
+      ['Shift (confused)', 'A confused figure\u2019s result moves one piece on: 0.5 s after the stop the wheel turns 0.3 s to the next piece, and the ticker says so.', () => battleStory('shift')],
+      ['Frozen', 'A frozen figure\u2019s wheel does not turn; it stays iced over.', () => battleStory('frozen')],
+      ['Z-Move', 'A figure in Z-state spins one full wheel, its Z-Move, under a pink seal.', () => battleStory('zmove')],
+      ['Plate boost', 'A plate adds 20: after the stop the damage runs up to the new number with a buff (Se123).', () => battleStory('plate')],
+      ['Poison', 'Poison takes 20 off: the damage runs down (Se091) and the ticker says why.', () => battleStory('poison')],
+      ['Sealed attack', 'The sealed attack comes up: \u201cSealed\u201d over the panel, and the wheel shows its seal.', () => battleStory('sealed')],
     ]),
     'Ability cue': ['A ring draws around the stand, rises and fades — the same cue for every poké-power. Loops.', () => ({ ...row([{}]), demo: 'ability' })],
     'Plate effect': steps([
@@ -495,7 +463,7 @@ function show(group, name, step) {
     return;
   }
   if (m.demo === 'move') { draw({ ...m, toks: m.toks.map(t => ({ ...t, moveId: null, path: null, x: (t._route || [[t.x, t.z]])[0][0], z: (t._route || [[t.x, t.z]])[0][1] })), snap: true }); loopMove(m, job); return; }
-  if (m.demo === 'wheel' || m.demo === 'battle') { draw(m); if (m.demo === 'battle') { sfx('attack'); sfx('select'); } playWheel(m, job); return; }
+  if (m.demo === 'battle') { draw(m); playBattle(m, job); return; }
   if (m.demo === 'ability') { draw(m); loopAbility(m, job); return; }
   if (m.demo === 'plate') { draw(m); loopPlate(m, job); return; }
   if (m.demo === 'fieldspin') { draw(m); loopFieldSpin(m, job); return; }
