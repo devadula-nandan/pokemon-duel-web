@@ -60,12 +60,13 @@
   .verdict:empty { display:none; }
   #sizes { position:absolute; inset:0; z-index:6; overflow:auto; display:flex; flex-wrap:wrap; align-items:flex-end; align-content:flex-start; gap:18px 6px; padding:16px; background:var(--bg); }
   #sizes figure { margin:0; display:flex; flex-direction:column; align-items:center; gap:4px; width:max-content; border-bottom:1px solid var(--line); } #sizes img { display:block; max-width:none; } #sizes figcaption { font:11px/1.2 "Segoe UI",system-ui,sans-serif; color:var(--dim); max-width:110px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }   /* one line, so every figure's feet share the line */
-  #gal { position:absolute; right:0; top:50%; translate:0 -50%; z-index:5; display:flex; flex-direction:column; align-items:stretch; width:150px; gap:1px; background:var(--line); border:1px solid var(--line); border-right:0; }   /* flush to the edge, parts split by 1px lines */
-  #board3d > div > .iconbtn { width:44px; height:44px; border:0; background:var(--bar); }   /* the camera buttons in the table's corner: flush blocks */
-  #gal button { height:44px; border:0; background:var(--bar); display:grid; place-items:center; color:inherit; font-size:18px; cursor:pointer; }
-  #gal .lbl { padding:8px 10px; background:var(--bar); text-align:center; font:13px/1.35 "Segoe UI",system-ui,sans-serif; color:inherit; }
-  #gal .lbl b { display:block; font-size:18px; } #gal .lbl span { display:block; font-size:11px; opacity:.7; }
-  pre { margin:0; padding:10px 16px; border-top:1px solid var(--line); background:var(--bar); color:var(--dim); font:12px/1.45 Consolas,monospace; max-height:34dvh; overflow:auto; white-space:pre-wrap; }
+  #board3d > div:has(> #camReset) { right:0; }   /* the table's corner bar runs the full width: Reset, Lock, the stepper, then the details toggle at the far end */
+  #board3d > div > .iconbtn { flex:none; width:44px; height:44px; border:0; background:var(--bar); }   /* the camera buttons: flush blocks */
+  #barFill { flex:1; background:var(--bar); } #propsBtn { flex:none; width:44px; height:44px; padding:0; border:0; background:var(--bar); display:grid; place-items:center; color:inherit; cursor:pointer; } #propsBtn:hover { background:var(--ctl2); } #propsBtn svg { transition:transform .15s; } #propsBtn[aria-expanded=false] svg { transform:rotate(180deg); }
+  #step { flex:none; display:flex; gap:1px; background:var(--line); } #step .arrows { display:flex; flex-direction:column; gap:1px; } #step .arrows button { width:44px; height:calc((var(--row-h) - 1px) / 2); padding:0; border:0; background:var(--bar); display:grid; place-items:center; color:inherit; font-size:10px; line-height:1; cursor:pointer; } #step .arrows button:hover { background:var(--ctl2); }   /* ▲ over ▼, beside the number */
+  #step > input { height:var(--row-h); border:0; padding:0 12px; background:var(--ctl); color:var(--ink); font:13px/1 "Segoe UI",system-ui,sans-serif; text-align:center; -moz-appearance:textfield; } #step > input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  #step .lbl { display:flex; align-items:center; padding:0 12px; background:var(--bar); font:12px/1 "Segoe UI",system-ui,sans-serif; white-space:nowrap; color:var(--dim); }   /* a story's variants: the number, full height (type to jump), ▲ / ▼ beside it, then the count, inline in the table's corner bar */
+  pre { margin:0; padding:10px 16px; border-top:1px solid var(--line); background:var(--bar); color:var(--dim); font:12px/1.45 Consolas,monospace; height:180px; flex:none; overflow:auto; white-space:pre-wrap; } #props[hidden] { display:none; }   /* fixed height, scrolling; the corner bar's toggle collapses it */
   @media (max-width:700px) { body { grid-template-columns:1fr; grid-template-rows:38dvh 1fr; } #nav { border-right:0; border-bottom:1px solid var(--line); } }
 </style>
 </head>
@@ -98,8 +99,8 @@ function table(mv = [], toks = []) {
   const slots = []; for (let p = 28; p < 44; p++) slots.push(P(p));
   return { pts, slots, edges: EDGES.map(([a, b]) => [P(a), P(b)]), toks: toks.map((t, i) => ({ ...tok(t, t.f || fig), i, x: t.out != null ? (t.team ? -120 + t.out * 48 : 120 - t.out * 48) / 54.2 : P(t.at)[0], z: t.out != null ? (t.team ? -7.01 : 7.01) : P(t.at)[1] })), snap: true };   // `out: n` = the n-th excluded figure of its side
 }
-const STATUS = ['poison', 'bad_poison', 'burn', 'paralyze', 'sleep', 'freeze', 'panic', 'curse'], MARKERS = Object.keys(D.conds).filter(k => !D.conds[k].includes('{0}') && !STATUS.includes(k) && !/^mp_|^plus_|faint|melt/.test(k));
-const mpd = d => ({ mp: String(fig.mp + d), mpd: d, badge: d ? 'MP ' + (d > 0 ? '+' : '') + d : 'normal' });
+const STATUS = ['poison', 'bad_poison', 'burn', 'paralyze', 'sleep', 'freeze', 'melt', 'panic', 'curse'].filter(k => D.conds[k]), MARKERS = Object.keys(D.conds).filter(k => !STATUS.includes(k) && k !== 'faint');   // condition = marker.circle, marker = marker.triangle (badges() in the game)
+const mpd = d => ({ mp: String(fig.mp + d), mpd: d });
 const some = n => D.figures.filter(f => f.dex <= 1025 && !/ /.test(f.n)).slice(0, n);
 const named = n => D.figures.find(f => f.n === n) || D.figures.find(f => f.n.startsWith(n));
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -179,10 +180,7 @@ async function loopPlate(m, job) {   // UsePlateEffect: the plate's effect on ea
   }
 }
 // Every attack whose spin the duel shows on the board (MatchMain.IsFieldDeclareSpin, plus spins of figures outside the battle): [skill, who spins]
-const BOARD_SPINS = [[1001, 'many'], [1140, 'many'], [1170, 'many'], [1181, 'many'], [1336, 'many'], [1349, 'many'], [1565, 'many'], [1568, 'many'], [1572, 'many'], [1588, 'one'],
-  [1635, 'many'], [1638, 'many'], [1651, 'many'], [1664, 'many'], [1665, 'many'], [1667, 'many'], [1668, 'many'], [1682, 'many'], [1728, 'many'], [1749, 'self'],
-  [1294, 'self'], [1334, 'one'], [1368, 'one'], [1402, 'one'], [1530, 'one'], [1550, 'one'], [1551, 'one'], [1570, 'many'], [1574, 'many'], [1620, 'one'], [1629, 'one'],
-  [1673, 'one'], [1690, 'many'], [1745, 'one'], [1755, 'many'], [1760, 'many'], [1778, 'many'], [1779, 'many']];
+const BOARD_SPINS = [[1749, 'self'], [1588, 'one'], [1001, 'many']];   // one real attack for each kind of field spin: on the user, on one figure, on several
 async function loopFieldSpin(m, job) {   // DeclareSpinInit field spin: each named figure's wheel turns around its stand and stops on a random slice
   while (job === demoJob && window.Board3D && Board3D.fieldSpin) {
     const on = m.toks.filter(t => t._spin); let turning = on.length;
@@ -279,92 +277,89 @@ function evoTable(lines, ats) {
   }
   return m;
 }
+// A story is [note, make], or steps([[label, note, make], ...]) for one story with variants: the stepper in the table's corner (▲ / ▼, or the
+// arrow keys) moves between them, so a family of near-identical cases is one story rather than many.
+const steps = list => ({ steps: list.map(([label, note, make]) => ({ label, note, make })) });
+const FIGS_BY_NO = [...D.figures].sort((a, b) => a.no - b.no || a.id - b.id);
 const STORIES = {
   Figure: {
-    'Blue team (you)': ['A figure on its base. The base carries the team colour; the number is its movement points.', () => row([{}])],
-    'Red team (opponent)': ['', () => row([{ team: 1 }])],
-    'Both teams': ['', () => row([{ badge: 'blue' }, { team: 1, badge: 'red' }])],
-    'Selected': ['Gold ring: the figure you picked.', () => row([{ sel: true }])],
-    'Attack target': ['Red ring: a figure the selected one can battle.', () => row([{ team: 1, atk: true }])],
-    'In the P.C.': ['Faded while it waits in the P.C.', () => row([{ dim: true, mp: '' }])],
+    'Figure states': steps([
+      ['Your figure', 'A figure on its base. The base carries the team colour; the puck is its movement points.', () => row([{}])],
+      ['Opponent’s figure', 'The opponent’s figures stand on red bases.', () => row([{ team: 1 }])],
+      ['Selected', 'Gold ring: the figure you picked.', () => row([{ sel: true }])],
+      ['Attack target', 'Red ring: a figure the selected one can battle.', () => row([{ team: 1, atk: true }])],
+      ['In the P.C.', 'Faded, with no movement points, while it waits in the P.C.', () => row([{ dim: true, mp: '' }])],
+    ]),
+    'Every figure': { steps: FIGS_BY_NO.map(f => ({ label: `No. ${f.no} ${f.n}`, note: 'Every figure in the game, one at a time, by its figure number.', make: () => ({ ...row([{ f }]), props: JSON.stringify({ no: f.no, id: f.id, name: f.n, dex: f.dex, mp: f.mp, img: art(f) }, null, 1) }) })) },
     'All figures at one scale': ['Every figure side by side at the scale the board draws them, standing on one line, so a figure that looks too big or too small stands out. Scroll; Animated / Still switches the pictures.', () => ({ ...row([]), demo: 'sizes' })],
-    'Every figure': ['Every figure in the game, one at a time, by its figure number. ▲ / ▼ (or the arrow keys) step through them.', () => ({ ...row([{}]), demo: 'gallery' })],
-    'No picture': ['Figures without a picture show their name.', () => row([{ img: '', name: 'Wash Rotom' }])],
-    'Interaction states': ['', () => row([{ badge: 'idle' }, { sel: true, badge: 'selected' }, { team: 1, atk: true, badge: 'target' }, { dim: true, mp: '', badge: 'P.C.' }])],
   },
-  'Status conditions': Object.fromEntries([...STATUS.map(k => [cond(k), ['Coloured aura under the base, with the condition named below.', () => row([{ status: k, badge: cond(k) }])]]),
-    ['All status conditions', ['', () => row(STATUS.map(k => ({ status: k, badge: cond(k) })), 4)]]]),
-  'Movement points': Object.fromEntries([...[-3, -2, -1, 0, 1, 2].map(d => [d ? 'MP ' + (d > 0 ? '+' : '') + d : 'MP unchanged', ['The puck counts from the old MP to the new one, and turns red when lowered or green when raised.', () => row([mpd(d)])]]),
-    ['All MP changes', ['', () => row([-3, -2, -1, 0, 1, 2].map(mpd))]]]),
-  'Wait and damage': {
-    'Wait 1': ['A waiting figure is greyed and shows the turns left.', () => row([{ wait: true, badge: 'wait 1' }])],
-    'Wait 1 to 3': ['', () => row([1, 2, 3].map(n => ({ wait: true, badge: 'wait ' + n })))],
-    'Damage changes': ['', () => row(['-20 dmg', '+10 dmg', '+20 dmg'].map(b => ({ badge: b })))],
-    'Status with wait': ['Several states at once are listed together.', () => row([{ status: 'sleep', wait: true, badge: 'asleep · wait 2' }, { status: 'burn', mpd: -1, mp: String(fig.mp - 1), badge: 'burned' }])],
+  Markers: {
+    'Status condition': steps(STATUS.map(k => [cond(k), 'A status condition (marker.circle): a coloured ring under the base with the condition named on it, and the figure takes on its colour.', () => row([{ status: k, badge: cond(k) }])])),
+    'Marker': steps(MARKERS.map(k => [cond(k), 'A marker an attack, ability or plate puts on a figure (marker.triangle): its name on a plain ring under the base.', () => row([{ _mark: k, badge: cond(k) }])])),
+    'Wait': ['A waiting figure is greyed and shows the turns it still has to wait.', () => row([{ wait: true, badge: 'wait 2' }])],
+    'MP change': steps([
+      ['Lowered', 'The puck counts down from the old MP to the new one and turns red.', () => row([mpd(-1)])],
+      ['Raised', 'The puck counts up from the old MP to the new one and turns green.', () => row([mpd(1)])],
+    ]),
+    'Damage change': steps([
+      ['Raised', 'An attack’s damage is raised: the change is named on the ring under the base.', () => row([{ badge: '+10 dmg' }])],
+      ['Lowered', 'An attack’s damage is lowered.', () => row([{ badge: '-10 dmg' }])],
+    ]),
+    'Several at once': ['Everything one figure can carry at once, listed in the duel’s order (condition · wait · marker · damage), with the MP change on the puck.', () => row([{ status: 'sleep', wait: true, _mark: 'lock_on', ...mpd(-1), badge: [cond('sleep'), 'wait 2', cond('lock_on'), '+10 dmg'].join(' · ') }])],
   },
-  'Other markers': { 'All markers': ['Every other marker the engine can put on a figure. They share a white aura.', () => row(MARKERS.map(k => ({ status: k, badge: cond(k) })), 7)] },
   Table: {
-    'Empty table': ['Field points, routes, both goals, bench rings and P.C. rings.', () => table()],
-    'Movable points': ['Points the selected figure can reach glow gold.', () => table([21, 22, 23, 16, 17, 18, 25, 26, 27, 19, 20], [{ at: 28, sel: true }])],
-    'Figures come onto the benches': ['The opening, as the original plays it (MatchMain.StartFigureAnim): each figure comes in from off the table, two at a time in figure order, and rises over its bench and drops on (or takes a low arc where nothing stands near its slot), landing with Se011. Loops.', () => ({ ...table([], some(12).map((f, i) => ({ f, at: i < 6 ? 28 + i : 34 + i - 6, team: i < 6 ? 0 : 1, mp: String(f.mp) }))), demo: 'intro' })],
-    'Goal: you score': ['Your figure lands on the opponent’s goal (MatchMain.GameSet, MatchCamera.GoolCamera): Se212, the red goal bursts and turns your colour, and the camera cuts to the goal shot for 3 s, then back. Loops.', () => ({ ...table([], [{ f: some(1)[0], at: 3, team: 0, mp: '2' }]), demo: 'goal', near: true })],
-    'Goal: the opponent scores': ['An opponent’s figure lands on your goal (MatchMain.GoalProduction): Se212, your blue goal bursts and turns their colour. The camera stays. Loops.', () => ({ ...table([], [{ f: some(2)[1], at: 24, team: 1, mp: '2' }]), demo: 'goal', near: false })],
-    'Opening position': ['Six figures on each bench.', () => table([], some(12).map((f, i) => ({ f, at: i < 6 ? 28 + i : 34 + i - 6, team: i < 6 ? 0 : 1, mp: String(f.mp) })))],
-    'Excluded figures': ['Figures removed from the duel sit in a row past their side\'s bench: yours along the near edge, the opponent\'s along the far edge.', () => table([], some(10).map((f, i) => i < 3 ? { f, out: i, team: 0, dim: true, mp: '' } : i < 5 ? { f, out: i - 3, team: 1, dim: true, mp: '' } : { f, at: [28, 29, 34, 35, 18][i - 5], team: i < 7 || i === 9 ? 0 : 1, mp: String(f.mp) }))],
-    'Tall and wide figures': ['Figures are sized by how much of them is visible, not by their outline: a compact one (Snorunt) is not blown up, a spread-out one (Mega Charizard X / Y) is not shrunk, and no picture is clipped. On the bench and on the field.', () => table([], ['Snorunt', 'Mega Charizard X', 'Mega Charizard Y'].flatMap((n, i) => [{ f: named(n), at: 28 + i, mp: String(named(n).mp) }, { f: named(n), at: [21, 22, 23][i], mp: String(named(n).mp) }]))],
-    'Mid duel': ['', () => table([], some(8).map((f, i) => ({ f, at: [24, 18, 13, 29, 3, 9, 14, 35][i], team: i < 4 ? 0 : 1, mp: String(f.mp), status: i === 1 ? 'burn' : i === 5 ? 'freeze' : '', badge: i === 1 ? 'burned' : i === 5 ? 'frozen' : '' })))],
+    'Table states': steps([
+      ['Empty table', 'Field points, routes, both goals, bench rings and P.C. rings.', () => table()],
+      ['Movable points', 'Points the selected figure can reach glow gold.', () => table([21, 22, 23, 16, 17, 18, 25, 26, 27, 19, 20], [{ at: 28, sel: true }])],
+      ['Mid duel', 'A table part-way through a duel.', () => table([], some(8).map((f, i) => ({ f, at: [24, 18, 13, 29, 3, 9, 14, 35][i], team: i < 4 ? 0 : 1, mp: String(f.mp), status: i === 1 ? 'burn' : i === 5 ? 'freeze' : '', badge: i === 1 ? cond('burn') : i === 5 ? cond('freeze') : '' })))],
+      ['Excluded figures', 'Figures removed from the duel sit in a row past their side’s bench: yours along the near edge, the opponent’s along the far edge.', () => table([], some(10).map((f, i) => i < 3 ? { f, out: i, team: 0, dim: true, mp: '' } : i < 5 ? { f, out: i - 3, team: 1, dim: true, mp: '' } : { f, at: [28, 29, 34, 35, 18][i - 5], team: i < 7 || i === 9 ? 0 : 1, mp: String(f.mp) }))],
+    ]),
+    'Opening': ['The opening, as the original plays it (MatchMain.StartFigureAnim): each figure comes in from off the table, two at a time in figure order, and rises over its bench and drops on (or takes a low arc where nothing stands near its slot), landing with Se011, until six stand on each bench. Loops.', () => ({ ...table([], some(12).map((f, i) => ({ f, at: i < 6 ? 28 + i : 34 + i - 6, team: i < 6 ? 0 : 1, mp: String(f.mp) }))), demo: 'intro' })],
+    'Goal': steps([
+      ['You score', 'Your figure lands on the opponent’s goal (MatchMain.GameSet, MatchCamera.GoolCamera): Se212, the red goal bursts and turns your colour, and the camera cuts to the goal shot for 3 s, then back. Loops.', () => ({ ...table([], [{ f: some(1)[0], at: 3, team: 0, mp: '2' }]), demo: 'goal', near: true })],
+      ['The opponent scores', 'An opponent’s figure lands on your goal (MatchMain.GoalProduction): Se212, your blue goal bursts and turns their colour. The camera stays. Loops.', () => ({ ...table([], [{ f: some(2)[1], at: 24, team: 1, mp: '2' }]), demo: 'goal', near: false })],
+    ]),
   },
-  Evolution: {
-    'Magikarp': ['One evolution. A glowing ball blasts open, then the figure on the table is the next form. Click Evolve to play the next step now.', () => evoTable([['Magikarp', 'Gyarados']], [14])],
-    'Charmander line': ['Each stage plays in turn, then the line starts again.', () => evoTable([['Charmander', 'Charmeleon', 'Charizard']], [14])],
-    'Eevee': ['Eevee can become any of these. Each one plays from Eevee, then the next.', () => evoTable([{ branch: true, names: ['Eevee', 'Vaporeon', 'Jolteon', 'Flareon', 'Espeon', 'Umbreon'] }], [14])],
-    'Starter lines': ['Bulbasaur, Charmander and Squirtle, one line after another.', () => evoTable([['Bulbasaur', 'Ivysaur', 'Venusaur'], ['Charmander', 'Charmeleon', 'Charizard'], ['Squirtle', 'Wartortle', 'Blastoise']], [8, 14, 20])],
-  },
-  Movement: {
-    'Hop along a route': ['The figure hops point to point (same pace as a duel). Loops.', () => hopStory([21, 22, 23, 18, 14])],
-    'Long jump over a figure': ['When the chosen path passes through an occupied point, the mover makes one long jump over that figure (Celebi, Soar, …).', () => {
-      const mover = named('Celebi') || fig, block = named('Rattata') || named('Charmander') || some(2)[1] || fig;
-      return hopStory([14, 18, 9], { sel: true, badge: 'over' }, mover, [{ f: block, at: 18, team: 1 }]);
-    }],
-    'To the P.C.': ['Knocked out: hops into the P.C. ring and fades.', () => hopStory([14, 19, 27, 40], { dim: true, mp: '', badge: 'P.C.' })],
-    'To exclusion': ['Removed from the duel: hops off the field into the exclusion row.', () => hopStory([14, 18, 25, outXZ(0, 0)], { dim: true, mp: '', badge: 'excluded', status: 'disappeared' })],
-    'To Ultra Space': ['Necrozma leaves the board the same way Ultra Space removals do.', () => hopStory([9, 14, 18, outXZ(0, 0)], { f: named('Necrozma') || named('Dawn Wings Necrozma') || fig, dim: true, mp: '', badge: 'Ultra Space', status: 'disappeared' })],
-  },
-  Battle: {
-    'Wheel spin': ['Solo spin on the original 750×1334 stage — one wheel, gem at centre.', () => ({ ...table([], [{ at: 14, sel: true }]), demo: 'wheel', fighters: [{ f: fig, slot: 'dn', team: 0 }] })],
-    'Attack battle': ['Same portrait stage as the match UI: disks meet at the gem on a 24° line, then the strike flare.', () => {
-      const a = named('Pikachu') || fig, b = named('Charmander') || some(2)[1] || fig;
-      return { ...table([], [{ f: a, at: 18, sel: true, team: 0 }, { f: b, at: 9, atk: true, team: 1 }]), demo: 'battle', fighters: [{ f: a, slot: 'dn', team: 0 }, { f: b, slot: 'up', team: 1 }] };
-    }],
-    'Damage boost on wheel': ['After the wheel stops, a plate boost (+10) rolls the power up.', () => ({ ...table([], [{ at: 14, sel: true, badge: '+10 dmg' }]), demo: 'wheel', boost: true, fighters: [{ f: fig, slot: 'dn', team: 0 }] })],
-  },
-  Boosts: {
-    '+10 damage': ['A small damage marker arrives on the figure.', () => row([{ status: 'plus_10', badge: '+10 dmg' }])],
-    '+20 damage': ['A medium damage marker.', () => row([{ status: 'plus_20', badge: '+20 dmg' }])],
-    'Damage lowered': ['A marker is taken away.', () => row([{ badge: '-20 dmg' }])],
-    'All boosts': ['', () => row([{ status: 'plus_10', badge: '+10 dmg' }, { status: 'plus_20', badge: '+20 dmg' }, { badge: '-10 dmg' }, { badge: '-20 dmg' }])],
-  },
-  Abilities: {
+  Actions: {
+    'Evolution': steps([
+      ['Magikarp', 'One evolution. A glowing ball blasts open, then the figure on the table is the next form. Click Evolve to play the next step now.', () => evoTable([['Magikarp', 'Gyarados']], [14])],
+      ['Charmander line', 'Two evolutions: each stage plays in turn, then the line starts again.', () => evoTable([['Charmander', 'Charmeleon', 'Charizard']], [14])],
+      ['Eevee', 'Eevee can become any of these. Each one plays from Eevee, then the next.', () => evoTable([{ branch: true, names: ['Eevee', 'Vaporeon', 'Jolteon', 'Flareon', 'Espeon', 'Umbreon'] }], [14])],
+    ]),
+    'Mega Evolution': { steps: FIGS_BY_NO.filter(f => /^(Shiny )?Mega /.test(f.n)).map(f => {   // every Mega, each Mega Evolving from its base form
+      const base = f.n.replace('Mega ', '').replace(/ [XY]$/, '');
+      return { label: f.n, note: `${base} Mega Evolves into ${f.n}; a Mega then counts down the turns until it turns back (the small blue puck on its MP marker, FigureMEGA, mega_remain; 3 here as an example). Loops.`, make: () => evoTable([[base, f.n]], [14]) };
+    }) },
+    'Movement': steps([
+      ['Hop along a route', 'The figure hops point to point (same pace as a duel). Loops.', () => hopStory([21, 22, 23, 18, 14])],
+      ['Long jump over a figure', 'When the chosen path passes through an occupied point, the mover makes one long jump over that figure (Celebi, Soar, …).', () => {
+        const mover = named('Celebi') || fig, block = named('Rattata') || named('Charmander') || some(2)[1] || fig;
+        return hopStory([14, 18, 9], { sel: true }, mover, [{ f: block, at: 18, team: 1 }]);
+      }],
+      ['To the P.C.', 'Knocked out: hops into the P.C. ring and fades.', () => hopStory([14, 19, 27, 40], { dim: true, mp: '' })],
+      ['To exclusion', 'Removed from the duel: hops off the field into the exclusion row.', () => hopStory([14, 18, 25, outXZ(0, 0)], { dim: true, mp: '' })],
+    ]),
+    'Battle': steps([
+      ['Attack battle', 'Same portrait stage as the match UI: disks meet at the gem on a 24° line, then the strike flare.', () => {
+        const a = named('Pikachu') || fig, b = named('Charmander') || some(2)[1] || fig;
+        return { ...table([], [{ f: a, at: 18, sel: true, team: 0 }, { f: b, at: 9, atk: true, team: 1 }]), demo: 'battle', fighters: [{ f: a, slot: 'dn', team: 0 }, { f: b, slot: 'up', team: 1 }] };
+      }],
+      ['Damage boost on wheel', 'After the wheel stops, a plate boost (+10) rolls the power up.', () => ({ ...table([], [{ at: 14, sel: true, badge: '+10 dmg' }]), demo: 'wheel', boost: true, fighters: [{ f: fig, slot: 'dn', team: 0 }] })],
+    ]),
     'Ability cue': ['A ring draws around the stand, rises and fades — the same cue for every poké-power. Loops.', () => ({ ...row([{}]), demo: 'ability' })],
-    'Several at once': ['Same cue on a few figures (any Pokémon).', () => ({ ...row([{}, { team: 1 }, {}]), demo: 'ability' })],
+    'Plate effect': steps([
+      ['On your figure', 'A plate that picks or powers up a figure (here X Attack): its card appears over the figure and sinks into it with a gold ring (Plate_In, Se114). Loops.', () => ({ ...row([{ _plate: true }]), demo: 'plate', plate: 'X Attack' })],
+      ['On an opponent', 'A plate that moves, evolves, removes or marks a figure (here Scoop Up on a figure of the other side): the card bursts away with a red ring (Plate_Out, Se130). Loops.', () => ({ ...row([{ team: 1, _plate: true }]), demo: 'plate', plate: 'Scoop Up', out: true })],
+      ['On two figures', 'A swap names two figures; the effect plays on both at once.', () => ({ ...row([{ _plate: true }, {}, { _plate: true }]), demo: 'plate', plate: 'Pokémon Switch', out: true })],
+      ['No figure', 'A plate whose action names no figure (Recycle) plays its effect over the table.', () => ({ ...row([{}, { team: 1 }]), demo: 'plate', plate: 'Recycle' })],
+    ]),
+    'Field spin': steps(BOARD_SPINS.map(([id, who]) => {
+      const sk = D.skills[id] || ['Attack ' + id, ''], users = D.figures.filter(f => (f.w || []).some(x => x[0] === id)), by = users[0] || fig;
+      const foes = ['Psyduck', 'Leafeon', 'Pikachu'].map(n => D.figures.find(f => f.n === n)).filter(Boolean);
+      const list = who === 'self' ? [{ f: by, _spin: true }] : [{ f: by }, ...foes.slice(0, who === 'one' ? 1 : 3).map(f => ({ f, team: 1, _spin: true }))];
+      return [sk[0], `${sk[1]} Used by ${users.map(f => f.n).join(', ') || '—'}.`, () => ({ ...row(list), demo: 'fieldspin' })];
+    }).concat([['With a shift', 'A displacement after the spin moves the wheel on to the next slice.', () => ({ ...row([{ _spin: true, _displace: 1 }]), demo: 'fieldspin' })]])),
   },
-  Plates: {
-    'On your figure': ['A plate that picks or powers up a figure (here X Attack): its card appears over the figure and sinks into it with a gold ring (Plate_In, Se114). Loops.', () => ({ ...row([{ _plate: true }]), demo: 'plate', plate: 'X Attack' })],
-    'On an opponent': ['A plate that moves, evolves, removes or marks a figure (here Scoop Up on a figure of the other side): the card bursts away with a red ring (Plate_Out, Se130). Loops.', () => ({ ...row([{ team: 1, _plate: true }]), demo: 'plate', plate: 'Scoop Up', out: true })],
-    'On two figures': ['A swap names two figures; the effect plays on both at once.', () => ({ ...row([{ _plate: true }, {}, { _plate: true }]), demo: 'plate', plate: 'Pokémon Switch', out: true })],
-    'No figure': ['A plate whose action names no figure (Recycle) plays its effect over the table.', () => ({ ...row([{}, { team: 1 }]), demo: 'plate', plate: 'Recycle' })],
-  },
-  'Field spins': {
-    'One figure': ['A spin outside a battle (Ice Shard, Powder Snow, Origin Pulse, ...): the figure\'s wheel lies around its stand, turns and stops on a slice, then fades. Loops.', () => ({ ...row([{ f: D.figures.find(f => f.n === 'Psyduck'), _spin: true }]), demo: 'fieldspin' })],
-    'Several at once': ['A spin that names several figures turns all their wheels together.', () => ({ ...row([{ f: D.figures.find(f => f.n === 'Psyduck'), team: 1, _spin: true }, {}, { f: D.figures.find(f => f.n === 'Leafeon'), team: 1, _spin: true }]), demo: 'fieldspin' })],
-    'With a shift': ['A displacement after the spin moves the wheel on to the next slice.', () => ({ ...row([{ _spin: true, _displace: 1 }]), demo: 'fieldspin' })],
-  },
-  'Spins on the board': Object.fromEntries(BOARD_SPINS.map(([id, who]) => {
-    const sk = D.skills[id] || ['Attack ' + id, ''], users = D.figures.filter(f => (f.w || []).some(x => x[0] === id)), by = users[0] || fig;
-    const foes = ['Psyduck', 'Leafeon', 'Pikachu'].map(n => D.figures.find(f => f.n === n)).filter(Boolean);
-    const list = who === 'self' ? [{ f: by, _spin: true }] : [{ f: by }, ...foes.slice(0, who === 'one' ? 1 : 3).map(f => ({ f, team: 1, _spin: true }))];
-    return [sk[0], [`${sk[1]} Used by ${users.map(f => f.n).join(', ') || '—'}.`, () => ({ ...row(list), demo: 'fieldspin' })]];
-  })),
   Sounds: {
     'Figure sounds': ['Every clip the original game names for something that happens to a figure. The list under the table is the whole set.', () => ({ ...row([{ badge: 'figure sounds' }]), catalog: true })],
   },
@@ -461,23 +456,32 @@ function soundText(m) {
   return lines.length ? lines.join('\n') + '\n' + MISSING : '';
 }
 let current = null;
-function show(group, name) {
+function show(group, name, step) {
   stopEvo();   // also stops wheel / move demos
-  const [note, make] = STORIES[group][name], m = make(); current = m;
+  const entry = STORIES[group][name], list = entry.steps || null, [hg, hn, pos] = decodeURIComponent(location.hash.slice(1)).split('/');   // #Group/Story/3: the story's third variant
+  let k = list ? (step != null ? step : pos && hg === group && hn === name ? +pos - 1 : 0) : 0; if (list) k = ((k % list.length) + list.length) % list.length || 0;
+  const variant = list && list[k], note = variant ? variant.note : entry[0], m = (variant ? variant.make : entry[1])(); current = m;
   const heard = soundText(m);
-  const pos = decodeURIComponent(location.hash.slice(1)).split('/')[2];   // the story's own position in the address (read before the address is rewritten)
-  $('title').textContent = group + ' / ' + name; $('note').textContent = note; location.hash = encodeURIComponent(group + '/' + name);
+  $('title').textContent = group + ' / ' + name + (variant ? ' · ' + variant.label : ''); $('note').textContent = note; history.replaceState(null, '', location.pathname + location.search + '#' + encodeURIComponent(group + '/' + name) + (list ? '/' + (k + 1) : ''));
   const body = m.toks.some(t => t.chain) ? m.toks.filter(t => t.chain).map(t => t.branch ? t.chain[0].n + ' → ' + t.chain.slice(1).map(f => f.n).join(' / ') : t.chain.map(f => f.n).join(' → ')).join('\n')
     : m.demo ? ('demo: ' + m.demo + '\n' + (m.fighters || []).map(x => x.f.n).join(' vs '))
     : m.toks.map(t => JSON.stringify({ team: t.team, mp: t.mp, mpd: t.mpd, status: t.status, wait: t.wait, badge: t.badge, sel: t.sel, atk: t.atk, dim: t.dim })).join('\n') || '(no figures)';
-  $('props').textContent = heard ? heard + '\n\n' + body : body;
+  $('props').textContent = m.props || (heard ? heard + '\n\n' + body : body);
   for (const b of $('nav').querySelectorAll('button')) b.classList.toggle('on', b.dataset.g === group && b.dataset.n === name);
   // A story whose figures carry a status condition or an MP change shows them without it first; after a second it is applied (ring, tint,
   // lettering, badge) and its sound plays, the way it arrives during a duel.
   (show.timers || []).forEach(clearTimeout); show.timers = [];
   const draw = x => { window.board3dModel = x; if (window.Board3D) Board3D.draw(x); };
   const job = ++demoJob;
-  const oldGal = $('gal'); if (oldGal) oldGal.remove(); $('sizes')?.remove(); window.Board3D?.clearGoal();   // a goal story leaves the MP markers hidden; the next story shows them again document.onkeydown = null; window.onhashchange = null;
+  const ae = document.activeElement, keep = ae && ae.closest && ae.closest('#step') ? (ae.tagName === 'INPUT' ? 'input' : `[data-d="${ae.dataset.d}"]`) : null;   // the stepper control in use, to focus again in the new one
+  $('step')?.remove(); $('sizes')?.remove(); window.Board3D?.clearGoal(); document.onkeydown = null; window.onhashchange = null;   // clearGoal: a goal story leaves the MP markers hidden; the next story shows them again
+  if (list) {   // the stepper, inline in the table's corner bar next to Reset and Lock
+    const bar = $('camReset') && $('camReset').parentNode, sp = document.createElement('div'); sp.id = 'step';
+    sp.innerHTML = `<input type="number" min="1" max="${list.length}" value="${k + 1}" aria-label="Go to number" style="width:calc(${String(list.length).length}ch + 24px)"><span class="arrows"><button data-d="1" aria-label="Next">▲</button><button data-d="-1" aria-label="Previous">▼</button></span><span class="lbl">/ ${list.length}</span>`;   // the variant's name is in the title
+    if (bar) bar.insertBefore(sp, $('barFill')); if (keep) { const el = sp.querySelector(keep); if (el) { el.focus(); if (el.select) el.select(); } } sp.onclick = e => { const btn = e.target.closest('[data-d]'); if (btn) show(group, name, k + +btn.dataset.d); };
+    const num = sp.querySelector('input'); num.onchange = () => { const v = Math.round(+num.value); if (v >= 1 && v <= list.length && v - 1 !== k) show(group, name, v - 1); else num.value = k + 1; };   // type a number and press Enter (or leave the field) to jump there   // type a number and press Enter (or leave the field) to jump there
+    document.onkeydown = e => { if (/^Arrow(Up|Down)$/.test(e.key) && !e.target.closest('input, select, textarea')) { e.preventDefault(); show(group, name, k + (e.key === 'ArrowUp' ? 1 : -1)); } };   // up raises the number, as ▲ and the field do
+  }
   if (m.demo === 'goal') {   // replay a goal: the figure hops node by node along a route onto the goal (as a duel move does), and the goal plays out
     const t = m.toks[0], route = (m.near ? [0, 1, 2, 3] : [21, 22, 23, 24]).map(P), go = () => { if (job !== demoJob) return;
       draw({ ...m, toks: [{ ...t, x: route[0][0], z: route[0][1] }], snap: true });
@@ -490,19 +494,6 @@ function show(group, name) {
     box.innerHTML = [...D.figures].sort((a, b) => a.no - b.no || a.id - b.id).map(f => `<figure><img loading="lazy" src="${art(f)}" alt="" onload="this.style.height = this.naturalHeight * .75 + 'px'"><figcaption>${esc(f.n)}</figcaption></figure>`).join('');
     return;
   }
-  if (m.demo === 'gallery') {   // every figure by its number, stepped with ▲ / ▼
-    const all = [...D.figures].sort((a, b) => a.no - b.no || a.id - b.id);
-    const fromUrl = (p = decodeURIComponent(location.hash.slice(1)).split('/')[2]) => p == null || p === '' ? -1 : all.findIndex(f => f.no === +p);   // #Figure/Every figure/25 opens No. 25
-    let k = fromUrl(pos); if (k < 0) { k = 0; try { k = Math.min(all.length - 1, Math.max(0, +localStorage.getItem('sb.gallery') || 0)); } catch (e) {} }
-    const g = document.createElement('div'); g.id = 'gal'; $('board3d').appendChild(g);
-    g.innerHTML = '<button data-d="-1" aria-label="Previous figure">▲</button><div class="lbl"></div><button data-d="1" aria-label="Next figure">▼</button>';
-    const go = d => { k = (k + d + all.length) % all.length; try { localStorage.setItem('sb.gallery', k); } catch (e) {}
-      const f = all[k]; history.replaceState(null, '', location.pathname + location.search + '#' + encodeURIComponent(group + '/' + name) + '/' + f.no); g.querySelector('.lbl').innerHTML = `<b>No. ${f.no}</b> ${f.n}<span>${k + 1} / ${all.length}</span>`; draw({ ...row([{ f }]) }); $('props').textContent = JSON.stringify({ no: f.no, id: f.id, name: f.n, dex: f.dex, mp: f.mp, img: art(f) }, null, 1); };
-    g.onclick = e => { const b = e.target.closest('[data-d]'); if (b) go(+b.dataset.d); };
-    document.onkeydown = e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); go(e.key === 'ArrowUp' ? -1 : 1); } };
-    window.onhashchange = () => { const i = fromUrl(); if (i >= 0 && i !== k) go(i - k); };
-    go(0); return;
-  }
   if (m.demo === 'move') { draw({ ...m, toks: m.toks.map(t => ({ ...t, moveId: null, path: null, x: (t._route || [[t.x, t.z]])[0][0], z: (t._route || [[t.x, t.z]])[0][1] })), snap: true }); loopMove(m, job); return; }
   if (m.demo === 'wheel' || m.demo === 'battle') { draw(m); if (m.demo === 'battle') { sfx('attack'); sfx('select'); } playWheel(m, job); return; }
   if (m.demo === 'ability') { draw(m); loopAbility(m, job); return; }
@@ -512,13 +503,14 @@ function show(group, name) {
   const playStatus = kind => { const row = COND_SOUND[kind]; if (row) sfx(row[2]); else statusSfx(kind); };
   const arrivals = [...new Set(m.toks.map(t => t.status).filter(Boolean))].map(kind => ({ hits: t => t.status === kind, sound: () => playStatus(kind) }))
     .concat(m.toks.filter(t => t.mpd).map(t => ({ hits: x => x === t, sound: () => mpSfx(t.mpd) })))
+    .concat(m.toks.filter(t => t._mark).map(t => ({ hits: x => x === t, sound: () => playStatus(t._mark) })))
     .concat(m.toks.filter(t => t.wait).map(t => ({ hits: x => x === t, sound: () => sfx('wait') })))
     .concat(m.toks.filter(t => t.out != null).map(t => ({ hits: x => x === t, sound: () => sfx('st_other') })))
     .concat(m.toks.filter(t => t.dim && t.out == null).map(t => ({ hits: x => x === t, sound: () => sfx('ko') })))
     .concat(m.toks.filter(t => t.sel).map(t => ({ hits: x => x === t, sound: () => sfx('select') })))
     .concat(m.toks.filter(t => dmgSound(t)).map(t => ({ hits: x => x === t, sound: () => sfx(dmgSound(t)[2]) })));
   if (!arrivals.length) { draw(m); startEvo(); return; }
-  const plain = t => ({ ...t, status: '', wait: false, mpd: 0, mp: t.mpd ? String(+t.mp - t.mpd) : t.mp, badge: t.status || t.mpd || t.wait || t.dim || t.sel || dmgSound(t) ? '' : t.badge, dim: false, sel: false });
+  const plain = t => ({ ...t, status: '', wait: false, mpd: 0, mp: t.mpd ? String(+t.mp - t.mpd) : t.mp, badge: t.status || t._mark || t.mpd || t.wait || t.dim || t.sel || dmgSound(t) ? '' : t.badge, dim: false, sel: false });
   const upTo = n => ({ ...m, toks: m.toks.map(t => arrivals.findIndex(a => a.hits(t)) >= n ? plain(t) : t) });   // only the first n arrivals applied
   draw(upTo(0));
   arrivals.forEach((a, k) => show.timers.push(setTimeout(() => { draw(upTo(k + 1)); a.sound(); }, 1000 + k * 600)));
@@ -535,7 +527,7 @@ function evoSleep(ms, job) {   // ends early when Evolve is clicked (current.rus
   });
 }
 function showForm(t, step) {
-  const f = t.chain[step]; t.step = step; t.img = art(f); t.name = f.n; t.mp = String(f.mp); t.evo = t.branch || step < t.chain.length - 1;
+  const f = t.chain[step]; t.step = step; t.img = art(f); t.name = f.n; t.mp = String(f.mp); t.evo = t.branch || step < t.chain.length - 1; t.mega = /^(Shiny )?Mega /.test(f.n) ? 3 : 0;   // a Mega shows its turn counter
   if (window.Board3D) Board3D.draw(current);
 }
 function flashEvo(t, job, reveal) {
@@ -582,7 +574,12 @@ window.boardPick = (fig, pt, act) => {   // click a figure to toggle its selecti
 };
 const [g0, n0] = decodeURIComponent(location.hash.slice(1)).split('/');
 addEventListener('spritemotion', () => { const [g, n] = decodeURIComponent(location.hash.slice(1)).split('/'); if (STORIES[g] && STORIES[g][n]) show(g, n); });   // Animated / Still switched: redraw the story   // a third part is a story's own position (Every figure: the figure number)
-import(new URL('board3d.js?v=leap2', document.baseURI)).then(() => show(...(STORIES[g0] && STORIES[g0][n0] ? [g0, n0] : ['Figure', 'Interaction states'])));
+import(new URL('board3d.js?v=leap2', document.baseURI)).then(() => {   // the details panel's toggle at the far end of the table's corner bar (remembered on this device)
+  const bar = $('camReset').parentNode, fill = document.createElement('div'), btn = document.createElement('button'); fill.id = 'barFill'; btn.id = 'propsBtn'; bar.append(fill, btn);
+  btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+  const set = open => { $('props').hidden = !open; btn.setAttribute('aria-expanded', open); btn.title = btn.ariaLabel = open ? 'Hide details' : 'Show details'; try { localStorage.setItem('sb.details', open ? '1' : '0'); } catch (e) {} };
+  let open = true; try { open = localStorage.getItem('sb.details') !== '0'; } catch (e) {} set(open); btn.onclick = () => set($('props').hidden);
+}).then(() => show(...(STORIES[g0] && STORIES[g0][n0] ? [g0, n0] : ['Figure', 'Figure states'])));
 </script>
 </body>
 </html>

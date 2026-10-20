@@ -637,7 +637,9 @@ const isMega = f => /^(Shiny )?Mega /.test(f.n);   // by name: group numbers of 
 const mutualForm = f => f.fr.length > 0 && f.fr.length === f.to.length && f.fr.every(g => f.to.includes(g));   // GetMutualRelationshipForm
 const FORM_GROUPS = new Set(D.figures.filter(f => f.fmx > 0).map(f => f.g));
 // ItemListManager.RemoveFormChangeItems: a form of another figure is not offered as a figure of its own
-const BASES = D.figures.filter(f => !(f.fr.length && f.rm !== 0 && !mutualForm(f) && FORM_GROUPS.has(f.fr[0])));
+// A Mega is not a figure of its own either: it only comes by Mega Evolving its base with the stone, and turns back after its turns run out
+// (mega_remain), so it is attached to a base, never set as one (the computer's random team and the builder both draw from BASES)
+const BASES = D.figures.filter(f => !isMega(f) && !(f.fr.length && f.rm !== 0 && !mutualForm(f) && FORM_GROUPS.has(f.fr[0])));
 let team = [], myPlates = [], replaceFig = null;   // team index to replace on the next figure pick; null = append
 function candidates(slot, k) { // evolution slot k: tree depth = base depth + k, on the same branch as the other stages
   const base = byId.get(slot.st[0]);
@@ -845,7 +847,7 @@ const FREE_KEY = 'pokemonduelweb.free.current', UI_KEY = 'pokemonduelweb.setup.u
 function storeFree() { if (ownedMode) return; try { localStorage.setItem(FREE_KEY, JSON.stringify({ team, plates: myPlates })); } catch (e) {} }
 function loadFree() {   // a team or plate this version does not know is dropped rather than loaded broken
   let v = null; try { v = JSON.parse(localStorage.getItem(FREE_KEY)); } catch (e) {}
-  const ok = v && Array.isArray(v.team) && v.team.every(sl => sl && Array.isArray(sl.st) && sl.st.concat(sl.forms || []).every(id => id == null || byId.has(id)));
+  const ok = v && Array.isArray(v.team) && v.team.every(sl => sl && Array.isArray(sl.st) && sl.st.concat(sl.forms || []).every(id => id == null || byId.has(id)) && !isMega(byId.get(sl.st[0])));   // a Mega as a base (older builds allowed it) drops the team
   return ok ? { team: v.team, plates: (v.plates || []).filter(id => plateById.has(id)) } : null;
 }
 function storeUi() { const ui = { tab: $('pickSide').dataset.tab || 'fig' }; for (const id of UI_IDS) { const el = $(id); if (el) ui[id] = el.type === 'checkbox' ? el.checked : el.value; } try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) {} }
@@ -1861,7 +1863,7 @@ function render() {
     const evoOk = mine && evolveMoves().some(m => evoFig(m) === i);
     const plan = hop && hop.plan, pathPts = plan ? plan.landings.map(q => U(xy(q))) : hop ? hop.route.map(q => U(xy(q))) : null;
     const segs = plan ? plan.segs.map(s => ({ leap: s.leap, dur: s.durMs / 1000 })) : null;
-    toks.push({ i, moveId: hop ? hop.id : null, path: pathPts, segs, x: U([x, y])[0], z: U([x, y])[1], team: col === low ? 0 : 1, img: anim(f), name: f.n, mp: c.index < 40 ? String(mp) : '', badge: b.join(' · '), status: c.marker && c.marker.circle && c.marker.circle !== 'normal' ? c.marker.circle : '', wait: c.wait > 0, mpd: (c.effect && c.effect.mp) || 0, sel: i === sel, atk: targets.has(i), dim: c.index >= 40, evo: evoOk });
+    toks.push({ i, mega: c.mega_remain || 0, moveId: hop ? hop.id : null, path: pathPts, segs, x: U([x, y])[0], z: U([x, y])[1], team: col === low ? 0 : 1, img: anim(f), name: f.n, mp: c.index < 40 ? String(mp) : '', badge: b.join(' · '), status: c.marker && c.marker.circle && c.marker.circle !== 'normal' ? c.marker.circle : '', wait: c.wait > 0, mpd: (c.effect && c.effect.mp) || 0, sel: i === sel, atk: targets.has(i), dim: c.index >= 40, evo: evoOk });
     const mpd = (c.effect && c.effect.mp) || 0, circle = (c.marker || {}).circle, aura = circle && circle !== 'normal' ? (STATUS_COL[circle] || '#ffffff') : b.length ? '#cbd5e1' : '';
     h += `<g class="tok ${i === sel ? 'sel' : ''} ${targets.has(i) ? 'atk' : ''} ${c.index >= 40 ? 'dim' : ''}" data-fig="${i}" transform="translate(${x},${y}) scale(${c.index >= 44 ? .85 : 1.3})"><circle class="halo" r="27.5"/>${aura ? `<circle class="aura" r="21.1" stroke="${aura}"/>` : ''}
       <circle class="bg" r="19" fill="${TYPE_COL[f.t[0]] || '#888'}"/><circle class="ring" r="19" stroke="${col === low ? '#1565c0' : '#b71c1c'}"/>

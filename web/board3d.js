@@ -180,6 +180,11 @@ function label(text, mpd) {   // MP puck top: face colour, ring/digit in route c
     g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '900 52px Segoe UI, sans-serif'; g.fillText(text, 48, 52);
   });
 }
+const MEGA_OFF = TAG_R * .85 * Math.SQRT2, MEGA_AT = 70 * Math.PI / 180;   // the Mega counter on the MP marker’s rim: this far out, 70° round from screen-right
+const CAM_R = new THREE.Vector3(), CAM_U = new THREE.Vector3(), CAM_F = new THREE.Vector3(), TAG_AT = new THREE.Vector3();
+function megaLabel(n) {   // the Mega counter's face: blue, a white ring and the turns left in white
+  return tex(96, 96, g => { g.fillStyle = '#1d5fd6'; g.beginPath(); g.arc(48, 48, 47, 0, 7); g.fill(); g.lineWidth = 6; g.strokeStyle = '#fff'; g.beginPath(); g.arc(48, 48, 40, 0, 7); g.stroke(); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '900 52px Segoe UI, sans-serif'; g.fillText(String(n), 48, 52); });
+}
 function paintTag(u, text, mpd) {   // swap the digit sprite; dispose the previous map so a count-up does not leak
   const empty = text === '' || text == null; u.hasMp = !empty; if (empty) { u.tag.visible = false; return; }
   const { face } = mpColors(mpd); u.tagSide.color.set(face);
@@ -209,14 +214,18 @@ function token(t) {
   const tagBody = new THREE.Mesh(G.tagBody, tagSide); tagBody.castShadow = true;   // 3D puck thickness (tipped to face the camera)
   const tagFace = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false, alphaTest: .05 }));   // digit: sprite, not rotated with the body
   tagFace.scale.set(TAG_R * 2.05, TAG_R * 2.05, 1);
-  const tag = new THREE.Group(); tag.add(tagBody, tagFace); tag.position.set(.24, .4, .56);   // group only moves/scales — never rolls. Where the original floats it (FigureMP: (0.3, 0.5, -0.7) on a base turned to face its owner = 0.3 aside, 0.5 up, 0.7 towards the near side; x mirrored here), scaled to this base (0.4 / 0.5)
+  const tag = new THREE.Group(); tag.add(tagBody, tagFace); tag.position.set(Math.SQRT1_2 * (BASE_R + TAG_R), TAG_R, Math.SQRT1_2 * (BASE_R + TAG_R));   // group only moves/scales — never rolls. Re-placed every frame at the base's bottom-right as seen by the camera (TAG_AT)
   base.position.y = BASE_H / 2; base.castShadow = true; cap.position.y = BASE_H - .002; cap.castShadow = true;   // lid sinks a hair into the cylinder top so the shared rim is seamless
   ring.rotation.x = Math.PI / 2; ring.position.y = .05; aura.rotation.x = Math.PI / 2; aura.position.y = AURA_H / 2; aura.castShadow = true;
   art.center.set(.5, 0); art.position.y = .04; art.scale.set(1.05, 1.05, 1); art.renderOrder = 1;
   tagBody.renderOrder = 2; tagFace.renderOrder = 3;
   words.rotation.x = -Math.PI / 2; words.position.y = AURA_H + .002; words.renderOrder = 3;   // status text lies on the top face of the aura ring
   const shade = new THREE.Mesh(shadeGeo, new THREE.MeshBasicMaterial({ map: shadeTex, transparent: true, depthWrite: false })); shade.rotation.x = -Math.PI / 2; shade.position.y = BASE_H + CAP_H - .002;
-  const g = new THREE.Group(); g.add(base, cap, shade, ring, aura, words, art, tag); g.position.set(t.x, 0, t.z); g.userData = { base, cap, shade, ring, art, tag, tagBody, tagFace, tagSide, aura, words, fig: t.i };
+  // the Mega counter (FigureMEGA, mega_guide_blue): the turns until a Mega turns back, on a small blue puck attached to the MP marker's
+  // top-right edge (placed each frame along the camera's right and up); blue on both sides, the number white
+  const megaBody = new THREE.Mesh(G.tagBody, mat(0x1d5fd6, 0, { roughness: .4 })), megaFace = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false, alphaTest: .05 }));
+  megaFace.scale.set(TAG_R * 2.05, TAG_R * 2.05, 1); const mega = new THREE.Group(); mega.add(megaBody, megaFace); mega.scale.setScalar(.6); mega.visible = false;
+  const g = new THREE.Group(); g.add(base, cap, shade, ring, aura, words, art, tag, mega); g.position.set(t.x, 0, t.z); g.userData = { base, cap, shade, ring, art, tag, tagBody, tagFace, tagSide, mega, megaBody, megaFace, aura, words, fig: t.i };
   for (const m of [base, art, tagBody, tagFace]) { m.userData.pick = g.userData; pickable.push(m); }   // the stand, the picture and the MP puck: what a tap hits
   scene.add(g); tokens.set(t.i, g);
   return g;
@@ -375,6 +384,7 @@ function draw(m) {
     if (AURA[t.status]) u.art.material.color.setHex(0xffffff).lerp(TINT.setHex(AURA[t.status]), .5); else u.art.material.color.setHex(t.wait ? 0x8a93a8 : 0xffffff);
     if (u.img !== t.img) { u.img = t.img; u.art.material.map = t.img ? picture(t.img) : tex(128, 128, (c) => { c.fillStyle = '#fff'; c.font = '700 22px Segoe UI, sans-serif'; c.textAlign = 'center'; c.fillText(t.name.slice(0, 9), 64, 70); }); u.art.material.needsUpdate = true; }
     u.words.visible = !!t.badge; if (t.badge && u.badge !== t.badge + dark) { u.badge = t.badge + dark; u.words.material.map = around(t.badge, dark ? '#05070f' : '#fff'); u.words.material.needsUpdate = true; }
+    if (u.megaN !== (t.mega || 0)) { u.megaN = t.mega || 0; const old = u.megaFace.material.map; u.megaFace.material.map = u.megaN ? megaLabel(u.megaN) : null; u.megaFace.material.needsUpdate = true; if (old) old.dispose(); }
     const key = t.mp + '|' + t.mpd;
     if (u.key !== key) {   // MP change: count the badge from the old number to the new one (same idea as the battle damage roll)
       const to = t.mp === '' || t.mp == null ? null : +t.mp, from = u.mpShown, step = to != null && from != null && Number.isFinite(from) && Number.isFinite(to) && from !== to;
@@ -491,7 +501,11 @@ renderer.setAnimationLoop(() => {
   // camera rises from the lowest side view the picture slides down, and after a slight tilt it sits centred on the base like a token.
   // It is lifted clear of the base as it centres, or the base would hide it.
   const rise = Math.min(1, Math.max(0, (controls.maxPolarAngle - controls.getPolarAngle()) / TILT)), lie = rise * rise * (3 - 2 * rise) * .45;
-  for (const g of tokens.values()) { const u = g.userData; const px = u.art.material.map?.userData.px || [FRAME, FRAME]; u.art.scale.set(1.05 * px[0] / FRAME, 1.05 * px[1] / FRAME, 1); /* every picture at one scale */ u.art.center.y = lie; u.art.position.y = .04 + lie * .6 + (u.boostPop || 0); if (u.evoBlast) u.art.material.opacity = 0; if (u.aura.visible) u.aura.material.opacity = .6 + .3 * pulse; if (u.words.visible) u.words.rotation.z -= dt * .5;
+  // the MP marker sits at the base's bottom-right on screen whatever the camera's angle: the camera's right and down, laid flat on the table,
+  // a puck's radius out from the rim (touching the stand, never cutting into it) and resting on the table
+  CAM_R.setFromMatrixColumn(camera.matrixWorld, 0).setY(0).normalize(); CAM_U.setFromMatrixColumn(camera.matrixWorld, 1).setY(0).normalize().negate();
+  TAG_AT.copy(CAM_R).add(CAM_U).normalize().multiplyScalar(BASE_R + TAG_R).setY(TAG_R);
+  for (const g of tokens.values()) { const u = g.userData; u.tag.position.copy(TAG_AT); const px = u.art.material.map?.userData.px || [FRAME, FRAME]; u.art.scale.set(1.05 * px[0] / FRAME, 1.05 * px[1] / FRAME, 1); /* every picture at one scale */ u.art.center.y = lie; u.art.position.y = .04 + lie * .6 + (u.boostPop || 0); if (u.evoBlast) u.art.material.opacity = 0; if (u.aura.visible) u.aura.material.opacity = .6 + .3 * pulse; if (u.words.visible) u.words.rotation.z -= dt * .5;
     if (u.drop) {   // the opening drop onto the bench (dropIn)
       const d = u.drop; d.t += dt; g.visible = d.t >= 0;
       if (g.visible) { const k = Math.min(1, d.t / d.dur); bezier(d.pts, k, g.position); if (k >= 1) { u.drop = null; window.sfx?.('land'); } }
@@ -503,7 +517,8 @@ renderer.setAnimationLoop(() => {
       else { const s = h.segs[h.i], k = Math.min(1, h.t / s.dur); g.position.lerpVectors(h.pts[h.i], h.pts[h.i + 1], k); g.position.y = Math.sin(k * Math.PI) * (s.leap ? 1.15 : .45); }
     }
     else if (u.to) g.position.lerp(u.to, 1 - Math.pow(.001, dt)); if (u.ring.visible) u.ring.scale.setScalar(.95 + .08 * pulse);
-    u.tag.visible = !!u.hasMp && !u.hop && !u.drop && !goalShown;   // the MP marker shows on a figure standing still that can move (no number in the P.C. or out of play); hidden while it moves
+    u.tag.visible = !!u.hasMp && !u.hop && !u.drop && !goalShown; u.mega.visible = u.megaN > 0 && !u.hop && !u.drop && !goalShown;
+    if (u.mega.visible) { u.megaBody.quaternion.copy(camera.quaternion); u.mega.position.copy(u.tag.position).addScaledVector(CAM_R.setFromMatrixColumn(camera.matrixWorld, 0), MEGA_OFF * Math.cos(MEGA_AT)).addScaledVector(CAM_U.setFromMatrixColumn(camera.matrixWorld, 1), MEGA_OFF * Math.sin(MEGA_AT)).addScaledVector(CAM_F.setFromMatrixColumn(camera.matrixWorld, 2), .02); }   // the MP marker shows on a figure standing still that can move (no number in the P.C. or out of play); hidden while it moves
     if (u.tag.visible) faceTag(u);
     if (u.mpAnim) {   // roll the MP digit and pop the puck while it changes colour
       const a = u.mpAnim, k = Math.min(1, (a.t += dt) / a.dur), n = Math.round(a.from + (a.to - a.from) * k), pop = TAG_S * (1 + .28 * Math.sin(k * Math.PI));
@@ -525,7 +540,7 @@ renderer.setAnimationLoop(() => {
     // the MP badge sits on the front edge of the base: seen from behind (the goal shot, a turned camera) it is farther than the figure, so it goes
     // first and the base and picture cover it; seen from the front it goes last
     const behind = u.tag.getWorldPosition(TAGW).distanceToSquared(camera.position) > g.position.distanceToSquared(camera.position);
-    u.tagBody.renderOrder = behind ? n + .3 : n + 5; u.tagFace.renderOrder = behind ? n + .6 : n + 6;
+    u.tagBody.renderOrder = behind ? n + .3 : n + 5; u.tagFace.renderOrder = behind ? n + .4 : n + 5.4; u.megaBody.renderOrder = behind ? n + .5 : n + 5.6; u.megaFace.renderOrder = behind ? n + .6 : n + 6;   // the Mega counter over the MP marker's edge
   });
   M.mv.emissiveIntensity = pulse;
   renderer.render(scene, camera);
@@ -710,7 +725,7 @@ function stepFieldSpins(dt) {
       if (k >= 1) { f.host.removeFromParent(); f.geo.dispose(); f.mat.map.dispose(); f.mat.dispose(); f.ptr.geometry.dispose(); f.ptr.material.dispose(); f.side.geometry.dispose(); f.side.material.map.dispose(); f.side.material.dispose(); fieldSpins.splice(n, 1); f.done(f.landed); } }
   }
 }
-function clearAbilities() { for (const a of abilityRings) endAbility(a); abilityRings.length = 0; }
+function clearAbilities() { for (const a of abilityRings) endAbility(a); abilityRings.length = 0; for (const f of fieldSpins) { f.phase = 'out'; f.t = 1; } stepFieldSpins(0); }   // and any field-spin wheel still on the table
 
 function project(i) {   // where a figure sits on the arena, so the evolution flash can land on it
   const g = tokens.get(i); if (!g) return null;
