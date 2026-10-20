@@ -365,7 +365,7 @@ function newDuel() {   // a new duel is starting: the last one's figures leave t
 }
 function draw(m) {
   if (m.table) drawTable(m.table);
-  const cam = JSON.stringify(m.cam) !== JSON.stringify(last && last.cam); last = m; if (built !== m.pts.length + ':' + m.slots.length + ':' + m.edges.length) build(m); if (cam) home();
+  const cam = JSON.stringify(m.cam) !== JSON.stringify(last && last.cam); last = m; if (built !== m.pts.length + ':' + m.slots.length + ':' + m.edges.length) build(m); if (cam && !fight) home();   // the battle stage keeps its own camera
   for (const p of m.pts) { const u = points.get(p.k).userData; u.pt = p.p; u.mv = !!p.mv; u.mark.material = p.mv ? M.mv : u.plain; u.mark.scale.setScalar(p.mv && !u.goal ? 1.6 : 1); }
   const seen = new Set();
   for (const t of m.toks) {
@@ -531,6 +531,7 @@ renderer.setAnimationLoop(() => {
   stepAbilities(dt);
   stepPlates(dt);
   stepFieldSpins(dt);
+  stepFight(dt);
   // Each figure is drawn whole, from the farthest to the nearest: its base, then its picture (which ignores depth, so its own base cannot
   // cut it off), then its MP badge. A nearer figure's base and picture therefore cover whatever stands behind them. The bases are marked
   // transparent only so that they take part in this ordering; they are fully opaque.
@@ -733,5 +734,93 @@ function project(i) {   // where a figure sits on the arena, so the evolution fl
   const rect = renderer.domElement.getBoundingClientRect(), host = (document.querySelector('.arena') || renderer.domElement.parentElement).getBoundingClientRect();
   return { x: (v.x * .5 + .5) * rect.width + rect.left - host.left, y: (-v.y * .5 + .5) * rect.height + rect.top - host.top };
 }
-window.Board3D = { draw, goal, newDuel, clearGoal: () => { goalShown = false; }, controls, tokens, project, blast, clearBlasts, ability, clearAbilities, plate, fieldSpin, info: () => ({ ...renderer.info.memory, objects: (() => { let n = 0; scene.traverse(() => n++); return n; })() }) };   // controls and tokens are exposed for inspection
+// The battle stage (MatchMain.BattleInfo / StartBattle, BattleController, BattleAnimController, MatchCamera.SetBattleCamera). The original keeps
+// it beside the table (BattleStageRoot, x 100); here it is 100 units off the other way (x mirrored on this board). The two figures stand in
+// their nodes 1.5 from the middle, yours on the near side, and play attack_anime_controller's clips (web/battleclips.js, the figure root's
+// motion and events); the camera is the rig's battle pose: dolly (0, 0.8, 0.34), rotY -30, rotX 78, zoom 8.9, camera (0, 0, -0.25) at
+// (89.21, 0, 180), fov 30. The stage model itself is not in the APK (each stage's battle_stage_mdl was downloaded), so a plain floor stands in.
+const FIGHT_AT = new THREE.Vector3(-100, 0, 0);
+const FIGHT_CAM = { pos: [4.327, 2.895, 7.834], fwd: [-.488, -.221, -.845], up: [-.111, .975, -.192] };
+let fight = null;
+const loadClips = () => window.BATTLE_CLIPS ? Promise.resolve() : new Promise(res => { const s = document.createElement('script'); s.src = new URL('battleclips.js', document.baseURI).href; s.onload = s.onerror = () => res(); document.head.appendChild(s); });
+function fighter(f, near) {   // a figure on its base, kept out of the board's own token list (and so out of its redraws and taps)
+  const id = '__fight' + (near ? 'a' : 'b'), g = token({ i: id, x: 0, z: 0 }), u = g.userData; tokens.delete(id); scene.remove(g);
+  for (const m of [u.base, u.art, u.tagBody, u.tagFace]) { const i = pickable.indexOf(m); if (i >= 0) pickable.splice(i, 1); }
+  u.base.material.color.setHex(f.team ? RED : BLUE); u.base.material.emissive.setHex(f.team ? 0x3a060c : 0x08224f);
+  u.art.material.map = picture(f.img); u.art.material.needsUpdate = true; u.ring.visible = u.aura.visible = u.words.visible = u.tag.visible = u.mega.visible = false;
+  return g;
+}
+async function battleOpen(a, b) {   // a: yours, b: theirs ({ img, team }). The figures come in (battle_in) behind the wheels.
+  battleClose(); await loadClips();
+  const root = new THREE.Group(); root.position.copy(FIGHT_AT); scene.add(root);
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(9, 64), new THREE.MeshStandardMaterial({ color: new THREE.Color(css('--bd', '#0c0d10')), roughness: .9 })); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; root.add(floor);
+  const nodes = [0, 1].map(k => { const n = new THREE.Group(); if (k) n.rotation.y = Math.PI; root.add(n); return n; });   // Player, Enemy (turned 180)
+  const figs = [fighter(a, true), fighter(b, false)];
+  figs.forEach((g, k) => { nodes[k].add(g); g.position.set(0, 0, 1.5); });
+  const keep = { pos: camera.position.clone(), at: controls.target.clone(), up: camera.up.clone(), fov: camera.fov, on: controls.enabled };
+  controls.enabled = false; camera.fov = 30; camera.up.set(...FIGHT_CAM.up); camera.position.copy(FIGHT_AT).add(new THREE.Vector3(...FIGHT_CAM.pos));
+  controls.target.copy(camera.position).addScaledVector(new THREE.Vector3(...FIGHT_CAM.fwd), 8.9); camera.lookAt(controls.target); camera.updateProjectionMatrix();   // the orbit target too, so a redraw keeps this view
+  fight = { root, nodes, figs, keep, base: camera.position.clone(), anims: [null, null], shake: 0, fx: [] };
+  fightClip(0, 'battle_in'); fightClip(1, 'battle_in');
+}
+// A clip on one figure: its motion (in the node's frame, Unity's axes: x mirrored, quaternions (x, -y, -z, w)) and its events.
+const REST = new THREE.Quaternion(0, 1, 0, 0).invert(), QQ = new THREE.Quaternion(), FW = new THREE.Vector3(), FW2 = new THREE.Vector3();
+function fightClip(k, name, on) {
+  const c = (window.BATTLE_CLIPS || {})[name];
+  fight.anims[k] = { name, c: c || { l: 0 }, t: 0, next: 0, on: on || (() => {}) };
+  return new Promise(res => { fight.anims[k].done = res; });
+}
+function stepFight(dt) {
+  if (!fight) return;
+  for (let k = 0; k < 2; k++) {
+    const a = fight.anims[k]; if (!a) continue;
+    a.t += dt; const c = a.c, n = c.p ? c.p.length / 3 : c.q ? c.q.length / 4 : 0, f = Math.min(n - 1, Math.floor(a.t * 30)), g = fight.figs[k];
+    if (c.p && f >= 0) g.position.set(-c.p[f * 3], c.p[f * 3 + 1], c.p[f * 3 + 2]);
+    if (c.q && f >= 0) { QQ.set(c.q[f * 4], -c.q[f * 4 + 1], -c.q[f * 4 + 2], c.q[f * 4 + 3]).multiply(REST); g.quaternion.copy(QQ); }
+    while (c.e && a.next < c.e.length && c.e[a.next][0] <= a.t) a.on(c.e[a.next][1], c.e[a.next][2], g), a.next++;
+    if (a.t >= c.l) { fight.anims[k] = null; a.done(); }
+  }
+  fight.figs.forEach(g => { const u = g.userData, px = u.art.material.map?.userData.px || [FRAME, FRAME]; u.art.scale.set(1.05 * px[0] / FRAME, 1.05 * px[1] / FRAME, 1); });   // every picture at one scale
+  [...fight.figs].sort((p, q) => q.getWorldPosition(FW).distanceToSquared(camera.position) - p.getWorldPosition(FW2).distanceToSquared(camera.position)).forEach((g, i) => { const u = g.userData, n = 900 + 5 * i; u.base.renderOrder = n + 1; u.cap.renderOrder = n + 2; u.shade.renderOrder = n + 3; u.art.renderOrder = n + 4; });
+  if (fight.shake) {   // MatchCamera.ShakeProgress: 0.1 x power, a new offset every 0.03 s
+    const m = Math.floor((fight.shakeT = (fight.shakeT || 0) + dt) / .03), r = Math.sin(m * 12.9898) * 43758.5453, ang = (r - Math.floor(r)) * Math.PI * 2;
+    camera.position.copy(fight.base).add(new THREE.Vector3(.1 * fight.shake * Math.sin(ang), 0, .1 * fight.shake * Math.cos(ang)));
+  } else if (fight.base) camera.position.copy(fight.base);
+}
+// A hit, a guard and the like: a flash in the attack's colour where the effect plays (the original's particle effects are not copied)
+const HIT_COL = { dark: 0x6b3fa0, electric: 0xffe14a, grass: 0x5ad25a, psychic: 0xff6fd0, steel: 0xb8c4d0, fire: 0xff7a1a, water: 0x3aa0ff, ice: 0x9feaff, poison: 0xb050e0, ground: 0xc8963c,
+  flying: 0xd8ecff, ghost: 0x8a5cd0, dragon: 0x5a6cff, fairy: 0xffa8e0, gold: 0xffd23f, zskill: 0xff5ad2, guard: 0x59c9f8 };
+const pal = c => ({ flash: [c, 0xffffff, c, 0x101010], ring: [c, 0xffffff, c], spark: [c, 0xffffff, c], life: 1.2 });
+function flashAt(g, flag) { const at = new THREE.Vector3(); (g || fight.root).getWorldPosition(at); at.y += .4; burst(at, pal(HIT_COL[flag] || 0xffffff)); }   // BattleAnimController.SetEffect: at the node's origin (the stage's middle), a guard on the figure
+// BattleController.Init: the winner w attacks (attack_success / damage on the loser with the attack's effect flag), or, when its attack is not an
+// attack, dodges or guards while the loser runs into it (attack_to_guard). A gold attack or a Z-Move first plays its glow (1.5 s) on both.
+// spec: { w: 0 yours | 1 theirs, effect: [flag, flag] (the effect flag of each side's attack, '' when none), attack: [bool, bool],
+//   dodge: [bool, bool], gold: [bool, bool], z: [bool, bool], sound(name) }. Resolves when both figures are done (IsEndBattleAnimation).
+async function battleFight(spec) {
+  if (!fight) return;
+  const w = spec.w, l = 1 - w, flag = spec.effect[w], played = [false, false];
+  const hitSound = k => { if (!played[k]) { played[k] = true; spec.sound(spec.hit(flag)); } };
+  const on = k => (fn, p, g) => {
+    if (fn === 'ShowDamageOrDebuffEffect') { hitSound(k); flashAt(null, flag); }
+    else if (fn === 'PlayPrecedingSoundEffect' || fn === 'PlayHitSound') hitSound(k);
+    else if (fn === 'ShowGuardEffect') { spec.sound('shield'); flashAt(g, 'guard'); }
+    else if (fn === 'ShowGoldEffect') { spec.sound('gold'); flashAt(null, 'gold'); }
+    else if (fn === 'ShowZSkillEffect') flashAt(null, 'zskill');
+    else if (fn === 'OnDodge') spec.sound('blue');
+    else if (fn === 'StartCameraShake') { fight.shake = p || 1; fight.shakeT = 0; }
+    else if (fn === 'StopCameraShake') fight.shake = 0;
+  };
+  const pre = spec.z[w] ? ['zskill_fx_on', 'zskill_fx_wait'] : spec.gold[w] ? ['gold_fx_on', 'gold_fx_wait'] : null;
+  if (pre) await Promise.all([fightClip(w, pre[0], on(w)), fightClip(l, pre[1], on(l))]);
+  if (spec.attack[w]) await Promise.all([fightClip(w, 'attack_' + flag, on(w)), fightClip(l, 'damage_' + flag, on(l))]);
+  else await Promise.all([fightClip(w, spec.dodge[w] ? 'dodge' : 'guard', on(w)), fightClip(l, 'attack_to_guard', on(l))]);
+  fight.shake = 0;
+}
+function battleClose() {
+  if (!fight) return;
+  const f = fight; fight = null;
+  scene.remove(f.root); f.root.traverse(o => { if (o.isMesh && o.geometry && !Object.values(G).includes(o.geometry)) o.geometry.dispose(); });
+  camera.fov = f.keep.fov; camera.up.copy(f.keep.up); camera.position.copy(f.keep.pos); controls.target.copy(f.keep.at); controls.enabled = f.keep.on; camera.updateProjectionMatrix(); controls.update();
+}
+window.Board3D = { battleOpen, battleFight, battleClose, draw, goal, newDuel, clearGoal: () => { goalShown = false; }, controls, tokens, project, blast, clearBlasts, ability, clearAbilities, plate, fieldSpin, info: () => ({ ...renderer.info.memory, objects: (() => { let n = 0; scene.traverse(() => n++); return n; })() }) };   // controls and tokens are exposed for inspection
 if (window.board3dModel) draw(window.board3dModel);

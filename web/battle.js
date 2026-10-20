@@ -260,6 +260,21 @@
       }
     }
   }
+  const AT_TYPES = ('None Dark Electric Grass Psychic Steel Fire Fire_Blue Water Water_Mad Ice Poison Ground Flying Ghost Dragon Fairy Strike Tackle Dive Fling Stab Pulse Pulse_Wave Quake Sonic '
+    + 'Slash Claw Absorb Beam Blizzard Acid Bind Whip Throw Throw_Mist Throw_Ball Throw_Gem Wave Wave_Mad Wave_Acid Explode Counter Damage SuperAquaTornado UltraDashAttack DynamicFullFlame Solgaleo '
+    + 'MoonlightBlaster Pikachu MaximumCybreaker BlackHoleEclipse BloomShineExtra SparkingGigaBolt FinalDiveCrash AllOutPummeling RisingLandOver SavageSpinOut WorldsEndFall RagingGeoFreeze AcidPoisonDelete '
+    + 'CorkscrewCrash NeverEndingNightmare UltimateDragonburn LovelyStarImpact OriginSuperNova NineEvorBoost Necrozma LightningSurfRide PokaBokoFriendTime RadialEdgeStorm BraisingSoleBeat GuardianDeArora '
+    + 'PulverizingPancake ShadowArrowsStrike HyperDarkCrusher OceanicOperetta SoulStealing7StarStrike Dummy').split(' ');
+  const AT_SOUND = { Dark: 70, Electric: 71, Grass: 72, Psychic: 73, Steel: 75, Fire: 76, Fire_Blue: 217, Water: 77, Water_Mad: 218, Ice: 78, Poison: 79, Ground: 80, Flying: 81, Ghost: 84, Dragon: 85, Fairy: 86,
+    Strike: 171, Tackle: 172, Dive: 173, Fling: 174, Stab: 82, Pulse: 176, Pulse_Wave: 177, Quake: 178, Sonic: 179, Slash: 180, Claw: 181, Absorb: 182, Beam: 183, Blizzard: 184, Acid: 185, Bind: 186, Whip: 187,
+    Throw: 83, Throw_Mist: 189, Throw_Ball: 190, Throw_Gem: 191, Wave: 192, Wave_Mad: 193, Wave_Acid: 194, Explode: 195, Counter: 172, Damage: 197, SuperAquaTornado: 173, Solgaleo: 173, Pikachu: 173,
+    FinalDiveCrash: 173, RisingLandOver: 173, LightningSurfRide: 173, RadialEdgeStorm: 173, ShadowArrowsStrike: 173, HyperDarkCrusher: 173, DynamicFullFlame: 195, BloomShineExtra: 176, MoonlightBlaster: 183,
+    RagingGeoFreeze: 183, UltimateDragonburn: 183, MaximumCybreaker: 179, SparkingGigaBolt: 179, BraisingSoleBeat: 179, BlackHoleEclipse: 189, OriginSuperNova: 189, Necrozma: 189, OceanicOperetta: 189,
+    UltraDashAttack: 172, LovelyStarImpact: 172, NineEvorBoost: 172, PulverizingPancake: 172, AllOutPummeling: 171, SavageSpinOut: 186, WorldsEndFall: 83, AcidPoisonDelete: 192, CorkscrewCrash: 82,
+    PokaBokoFriendTime: 82, SoulStealing7StarStrike: 82, NeverEndingNightmare: 184, GuardianDeArora: 75 };
+  const atType = skill => AT_TYPES[(D.skills[skill] || [])[4] || 0] || 'None';
+  const atFlag = skill => atType(skill).toLowerCase().split('_')[0];
+  const hitSound = flag => { const t = AT_TYPES.find(x => x.toLowerCase().split('_')[0] === flag) || 'Strike'; return 'se' + String(AT_SOUND[t] || 171).padStart(3, '0'); };
   const battleMark = text => { const t = String(text || ''); return t.includes('win') ? 1 : t.includes('draw') ? 0 : t.includes('lose') ? -1 : null; };   // the original matches with IndexOf
   // The live-ticker strip at the top of the battle screen (LiveTickerRoot: black, 47 high): one line, typed out
   async function say(text, color) {
@@ -268,7 +283,7 @@
     for (let n = 1; n <= text.length && job === say.job; n++) { el.textContent = text.slice(0, n); await sleep(30); }
   }
   let gen = 0;   // close() ends every screen still running (a story switched mid-battle)
-  function close() { gen++; if (window.sfxStop) { sfxStop('spin'); sfxStop('roulette'); } const ov = $('battle'); if (ov) { ov.hidden = true; ov.innerHTML = ''; } }
+  function close() { gen++; if (window.Board3D && Board3D.battleClose) Board3D.battleClose(); if (window.sfxStop) { sfxStop('spin'); sfxStop('roulette'); } const ov = $('battle'); if (ov) { ov.hidden = true; ov.innerHTML = ''; ov.classList.remove('staged', 'close'); } }
   // One spin on the battle screen. spec:
   //   host      the element the screen covers                view   what run() returned for the spin before (a respin keeps it), or null
   //   spins     [{ key, info: { skills, frozen, marker }, results }]: each spinning figure, its wheel and the engine's stops
@@ -315,6 +330,10 @@
     if (battle && res) for (const w of view.wheels) if (!wheels.some(x => x.w === w) && !w.notices.some(n => n.kind === 'Result')) {   // the wheel that did not spin again gets the result too
       const side = sideOf(w.key); if (side) w.notices.push({ kind: 'Result', skillId: side.skill, resultVal: side.speed_or_damage }); }
     if (!keep && battle) {   // BattleInfo: the fade, then each wheel slides in (BattleStartMove) and the condition shows on it (RouletteCircleEffect)
+      const dn = ids.find(id => spec.slotOf(id, ids) === 'dn'), up = ids.find(id => id !== dn);
+      if (spec.fighter && dn != null && up != null && window.Board3D && Board3D.battleOpen) {   // the figures come onto the battle stage behind the wheels
+        await Board3D.battleOpen(spec.fighter(dn), spec.fighter(up)); view.staged = true; ov.classList.add('staged'); setTimeout(() => stage.classList.add('dim'), 500 * view.pace);
+      }
       view.sound('attack_phase'); await view.wait(500);
       for (const { w, sp } of wheels) {
         if (w.disk) { w.disk.classList.remove('wait'); w.disk.classList.add('in'); }
@@ -348,7 +367,16 @@
         const drawn = sides.some(s => s.result === 'win') || (sides.length > 1 && sides.every(s => /draw/.test(s.result)));
         const winner = sides.find(s => battleMark(s.result) === 1), wk = winner ? view.ids.findIndex(id => same(id, winner.pokemon)) : -1;
         const nextField = winner && (D.skills[winner.skill] || [])[6] === 1;
-        if (sides.some(isAtk) && !drawn && !nextField) {
+        if (sides.some(isAtk) && !drawn && !nextField && view.staged) {   // BattleEndMove / RouletteBGFadeOut after 0.3 s, StartBattle after 0.5 s
+          await view.wait(300); stage.classList.add('fight'); await view.wait(200);
+          const sideKey = k => view.ids.find(id => (spec.slotOf(id, view.ids) === 'dn') === (k === 0)), res2 = k => sides.find(s => same(s.pokemon, sideKey(k))) || {};
+          const wheelOf = k => view.wheels.find(x => same(x.key, sideKey(k))) || {}, w = winner && same(winner.pokemon, sideKey(0)) ? 0 : 1;
+          const fx = [0, 1].map(k => atType(res2(k).skill));
+          if (!stopped()) await Board3D.battleFight({ w, effect: [0, 1].map(k => atFlag(res2(k).skill)), attack: fx.map(t => AT_TYPES.indexOf(t) > 0 && AT_TYPES.indexOf(t) < AT_TYPES.indexOf('Dummy')),
+            dodge: [0, 1].map(k => ((D.skills[res2(k).skill] || [])[5] || 0) === 2), gold: [0, 1].map(k => (wheelOf(k).last || {}).col === 3), z: [0, 1].map(k => !!(wheelOf(k).info && wheelOf(k).info.marker.z_state)),
+            sound: n => view.sound(n), hit: hitSound });
+          await view.wait(250);   // IsEndBattleAnimation: 15 frames with both done
+        } else if (sides.some(isAtk) && !drawn && !nextField) {
           await view.wait(300);
           if (wk >= 0 && $('bd' + wk)) { $('bd' + wk).classList.add('won'); view.ids.forEach((_, k) => { if (k !== wk && $('bd' + k)) $('bd' + k).classList.add('lost'); }); }
           const ww = wk >= 0 && view.wheels.find(w => same(w.key, view.ids[wk])), land = (ww && ww.last) || {};
@@ -357,7 +385,7 @@
           await view.wait(1500);
         } else await view.wait(500);
       }
-      if (stage && !stopped()) { stage.classList.add('close'); await view.wait(300); }   // the 0.3 s fade back to the table
+      if (stage && !stopped()) { ov.classList.add('close'); await view.wait(300); }   // the 0.3 s fade back to the table
       if (gen === g) close(); return null;
     } else if (!battle) { await view.wait(2000); if (gen === g) close(); return null; }   // a spin outside a battle stays up two seconds
     return stopped() ? null : view;

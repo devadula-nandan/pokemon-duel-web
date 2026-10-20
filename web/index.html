@@ -2253,7 +2253,7 @@ async function showSpin(e, result, notices, opt) {
     spins: spins.map(sp => ({ key: sp.pokemon, info: wheelSnap(opt.wheelSt, sp.pokemon, sp), results: sp.results })),
     slotOf: (id, list) => list.length > 2 ? 'row' : list.length === 1 ? 'dn' : (id === (colorOf(list[0]) === mineCol ? list[1] : list[0]) ? 'up' : 'dn'),
     same: sameFig, mine: sides => sides.find(s => colorOf(fieldForm(s.pokemon)) === mineCol),
-    tick: tickFig, name: plain, condName,
+    tick: tickFig, name: plain, condName, fighter: key => { const i = fieldForm(key); return { img: anim(figOf(i)), team: colorOf(i) === mineCol ? 0 : 1 }; },
     strike: (w, land) => window.strikeSfx ? strikeSfx((D.skills[w.skill] || [''])[0], land.col, land.col === 0) : null });
 }
 function abilityFig(v) {   // figure index on a poké-power move or notice (evolve wraps the real figure in .value)

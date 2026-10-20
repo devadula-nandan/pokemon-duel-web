@@ -215,7 +215,7 @@ async function playBattle(m, job) {
       if (job !== demoJob) return;
       view = await Battle.run({ host: $('board3d'), view, battle: true, hold: !!ph.hold, human: true, result: ph.result || null, notices: ph.notices,
         spins: ph.spins.map(s => ({ key: s.key, results: s.results, info: bInfo(figs[s.key], (sc.info || {})[s.key], (sc.zSkills || {})[s.key]) })),
-        slotOf: id => id === 0 ? 'dn' : 'up', mine: sides => sides.find(s => s.pokemon === 0), name: k => figs[k].n, condName: c => cond(c),
+        slotOf: id => id === 0 ? 'dn' : 'up', fighter: k => ({ img: art(figs[k]), team: k ? 1 : 0 }), mine: sides => sides.find(s => s.pokemon === 0), name: k => figs[k].n, condName: c => cond(c),
         tick: (k, text) => Battle.say(text, k === 0 ? 'rgb(0,150,255)' : 'rgb(250,102,189)') });
       if (ph.declare && view) await Battle.declare(view, ph.declare.type, ph.declare.ids);
     }

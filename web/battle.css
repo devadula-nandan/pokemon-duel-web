@@ -60,3 +60,10 @@
 .sdp.up .dmg { left:calc(50% - var(--p) * 355); top:calc(50% - var(--p) * 557); } .sdp.up .imp { left:calc(50% - var(--p) * 349); top:calc(50% - var(--p) * 590); }
 .sdp.buff .dmg { animation:sdbuff .6s ease-out; } .sdp.debuff .dmg { animation:sddebuff .6s ease-out; } @keyframes sdbuff { 30% { filter:drop-shadow(0 0 12px #39d98a); scale:1.08; } } @keyframes sddebuff { 30% { filter:drop-shadow(0 0 12px #ff6b7a); scale:.94; } }
 .skip { position:absolute; right:10px; top:10px; z-index:5; padding:3px 12px; font-size:12px; background:rgba(0,0,0,.55); color:#fff; border-color:rgba(255,255,255,.4); } .skip:hover:not(:disabled) { background:rgba(0,0,0,.8); border-color:#fff; }
+/* With the 3D table the battle stage shows through: the figures stand behind the wheels, under RouletteBG (black at 75 %, faded in 0.5 s
+   after the fade). At the result the wheels and panels go (BattleEndMove 0.1 s, RouletteBGFadeOut 0.2 s) and the figures fight. */
+#battle.staged { background:transparent; } #battle.staged .stage { background:transparent; transition:background .2s linear; } #battle.staged .stage.dim { background:rgba(0,0,0,.75); }
+#battle.staged .stage.open { animation:none; } #battle.staged::before, #battle.close::after { content:""; position:absolute; inset:0; z-index:30; background:#000; pointer-events:none; }
+#battle.staged::before { animation:bunveil .3s linear forwards; } #battle.close::after { animation:bveil .3s linear forwards; } @keyframes bunveil { to { opacity:0; } } @keyframes bveil { from { opacity:0; } }
+#battle.staged .stage.fight { background:transparent; } .stage.fight .bdisk, .stage.fight .gem, .stage.fight .sdp { opacity:0; transition:opacity .1s linear, translate .1s linear; }
+.stage.fight .bdisk.dn { translate:calc(var(--u) * -.87) calc(var(--u) * 1.8); } .stage.fight .bdisk.up { translate:calc(var(--u) * .87) calc(var(--u) * -1.8); }
