@@ -161,14 +161,15 @@
   /* the attack table runs to the column's edges: its row lines touch the borders; the cells carry the inset instead */
   #figpop.sheet .fp-atk { padding:0; } #figpop.sheet .fp-atk > .h { padding-top:12px; } #figpop.sheet .fp-atk > :is(.an, .h:first-child) { padding-left:14px; }
   #figpop.sheet .fp-atk > .desc { padding:0 14px 8px 34px; } #figpop.sheet .fp-atk:not(.carm) > :is(.an + * + *, .h:nth-child(3)), #figpop.sheet .fp-atk.carm > :is(.an + * + * + *, .h:nth-child(4)) { padding-right:14px; }
-  #figpop.sheet .fp-scroll > .fp-ab { margin:0; padding:12px 14px 16px; }   /* Z-Moves (and a long ability) under the table */
+  #figpop.sheet .fp-scroll > .fp-ab { margin:0; padding:12px 14px 16px; }   /* Z-Moves (and a long ability) under the table */ #figpop.sheet .fp-scroll > .fp-tips { padding:10px 14px; border-top:1px solid var(--line); }   /* a duel figure's markers and what they mean */
   @media (max-width:860px) { #figpop.sheet .fp-scroll > .fp-body { grid-template-columns:minmax(0,1fr); } #figpop.sheet .fp-body > .fp-side { border-right:0; } #figpop.sheet .fp-body > :not(.fp-side, .fp-atk) { padding:12px 14px; } #figpop.sheet .fp-side > .fp-ab { margin:0; padding:12px 14px; } }
   @media (max-width:860px) { #figpop.sheet { inset:0; width:auto; max-width:none; max-height:none; border:0; box-shadow:none; } }
+  @media (max-width:860px) { #figpop.sheet .fp-body > .fp-atk, #figpop.sheet .fp-bar { border-top:1px solid var(--line); } }   /* full screen on a phone: the title bar and, stacked under the wheel, the attack table start with a line */
   @media (min-width:861px) { #figpop.sheet { left:50%; top:50%; right:auto; bottom:auto; transform:translate(-50%,-50%); width:min(720px,96vw); max-height:92vh; } }
   #figpop.duel.drag, #figpop.sheet.drag { transition:none; }
   .fp-head { display:flex; gap:12px; align-items:center; padding-right:36px; } .fp-head img { width:56px; height:56px; } .fp-name { display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .fp-name b { font-size:18px; line-height:1.2; } .fp-name .chip { margin:0; }
-  .fp-line { display:flex; align-items:stretch; gap:0; margin:8px 0 0; padding:0; overflow-x:auto; border:1px solid var(--line); } .fp-line > * + * { border-left:1px solid var(--line); }   /* the evolution line: one flush strip */ .fp-line > .fp-chev { flex:none; display:grid; place-items:center; font-size:18px; font-weight:700; line-height:1; color:var(--dim); padding:0 8px; } .fp-line button { flex:none; display:flex; align-items:center; gap:6px; padding:4px 8px 4px 4px; font-size:12px; border:0; } .fp-line img { width:28px; height:28px; } .fp-line .on { border-color:var(--ink); background:var(--ctl2); }
-  .fp-line .fp-slot { flex:none; display:inline-flex; flex-direction:row; align-items:center; gap:4px; padding:2px 4px 2px 2px; background:var(--ctl); } .fp-line .fp-slot.on { border-color:var(--ink); background:var(--ctl2); } .fp-line .fp-slot > button { border:0; background:none; padding:2px; }
+  .fp-line { display:flex; align-items:stretch; gap:0; margin:8px 0 0; padding:0; overflow-x:auto; border:1px solid var(--line); } .fp-line > * + * { border-left:1px solid var(--line); }   /* the evolution line: one flush strip */ .fp-line > .fp-chev { flex:none; display:grid; place-items:center; font-size:18px; font-weight:700; line-height:1; color:var(--dim); padding:0 8px; } .fp-line button { flex:none; display:flex; align-items:center; gap:6px; padding:4px 8px 4px 4px; font-size:12px; border:0; } .fp-line img { width:28px; height:28px; } .fp-line .on, .fp-line button.on:hover:not(:disabled) { border-color:var(--ink); background:var(--ink); color:var(--bg); }   /* the form on show: high contrast, as a page link that is on */
+  .fp-line .fp-slot { flex:none; display:inline-flex; flex-direction:row; align-items:center; gap:4px; padding:2px 4px 2px 2px; background:var(--ctl); } .fp-line .fp-slot.on { border-color:var(--ink); background:var(--ink); color:var(--bg); } .fp-line .fp-slot > button { border:0; background:none; padding:2px; }
   .fp-line .fp-pick { width:auto; min-width:7.5em; max-width:140px; height:30px; padding:0 34px 0 8px; font-size:11px; background-position:right 10px center; background-size:12px; }   /* keep theme select chevron clear of the label */
   .fp-side { display:grid; gap:12px; justify-items:center; } .fp-body { display:grid; grid-template-columns:180px minmax(0,1fr); gap:16px; align-items:start; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
   .fp-atk { display:grid; align-content:start; grid-template-columns:minmax(0,1fr) auto auto; } .fp-atk.carm { grid-template-columns:minmax(0,1fr) auto auto auto; } .fp-atk > * { padding:6px 0 6px 12px; border-top:1px solid var(--line); text-align:right; font-weight:700; } .fp-atk > .h { padding-top:0; border-top:0; }
@@ -426,7 +427,7 @@
   .ibar button, .ibar #ibWait { height:44px; border-width:0; }
   #ibGive { border-right:1px solid var(--line); padding:0 18px; }
   #ibMid, #ibMid:disabled { padding:0 24px; }
-  html.mview #game .ibar { gap:0; align-items:stretch; }
+  html.mview #game .ibar { gap:0; align-items:stretch; } html.mview #game .ibar { justify-content:flex-end; }   /* while the duel is still loading the bar is empty but for its buttons: they stay at the right */
   html.mview #sideBtn, html.mview #fsGame { width:44px; height:44px; border-width:0 0 0 1px; border-color:var(--line); }   /* the centre label gives up width so the menu button keeps the bar's right inset */
   #ibWait i { min-width:18px; height:18px; padding:0 5px; background:var(--ink); color:var(--bg); font:700 11px/18px "Segoe UI",system-ui,sans-serif; }
   /* the plate list (PlateChoices): a band 468 high across the bottom, plates 178 apart that snap to the centre, a frame round the centre
@@ -2111,15 +2112,17 @@ function boardDetail(i, view) {   // MiniDetailFigure: a long press opens this f
   const abBox = ab ? `<div class="fp-ab"><span class="h">Ability</span><b>${esc(ab[0])}</b><div class="desc">${esc(ab[1])}</div></div>` : '', long = ab && ab[1].length > 150;
   const tips = badgeTips(c), nxt = evoNext(i), ready = evolveMoves().some(m => evoFig(m) === i);
   const chain = [i, ...nxt.map(m => m.pokemon_index)], pic = g => anim(g) ? `<img src="${anim(g)}" alt="">` : '';
-  const evoBox = chain.length > 1 ? `<div class="fp-evo"><i class="mark" title="Can evolve"></i><div><span class="h">${live ? 'Can evolve' : 'Evolution'}</span><div class="who">${chain.map(idx => { const g = figOf(idx); return `<button type="button" data-root="${i}" data-evo="${idx}" class="${idx === viewI ? 'on' : ''}">${pic(g)}<b>${esc(g.n)}</b></button>`; }).join('')}</div>${ready && live ? '<div class="note">Ready now.</div>' : ''}</div></div>` : '';
-  const p = $('figpop'); placeFigpop(true); boardDetail.root = i;
-  p.innerHTML = `<button class="x" data-close title="Close" aria-label="Close">${X_ICON}</button>
-    <div class="fp-head">${pic(f)}<div><div class="fp-name">${nameOf(viewI)}<span class="chip rar${f.r}">${RAR[f.r] || ''}</span><span class="chip">MP ${mp}</span></div><div class="note">${typeNames(f)} · ${place(c.index)}${c.evolution_ring ? ` · evolved ${c.evolution_ring}` : ''}${!live ? ' · preview' : ''}</div></div></div>
-    ${evoBox}
-    ${live && badges(c).length ? `<div style="margin-top:10px">${badges(c).map((b, k) => `<div class="desc"><b>${esc(b)}</b> — ${esc(tips[k] || '')}</div>`).join('')}</div>` : ''}
+  const evoLine = chain.length > 1 ? `<div class="fp-line">${chain.map(idx => { const g = figOf(idx); return `<button type="button" data-root="${i}" data-evo="${idx}" class="${idx === viewI ? 'on' : ''}">${pic(g)}${esc(g.n)}</button>`; }).join('<span class="fp-chev" aria-hidden="true">›</span>')}</div>` : '';   // the team sheet's evolution tabs
+  const p = $('figpop'); placeFigpop(false); sheet = null; boardDetail.root = i;   // the same sheet as a team slot's, without Edit
+  p.innerHTML = `<div class="fp-bar"><h2>${esc(label(colorOf(i)))} · ${esc(place(c.index))}</h2><button type="button" class="x" data-close title="Close" aria-label="Close">${X_ICON}</button></div>
+    <div class="fp-scroll">
+    <div class="fp-head">${pic(f)}<div><div class="fp-name">${nameOf(viewI)}<span class="chip rar${f.r}">${RAR[f.r] || ''}</span><span class="chip">MP ${mp}</span></div><div class="note">${typeNames(f)}${c.evolution_ring ? ` · evolved ${c.evolution_ring}` : ''}${!live ? ' · preview' : ready && nxt.length ? ' · can evolve now' : ''}</div></div></div>
+    ${evoLine}
+    ${live && badges(c).length ? `<div class="fp-tips">${badges(c).map((b, k) => `<div class="desc"><b>${esc(b)}</b> — ${esc(tips[k] || '')}</div>`).join('')}</div>` : ''}
     <div class="fp-body"><div class="fp-side"><div class="fp-wheel">${wheelSvg(skills, 180)}</div>${long ? '' : abBox}</div>
-      <div class="fp-atk"><span class="h">Attack</span><span class="h">Size</span><span class="h">Power</span>${skills.filter(x => x.range > 0).map(x => { const k = x.sealed ? ['Miss', '', 0] : (D.skills[x.id] || ['Attack ' + x.id, '', 0]); return `<span class="an"><span class="sw" style="background:${SEG_COL[k[2]]}"></span><b>${esc(k[0])}</b></span><span>${x.range}</span><span>${power(x) || '–'}</span>${k[2] && k[1] ? `<span class="desc">${esc(k[1])}</span>` : ''}`; }).join('')}</div></div>${long ? abBox : ''}${zBox(f)}`;
-  p.hidden = false; p.classList.add('pin', 'duel'); p.classList.remove('pl', 'drag'); p.style.left = p.style.top = p.style.transform = ''; p.scrollTop = 0; showInfo.pin = true; showInfo.card = null;
+      <div class="fp-atk"><span class="h">Attack</span><span class="h">Size</span><span class="h">Power</span>${skills.filter(x => x.range > 0).map(x => { const k = x.sealed ? ['Miss', '', 0] : (D.skills[x.id] || ['Attack ' + x.id, '', 0]); return `<span class="an"><span class="sw" style="background:${SEG_COL[k[2]]}"></span><b>${esc(k[0])}</b></span><span>${x.range}</span><span>${power(x) || '–'}</span>${k[2] && k[1] ? `<span class="desc">${esc(k[1])}</span>` : ''}`; }).join('')}</div></div>${long ? abBox : ''}${zBox(f)}
+    </div>`;
+  p.hidden = false; p.classList.add('pin', 'sheet'); p.classList.remove('duel', 'edit', 'pl', 'drag'); p.style.left = p.style.top = p.style.transform = ''; const sc = p.querySelector('.fp-scroll'); if (sc) sc.scrollTop = 0; showInfo.pin = true; showInfo.card = null;
 }
 window.boardDetail = boardDetail;
 (() => {   // swipe a duel / team sheet down to dismiss, from anywhere on it, once its content is scrolled to the top
