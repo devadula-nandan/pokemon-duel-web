@@ -46,7 +46,7 @@
   html.mview:has(#game:not([hidden])) body > .top { display:none; }   /* only the chrome bar — not #first .half.top */
   html.mview #game .arena { --fit:100cqh; height:100%; width:100%; aspect-ratio:auto; margin:0; align-self:stretch; justify-self:stretch; }   /* the whole screen, not the table's shape */
   html.mview .arena, html.mview .side, html.mview #board3d button:not(:focus-visible), html.mview .hud .z, html.mview .clock { border:0 !important; outline:0 !important; }
-  html.mview .side.open { transform:none; } html.mview .side .panel { box-shadow:none; } html.mview .side { border-left:1px solid var(--line) !important; }   /* flat drawer: the HUD's 1px theme line on its left edge, no shadows */
+  html.mview .side.open { transform:none; } html.mview .side { touch-action:pan-y; }   /* a sideways swipe is the menu's own (to close it) */ html.mview .side .panel { box-shadow:none; } html.mview .side { border-left:1px solid var(--line) !important; }   /* flat drawer: the HUD's 1px theme line on its left edge, no shadows */
   html.mview .arena .table { position:relative; } html.mview .arena .table::after { content:''; position:absolute; inset:0; z-index:2; background:color-mix(in srgb, var(--bg) 60%, transparent); opacity:0; transition:opacity .2s; pointer-events:none; }
   html.mview:has(.side.open) .arena .table::after { opacity:1; }   /* the board under the open drawer is tinted in place and fades; a tap there still closes the drawer */
   #fsGame { display:none; } #fsBtn[aria-pressed=true], #fsGame[aria-pressed=true] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
@@ -163,7 +163,7 @@
   #figpop.sheet .fp-atk > .desc { padding:0 14px 8px 34px; } #figpop.sheet .fp-atk:not(.carm) > :is(.an + * + *, .h:nth-child(3)), #figpop.sheet .fp-atk.carm > :is(.an + * + * + *, .h:nth-child(4)) { padding-right:14px; }
   #figpop.sheet .fp-scroll > .fp-ab { margin:0; padding:12px 14px 16px; }   /* Z-Moves (and a long ability) under the table */ #figpop.sheet .fp-scroll > .fp-tips { padding:10px 14px; border-top:1px solid var(--line); }   /* a duel figure's markers and what they mean */
   @media (max-width:860px) { #figpop.sheet .fp-scroll > .fp-body { grid-template-columns:minmax(0,1fr); } #figpop.sheet .fp-body > .fp-side { border-right:0; } #figpop.sheet .fp-body > :not(.fp-side, .fp-atk) { padding:12px 14px; } #figpop.sheet .fp-side > .fp-ab { margin:0; padding:12px 14px; } }
-  @media (max-width:860px) { #figpop.sheet { inset:0; width:auto; max-width:none; max-height:none; border:0; box-shadow:none; } }
+  @media (max-width:860px) { #figpop.sheet { inset:0; width:auto; max-width:none; max-height:none; border:0; box-shadow:none; } } @media (max-width:860px) { #figpop.sheet:not(.edit) { top:auto; max-height:60dvh; } }   /* a bottom sheet, at most 60 % of the screen (editing keeps the whole screen) */
   @media (max-width:860px) { #figpop.sheet .fp-body > .fp-atk, #figpop.sheet .fp-bar { border-top:1px solid var(--line); } }   /* full screen on a phone: the title bar and, stacked under the wheel, the attack table start with a line */
   @media (min-width:861px) { #figpop.sheet { left:50%; top:50%; right:auto; bottom:auto; transform:translate(-50%,-50%); width:min(720px,96vw); max-height:92vh; } }
   #figpop.duel.drag, #figpop.sheet.drag { transition:none; }
@@ -2129,6 +2129,39 @@ function boardDetail(i, view) {   // MiniDetailFigure: a long press opens this f
   p.hidden = false; p.classList.add('pin', 'sheet'); p.classList.remove('duel', 'edit', 'pl', 'drag'); p.style.left = p.style.top = p.style.transform = ''; const sc = p.querySelector('.fp-scroll'); if (sc) sc.scrollTop = 0; showInfo.pin = true; showInfo.card = null;
 }
 window.boardDetail = boardDetail;
+(() => {   // swipe the side menu (narrow screens) to the right to close it, as a sheet is swiped down; vertical moves still scroll its lists
+  const d = document.querySelector('#game .side'); if (!d) return;
+  let x0 = null, y0 = 0, dx = 0, dragging = false, pid = null, eat = false;
+  const open = () => document.documentElement.classList.contains('mview') && d.classList.contains('open');
+  const start = (x, y) => { x0 = x; y0 = y; dx = 0; dragging = false; };
+  const move = (x, y, ev) => {   // true while this gesture drags the menu
+    if (x0 == null) return false;
+    dx = x - x0; const dy = y - y0;
+    if (!dragging) {
+      if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) { x0 = null; return false; }   // up or down first: an ordinary scroll
+      if (dx < 10) { if (dx < -8) x0 = null; return false; }
+      dragging = true; d.style.transition = 'none';
+    }
+    d.style.transform = `translateX(${Math.max(0, dx)}px)`; ev.preventDefault(); return true;
+  };
+  const end = () => {
+    if (x0 == null) return;
+    if (dragging) {
+      eat = true; setTimeout(() => { eat = false; }, 0);   // the click that ends a drag does not also press what it started on
+      d.style.transition = ''; d.style.transform = '';
+      if (dx > 90) d.classList.remove('open');
+    }
+    if (pid != null) try { d.releasePointerCapture(pid); } catch (_) {}
+    x0 = null; dx = 0; dragging = false; pid = null;
+  };
+  d.addEventListener('touchstart', e => { if (open() && e.touches.length === 1) start(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+  d.addEventListener('touchmove', e => { if (e.touches.length === 1) move(e.touches[0].clientX, e.touches[0].clientY, e); }, { passive: false });
+  d.addEventListener('touchend', end); d.addEventListener('touchcancel', end);
+  d.addEventListener('pointerdown', e => { if (e.pointerType === 'touch' || !open() || e.button) return; start(e.clientX, e.clientY); pid = e.pointerId; });
+  d.addEventListener('pointermove', e => { if (e.pointerType === 'touch' || e.pointerId !== pid) return; if (move(e.clientX, e.clientY, e) && dragging) try { d.setPointerCapture(pid); } catch (_) {} }, { passive: false });
+  d.addEventListener('pointerup', e => { if (e.pointerType !== 'touch') end(); }); d.addEventListener('pointercancel', e => { if (e.pointerType !== 'touch') end(); });
+  d.addEventListener('click', e => { if (eat) { e.stopPropagation(); e.preventDefault(); } }, true);
+})();
 (() => {   // swipe a duel / team sheet down to dismiss, from anywhere on it, once its content is scrolled to the top
   // Touch uses touch events: the sheet lets the browser scroll it (touch-action: pan-y), so a pointer drag would be cancelled the moment
   // the browser takes the gesture; a touchmove can still claim a pull-down (preventDefault) when there is nothing above to scroll to.
