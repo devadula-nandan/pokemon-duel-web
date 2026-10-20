@@ -151,7 +151,7 @@
     select: 'se028', cancel: 'se029', deselect: 'se029',
     step: 'se011', land: 'se011', ai_step: 'se034', ai_select: 'se213',
     ai_on: 'se210', ai_off: 'se211', ai_unused: 'se039',
-    spin: 'se024', spin_short: 'se036_1shot', spin_tick: 'se036_1shot', spin_stop: 'se037',
+    spin: 'se024', roulette: 'se036_1', spin_short: 'se036_1shot', spin_tick: 'se036_1shot', spin_stop: 'se037',
     prize_chance: 'se214', prize_extend: 'se215',
     miss: 'se060', hit: 'se172', punch: 'se171', swing: 'se173', throw_a: 'se174', throw_b: 'se175',
     shock_a: 'se176', shock_b: 'se177', shock_c: 'se178', blast: 'se179',
@@ -191,7 +191,7 @@
     smash_a: 'se203', emblem: 'se205', dialog: 'se229', mechanisms: 'se230',
     smash_b: 'se231', carlo_intro: 'se238'
   };
-  const LOOP = { spin: 1 }; // se024 loops for the whole wheel / first-move spin
+  const LOOP = { spin: 1, roulette: 1 }; // se024 loops for the whole wheel / first-move spin
 
   // Every shipped clip (Duels 107 + Common 30 + Cutscenes 29, overlaps resolved).
   const ALL_IDS = ['jingle001','jingle002','se001','se002','se003','se004','se005','se006','se009','se010','se011','se012','se013','se014','se017','se017_2','se022','se023','se024','se026','se027','se028','se029','se030','se034','se035','se036_1','se036_1shot','se037','se038','se039','se042','se043','se044','se045','se046','se047','se048','se051','se052','se053','se054','se055','se057','se058','se059','se060','se061','se063','se064','se065','se066','se067','se070','se071','se072','se073','se074','se075','se076','se077','se078','se079','se080','se081','se082','se083','se084','se085','se086','se087','se088','se089','se090','se091','se092','se093','se094','se114','se116','se121','se122','se123','se124','se125','se129','se130','se132','se133','se134','se135','se136','se137','se138','se139','se140','se141','se142','se147','se148','se149','se152','se153','se154','se156','se157','se158','se160','se165','se166','se169','se170','se171','se172','se173','se174','se175','se176','se177','se178','se179','se180','se181','se182','se183','se184','se185','se186','se187','se188','se189','se190','se191','se192','se193','se194','se198','se203','se205','se206','se207','se208','se209','se210','se211','se212','se213','se214','se215','se216','se217','se218','se219','se221','se222','se223','se223_2','se224','se226','se227','se229','se230','se231','se233','se235','se238'];
@@ -247,10 +247,10 @@
     }
   }
 
-  function playBuf(buf, gain, dest, loop, loopKey) {
+  function playBuf(buf, gain, dest, loop, loopKey, rate) {
     if (!actx || actx.state === 'closed') return null;
     if (loopKey) stopLoop(loopKey);
-    const src = actx.createBufferSource(); src.buffer = buf; src.loop = !!loop;
+    const src = actx.createBufferSource(); src.buffer = buf; src.loop = !!loop; if (rate) src.playbackRate.value = rate;
     const g = actx.createGain(); g.gain.value = gain;
     src.connect(g).connect(dest || master); src.start();
     if (loop && loopKey) {
@@ -269,28 +269,29 @@
   }
 
   // Prefer HTMLAudio from the asset cache (audible on iOS silent switch).
-  async function playHtml(path, vol, loopKey) {
+  async function playHtml(path, vol, loopKey, rate) {
     const url = await cachedUrl(path);
     if (!url) return false;
     if (loopKey) stopLoop(loopKey);
     const a = new Audio(url);
     a.volume = Math.max(0.01, Math.min(1, vol));
     a.loop = !!loopKey;
+    if (rate) { a.preservesPitch = false; a.playbackRate = rate; }   // a pitch change, as SoundController.ChangePitch
     a.setAttribute('playsinline', '');
     a.playsInline = true;
     if (loopKey) htmlLoops[loopKey] = a;
     try { await a.play(); return true; } catch (e) { return false; }
   }
 
-  function playClip(id, ui, loopKey) {
+  function playClip(id, ui, loopKey, rate) {
     const vol = ui ? Math.min(1, UI_GAIN * 2.2) : SFX_GAIN;
-    return playHtml(sfxPath(id), vol, loopKey || null).then(ok => {
+    return playHtml(sfxPath(id), vol, loopKey || null, rate).then(ok => {
       if (ok) return true;
       return decodeId(id).then(buf => {
         if (!buf || !sfxOn()) return false;
         return ensureCtx().then(c => {
           if (!c || !sfxOn()) return false;
-          playBuf(buf, ui ? UI_GAIN : SFX_GAIN, null, !!loopKey, loopKey || null);
+          playBuf(buf, ui ? UI_GAIN : SFX_GAIN, null, !!loopKey, loopKey || null, rate);
           return true;
         });
       });
@@ -307,7 +308,7 @@
     return [];
   }
 
-  function sfx(name) {
+  function sfx(name, pitch) {   // pitch: semitones up (SoundUtil.GetPitch), e.g. the rising Se059 of each respin
     if (!sfxOn() || !audioArmed()) return;
     if (name === 'spin_stop') stopLoop('spin');
     const ui = name === 'click' || name === 'back';
@@ -322,7 +323,7 @@
     const next = () => {
       if (i >= ids.length || !sfxOn()) return;
       const id = ids[i++];
-      playClip(id, ui, i === 1 ? loopKey : null).then(ok => {
+      playClip(id, ui, i === 1 ? loopKey : null, pitch ? Math.pow(2, pitch / 12) : 0).then(ok => {
         if (!ok && i === 1) ensureCtx().then(c => { if (c && bank[name]) bank[name](c.currentTime); });
         if (i < ids.length) setTimeout(next, 200);
       });

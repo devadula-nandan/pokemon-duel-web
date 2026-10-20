@@ -44,19 +44,22 @@
 
   // --- Figure pictures: animated or still -----------------------------------
   // Buttons with data-motion-btn show the current choice and switch it. Pages read spriteMotion() ('anim' / 'still') and redraw on the
-  // 'spritemotion' event. Remembered on this device; with no choice made, a device that asks for reduced motion gets still pictures.
-  const MKEY = 'pokemonduelweb.motion', MICON = { anim: '<circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/>', still: '<rect x="3.5" y="5" width="17" height="14" rx="1"/><circle cx="9" cy="10" r="1.6"/><path d="M20.5 16l-5-5-8 8"/>' };
+  // 'spritemotion' event. Remembered on this device; live (animated) unless chosen otherwise. The flat board (/2d/) always shows still
+  // pictures and offers no switch. The icon shows what is on now: rings for live pictures, a framed picture for still ones.
+  const MKEY = 'pokemonduelweb.motion', FLAT = /\/2d\/(index\.html)?$/.test(location.pathname), MICON = { anim: '<circle cx="12" cy="12" r="2.6" fill="currentColor"/><circle cx="12" cy="12" r="5.8"/><circle cx="12" cy="12" r="9.4" stroke-dasharray="1.5 2.6"/>', still: '<rect x="3.5" y="5" width="17" height="14" rx="1"/><circle cx="9" cy="10" r="1.6"/><path d="M20.5 16l-5-5-8 8"/>' };
   let motion = null; try { motion = localStorage.getItem(MKEY); } catch (e) {}
-  if (motion !== 'anim' && motion !== 'still') motion = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'still' : 'anim';
+  if (motion !== 'anim' && motion !== 'still') motion = 'anim';
+  if (FLAT) motion = 'still';
   window.spriteMotion = () => motion;
   const motionLabel = () => {
-    const title = 'Figure pictures: ' + (motion === 'anim' ? 'animated' : 'still') + ' — click for ' + (motion === 'anim' ? 'still' : 'animated');
+    const title = 'Figure pictures: ' + (motion === 'anim' ? 'live' : 'still') + ' — click for ' + (motion === 'anim' ? 'still' : 'live');
     for (const b of document.querySelectorAll('[data-motion-btn]')) {
+      if (FLAT) { b.hidden = true; continue; }
       b.innerHTML = icon(MICON[motion]); b.title = title; b.setAttribute('aria-label', title); b.classList.add('iconbtn');
       if (!b._motionBound) { b._motionBound = 1; b.onclick = () => window.setSpriteMotion(motion === 'anim' ? 'still' : 'anim'); }
     }
   };
-  window.setSpriteMotion = m => { motion = m === 'still' ? 'still' : 'anim'; try { localStorage.setItem(MKEY, motion); } catch (e) {} motionLabel(); dispatchEvent(new Event('spritemotion')); };
+  window.setSpriteMotion = m => { if (FLAT) return; motion = m === 'still' ? 'still' : 'anim'; try { localStorage.setItem(MKEY, motion); } catch (e) {} motionLabel(); dispatchEvent(new Event('spritemotion')); };
   addEventListener('DOMContentLoaded', motionLabel);
 
   // --- Update check (the published APP_VER) -------------------------------

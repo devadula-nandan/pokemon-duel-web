@@ -362,39 +362,63 @@
     .ed-body { grid-template-columns:minmax(0,1fr); padding-bottom:16px; } .ed-foot { margin-top:auto; } .ed-grid { grid-template-columns:repeat(var(--n),minmax(0,1fr)); column-gap:8px; }
     .ed-grid > * { padding:0 0 8px; border-top:0; } .ed-grid > .h:first-child { display:none; } .ed-grid > .h { padding-bottom:4px; }
     .ed-grid > .an { grid-column:1 / -1; padding:8px 0 4px; border-top:1px solid var(--line); } .ed-grid .stepper { width:100%; min-width:0; } }
-  /* battle screen: a dark stage with two disks that touch at the gem. --w / --h are the stage, --d a disk's diameter; the disk centres sit
-     on a line leaning 24 degrees (sin .407, cos .914) through the stage's middle, one radius either side of it. */
-  .arena { position:relative; } #battle { position:absolute; inset:0; z-index:6; container-type:size; background:#15171b; }
-  .stage { --w:100cqw; --h:100cqh; --d:min(calc(var(--w) * 1.42), calc(var(--h) * .98)); position:relative; width:var(--w); height:var(--h); overflow:hidden;
-    background:radial-gradient(ellipse at 50% 50%, #3a3f47, #15171b 70%); }
+  /* battle screen (MatchMain / Roulette / SpinSkillDataUI). --u is one roulette-camera unit (the orthographic camera shows 1.4 of them from the
+     middle to the top edge), --p one unit of the 750 x 1334 UI Root. A wheel with its frame is 2 x 0.9577 units across; the centres sit
+     0.41615 across and 0.86275 up or down from the middle, so the two frames meet there, on a line leaning 25.75 degrees. */
+  .arena { position:relative; } #battle { position:absolute; inset:0; z-index:6; container-type:size; background:#000; }
+  .stage { --u:calc(100cqh / 2.8); --p:calc(100cqh / 1334); --d:calc(var(--u) * 1.93); position:relative; width:100cqw; height:100cqh; overflow:hidden;
+    background:radial-gradient(ellipse at 50% 50%, #1d1f24, #0b0c0e 75%); }   /* the 3D battle stage under RouletteBG, black at 75% */
+  .stage.open { animation:bopen .3s linear; } .stage.close { animation:bclose .3s linear forwards; } @keyframes bopen { from { filter:brightness(0); } } @keyframes bclose { to { filter:brightness(0); } }
   .bdisk { position:absolute; width:var(--d); height:var(--d); filter:drop-shadow(0 8px 14px rgba(0,0,0,.55)); } .bdisk svg { width:100%; height:100%; }
-  .bdisk.up { left:calc(var(--w) / 2 + var(--d) * .2035 - var(--d) / 2); top:calc(var(--h) / 2 - var(--d) * .457 - var(--d) / 2); }
-  .bdisk.dn { left:calc(var(--w) / 2 - var(--d) * .2035 - var(--d) / 2); top:calc(var(--h) / 2 + var(--d) * .457 - var(--d) / 2); }
-  .stage.solo .bdisk.dn { left:calc(var(--w) / 2 - var(--d) / 2); top:calc(var(--h) / 2 + 6px); } .stage.solo .gem, .stage.solo .flare { top:calc(50% + 6px); }
+  .bdisk.dn { left:calc(50cqw - var(--u) * .41615 - var(--d) / 2); top:calc(50cqh + var(--u) * .86275 - var(--d) / 2); }
+  .bdisk.up { left:calc(50cqw + var(--u) * .41615 - var(--d) / 2); top:calc(50cqh - var(--u) * .86275 - var(--d) / 2); }
+  .bdisk.wait { visibility:hidden; } .bdisk.in { animation:bin .2s ease-in both; }   /* BattleStartMove: 1.5 units in along the line, 0.2 s EaseIn */
+  .bdisk.dn.in { --from:calc(var(--u) * -.651) calc(var(--u) * 1.351); } .bdisk.up.in { --from:calc(var(--u) * .651) calc(var(--u) * -1.351); } @keyframes bin { from { translate:var(--from); } }
+  .stage.solo .bdisk.dn { left:calc(50cqw - var(--d) / 2); top:calc(50cqh - var(--d) / 2); } .stage.solo .gem, .stage.solo .flare { display:none; }
   /* a follow-up spin of more than two wheels (an attack that spins several figures) lays them in a row instead of stacking them on one disk */
   .stage.row { display:flex; flex-wrap:wrap; align-content:center; align-items:center; justify-content:center; gap:8px; }
   .stage.row .bdisk { position:relative; left:auto; top:auto; width:min(34cqw, 46cqh); height:auto; }
   .stage.row .spin { width:100%; aspect-ratio:1; } .stage.row .gem, .stage.row .flare, .stage.row .sparks { display:none; }
-  .cap.row { position:relative; left:auto; right:auto; top:auto; bottom:auto; max-width:100%; text-align:center; }
   .spin { position:relative; width:100%; height:100%; } .spin .dimw { position:absolute; inset:0; pointer-events:none; animation:resin .2s; }
   .bdisk { transition:transform .25s, filter .25s; } .bdisk.won { transform:scale(1.03); filter:drop-shadow(0 0 22px var(--gold)); } .bdisk.lost { filter:brightness(.4) saturate(.5); animation:bshake .4s; }
   @keyframes bshake { 20% { translate:-10px 4px; } 40% { translate:9px -5px; } 60% { translate:-6px 3px; } 80% { translate:4px -2px; } }
-  .more { position:absolute; left:50%; top:50%; z-index:5; translate:-50% -50%; padding:4px 16px; background:#000c; color:var(--gold); font:900 22px/1.2 "Segoe UI",system-ui,sans-serif; font-style:italic; letter-spacing:.08em; animation:more .5s ease-out forwards; pointer-events:none; }
+  /* effects on a wheel (Effects/AT/Main/Main_*_fx_Roulette; the original's particle art is not copied, these only stand in for it) */
+  .bfx { position:absolute; inset:0; border-radius:50%; pointer-events:none; z-index:2; }
+  .bfx.more::after, .bfx.respin::after { content:"MORE"; position:absolute; left:50%; top:50%; translate:-50% -50%; rotate:-22deg; padding:0 .15em .08em; border-bottom:calc(var(--p) * 10) solid #fff8d0; color:#ffb400; white-space:pre; text-align:center;
+    font:900 italic calc(var(--p) * 120)/1 "Segoe UI",system-ui,sans-serif; -webkit-text-stroke:calc(var(--p) * 3) #fff3a0; text-shadow:0 0 calc(var(--p) * 18) #ffd000, 0 0 calc(var(--p) * 40) #ff9a00; animation:more .5s ease-out forwards; }
+  .bfx.respin::after { content:"MORE\ARESPIN"; border:0; }
   @keyframes more { from { scale:.4; opacity:0; } 40% { scale:1.15; opacity:1; } to { scale:1; opacity:1; } }
-  .gem { position:absolute; left:50%; top:50%; width:32px; height:44px; transform:translate(-50%,-50%) rotate(24deg); z-index:3; clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
-    background:linear-gradient(90deg, rgba(255,255,255,.28) 0 50%, rgba(0,0,0,.18) 50%), linear-gradient(180deg, #ff7b6b 0 50%, #c2140f 50%); background-color:#f0241c; filter:drop-shadow(0 2px 4px rgba(0,0,0,.7)) drop-shadow(0 0 8px rgba(255,170,60,.55)); }
-  .flare { position:absolute; left:50%; top:50%; width:170%; height:30px; transform:translate(-50%,-50%) rotate(24deg) scaleX(0); z-index:2; opacity:0; pointer-events:none;
+  .bfx.spark { box-shadow:0 0 0 2px rgba(255,220,120,.9), 0 0 30px 6px rgba(255,190,60,.6); animation:bspark 1s ease-out forwards; } @keyframes bspark { to { box-shadow:0 0 0 2px rgba(255,220,120,0), 0 0 60px 20px rgba(255,190,60,0); } }
+  
+  .bfx.frozen { background:radial-gradient(circle, rgba(200,245,255,.12) 45%, rgba(150,225,255,.5) 75%, rgba(225,250,255,.8)); }
+  .bfx.burn { box-shadow:inset 0 0 calc(var(--d) * .1) rgba(255,110,20,.9); animation:bflick .4s infinite alternate; } .bfx.paralyze { box-shadow:inset 0 0 calc(var(--d) * .08) rgba(255,230,40,.9); animation:bflick .15s infinite alternate; }
+  @keyframes bflick { to { opacity:.45; } } .bfx.panic { background:conic-gradient(from 0deg, rgba(244,114,182,.0), rgba(244,114,182,.55), rgba(244,114,182,0)); animation:bpanic 1s linear 3 forwards; } @keyframes bpanic { to { rotate:-1turn; opacity:0; } }
+  .bfx.seal { background:repeating-linear-gradient(45deg, rgba(0,0,0,.5) 0 5%, rgba(0,0,0,.12) 5% 10%); } .bfx.zseal { background:repeating-linear-gradient(45deg, rgba(255,90,210,.38) 0 5%, rgba(255,90,210,.08) 5% 10%); }
+  .gem { position:absolute; left:50%; top:50%; width:calc(var(--u) * .149); height:calc(var(--u) * .265); transform:translate(-50%,-50%) rotate(25.75deg); z-index:3; clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
+    background:linear-gradient(90deg, #fd2c19 0 50%, #890000 50%); filter:drop-shadow(0 1px 2px rgba(0,0,0,.7)); }
+  .flare { position:absolute; left:50%; top:50%; width:170%; height:30px; transform:translate(-50%,-50%) rotate(25.75deg) scaleX(0); z-index:2; opacity:0; pointer-events:none;
     background:radial-gradient(ellipse at center, rgba(255,250,200,1), rgba(255,190,60,.6) 28%, rgba(255,120,20,0) 68%); }
-  .flare.on { animation:flare 1s ease-out forwards; } @keyframes flare { 0% { opacity:0; transform:translate(-50%,-50%) rotate(24deg) scaleX(0); } 22% { opacity:1; transform:translate(-50%,-50%) rotate(24deg) scaleX(1); } 100% { opacity:.6; transform:translate(-50%,-50%) rotate(24deg) scale(.75,.4); } }
+  .flare.on { animation:flare 1s ease-out forwards; } @keyframes flare { 0% { opacity:0; transform:translate(-50%,-50%) rotate(25.75deg) scaleX(0); } 22% { opacity:1; transform:translate(-50%,-50%) rotate(25.75deg) scaleX(1); } 100% { opacity:.6; transform:translate(-50%,-50%) rotate(25.75deg) scale(.75,.4); } }
   .sparks { position:absolute; left:50%; top:50%; z-index:2; pointer-events:none; } .sparks i { position:absolute; left:0; top:0; width:var(--l); height:2px; opacity:0; transform-origin:0 50%; background:linear-gradient(90deg, rgba(255,160,40,0), #ffb347 55%, #fff3c4); }
   .sparks.on i { animation:spark .75s var(--t) ease-out forwards; } @keyframes spark { 0% { opacity:0; transform:rotate(var(--a)) translateX(10px) scaleX(.2); } 18% { opacity:1; } 100% { opacity:0; transform:rotate(var(--a)) translateX(var(--far)) scaleX(1); } }
-  .cap { position:absolute; z-index:4; display:flex; flex-direction:column; gap:1px; max-width:46%; color:var(--c); text-shadow:0 2px 3px #000, 0 0 10px #000; font-weight:800; line-height:1.15; }
-  .cap.up { left:12px; top:10px; text-align:left; transform-origin:0 50%; } .cap.dn { right:12px; bottom:10px; text-align:right; transform-origin:100% 50%; } .cap b { font-size:17px; } .cap .val { font-size:40px; font-weight:900; line-height:1; font-variant-numeric:tabular-nums; }
-  .cap.in { animation:capin .1s linear; } @keyframes capin { from { transform:scaleX(0); } } .cap .add { color:#ffff40; font-size:18px; } .cap .seal { color:#fff; font-size:24px; letter-spacing:.12em; text-transform:uppercase; }
-  .cap .why { font-size:11px; color:#fff; opacity:.85; font-weight:600; } .cap .val.up { color:#39d98a; } .cap .val.down { color:#ff6b7a; }
-  .cap .out { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#fff; opacity:.9; }
+  /* SpinSkillDataUI: yours along the bottom right (blue #0096ff, text right-aligned), the opponent's along the top left (pink #fa66bd, left-aligned);
+     the name 40, the added part 40 in #ffff40, the damage 106, "Sealed" 136 in white, over an 876 x 368 band */
+  .sdp { position:absolute; inset:0; z-index:4; pointer-events:none; font-family:"Segoe UI",system-ui,sans-serif; font-weight:800; } .sdp.dn { color:#0096ff; } .sdp.up { color:#fa66bd; }
+  .sdp > * { position:absolute; white-space:nowrap; line-height:1; } .sdp .bg { width:calc(var(--p) * 876); height:calc(var(--p) * 368); }
+  .sdp.dn .bg { right:calc(50cqw - var(--p) * 501.3); top:calc(50cqh + var(--p) * 300); clip-path:polygon(0 100%, 100% 0, 100% 100%); transform-origin:100% 50%;
+    background:linear-gradient(to right, #00071f 62%, #000a2a 80%, #04208a 97%, #0d36b8); }
+  .sdp.up .bg { left:calc(50cqw - var(--p) * 501); top:calc(50cqh - var(--p) * 622); clip-path:polygon(0 0, 100% 0, 0 100%); transform-origin:0 50%;
+    background:linear-gradient(to right, #8a1001, #3a0500 6%, #250300 30%, #2b0400); }
+  .sdp.open .bg { animation:sdpin .1s linear; } @keyframes sdpin { from { transform:scaleX(0); } }
+  .sdp .nm, .sdp .add { font-size:calc(var(--p) * 40); } .sdp .nm { max-width:calc(var(--p) * 440); overflow:hidden; text-overflow:ellipsis; } .sdp .add { color:#ffff40; }
+  .sdp .dmg { font-size:calc(var(--p) * 106); letter-spacing:calc(var(--p) * 1); font-variant-numeric:tabular-nums; } .sdp .imp { font-size:calc(var(--p) * 136); color:#fff; }
+  .sdp.dn .nmr { display:contents; } .sdp.dn .nm { position:absolute; right:calc(50cqw - var(--p) * 271.3); top:calc(50cqh + var(--p) * 594); }
+  .sdp.dn .add { position:absolute; right:calc(50cqw - var(--p) * 367.3); top:calc(50cqh + var(--p) * 594); }
+  .sdp.dn .dmg { right:calc(50cqw - var(--p) * 354.3); top:calc(50cqh + var(--p) * 475); } .sdp.dn .imp { right:calc(50cqw - var(--p) * 330.3); top:calc(50cqh + var(--p) * 478); }
+  .sdp.up .nmr { display:flex; left:calc(50cqw - var(--p) * 353); top:calc(50cqh - var(--p) * 602); }
+  .sdp.up .dmg { left:calc(50cqw - var(--p) * 355); top:calc(50cqh - var(--p) * 557); } .sdp.up .imp { left:calc(50cqw - var(--p) * 349); top:calc(50cqh - var(--p) * 590); }
+  .sdp.buff .dmg { animation:sdbuff .6s ease-out; } .sdp.debuff .dmg { animation:sddebuff .6s ease-out; } @keyframes sdbuff { 30% { filter:drop-shadow(0 0 12px #39d98a); scale:1.08; } } @keyframes sddebuff { 30% { filter:drop-shadow(0 0 12px #ff6b7a); scale:.94; } }
   .skip { position:absolute; right:10px; top:10px; z-index:5; padding:3px 12px; font-size:12px; background:rgba(0,0,0,.55); color:#fff; border-color:rgba(255,255,255,.4); } .skip:hover:not(:disabled) { background:rgba(0,0,0,.8); border-color:#fff; }
-  .verdict { position:absolute; left:50%; top:50%; z-index:6; translate:-50% -50%; max-width:92%; padding:10px 22px; background:#000d; color:#fff; text-align:center; font:900 26px/1.2 "Segoe UI",system-ui,sans-serif; font-style:italic; box-shadow:0 8px 30px #000; animation:rbig .3s cubic-bezier(.2,1.4,.4,1); } .verdict:empty { display:none; }
   /* The original's duel controls. Every position and size here is the original's own: the table objects come from its stage prefab
      ("square": plate_device01/02) and its AIButton / TurnEndButton / ZSkillButton / PlateObject prefabs; the bar and the plate list come
      from the 750 x 1334 "UI Root" of its match scene, so lengths are in --u, one of that screen's units (it fits both width and height).
@@ -2083,17 +2107,21 @@ function drawClock() {
 // thin black dividers, a black ring for a hub, the attack's name spaced out along the rim and its damage (or stars) large beneath it.
 // All lettering stands with its feet on the rim and its head towards the hub, so a wedge reads upright when it is at the bottom of the disk.
 // Small wheels (under 130 px) leave the names out.
-const DISK_COL = ['#e2494e', '#efefef', '#9a5fd0', '#e8cb4d', '#4fb9e9'];   // Miss, white, purple, gold, blue
+const DISK_COL = ['#f05353', '#ffffff', '#ce72ec', '#f0d74e', '#59c9f8'];   // Miss, white, purple, gold, blue (SkillColorEnum.ToColor)
+// Roulette.GetRouletteText: White and Gold print the damage as the attack's format asks (none, N, N+, Nx), Purple a star per point, the rest
+// nothing. A Z-Move's wheel always prints its number (Roulette.SetZSkill).
+const pieceText = (id, val, col, z) => col === 2 ? '★'.repeat(Math.max(0, val || 0)) : col === 1 || col === 3 ? (['', String(val || 0), (val || 0) + '+', (val || 0) + 'x'][z ? 1 : (D.skills[id] || [])[3] || 0] || '') : '';
 let wheelSeq = 0;
-function wheelSvg(skills, size) {
-  const id = 'wh' + (++wheelSeq), names = size >= 130, R = 88, ang = t => t / 96 * 2 * Math.PI, pt = (t, r) => [100 + r * Math.sin(ang(t)), 100 - r * Math.cos(ang(t))];
+function wheelSvg(skills, size, battle) {   // battle: the battle screen's wheel, in its 3D frame (RouletteWakuMesh + RouletteFrame): pieces to 0.875 of
+  // the frame's 0.965, a black ring with a grey line at 0.936, and a small black hub (0.109) with a grey ring at 0.080
+  const id = 'wh' + (++wheelSeq), names = size >= 130, R = battle ? 90.7 : 88, ang = t => t / 96 * 2 * Math.PI, pt = (t, r) => [100 + r * Math.sin(ang(t)), 100 - r * Math.cos(ang(t))];
   let a = 0, wedges = '', text = '', defs = '', rays = '';
   for (let k = 0; k < 96; k += 2) { const [x1, y1] = pt(k, R), [x2, y2] = pt(k + 1, R); rays += `M100 100L${x1} ${y1}A${R} ${R} 0 0 1 ${x2} ${y2}Z`; }
   skills.filter(x => x.range > 0).forEach((x, n) => {
     const sk = x.sealed ? ['Miss', '', 0] : D.skills[x.id] || ['', '', 0], col = sk[2], a2 = a + x.range, mid = (a + a2) / 2, ink = col === 2 ? '#fff' : '#111', big = x.range > 48 ? 1 : 0;
     const [x1, y1] = pt(a, R), [x2, y2] = pt(a2, R);
     wedges += x.range >= 96 ? `<circle cx="100" cy="100" r="${R}" fill="${DISK_COL[col]}"/>` : `<path d="M100 100L${x1} ${y1}A${R} ${R} 0 ${big} 1 ${x2} ${y2}Z" fill="${DISK_COL[col]}" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/>`;
-    const val = col === 2 ? '★'.repeat(Math.min(x.speed_or_damage || 0, 5)) : col === 1 || col === 3 ? String(x.speed_or_damage || 0) : '';
+    const val = pieceText(x.id, x.speed_or_damage, col, x.z);
     if (names && x.range >= 4) {   // the name runs anticlockwise just inside the rim, which is what stands it feet-out; a thin wedge gets small lettering
       const fs = x.range >= 12 ? 9.5 : x.range >= 8 ? 7.5 : 5, gap = x.range >= 16 ? 2.4 : x.range >= 12 ? 1.6 : .6, room = Math.floor(x.range * 5.1 / (fs * .62 + gap)), name = sk[0].length > room ? sk[0].slice(0, Math.max(1, room - 1)) + '…' : sk[0];
       const [p1x, p1y] = pt(a2 - .5, 79), [p2x, p2y] = pt(a + .5, 79);
@@ -2108,8 +2136,9 @@ function wheelSvg(skills, size) {
   });
   return `<svg viewBox="0 0 200 200" width="${size}" height="${size}" style="display:block"><defs>${defs}<linearGradient id="${id}s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
     <circle cx="100" cy="100" r="99" fill="#0b0b0c"/>${wedges}<path d="${rays}" fill="#000" opacity=".085"/>${text}
-    <circle cx="100" cy="100" r="93.5" fill="none" stroke="#0b0b0c" stroke-width="11"/><circle cx="100" cy="100" r="96.5" fill="none" stroke="url(#${id}s)" stroke-width="2.2"/><circle cx="100" cy="100" r="88.6" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width=".9"/>
-    <circle cx="100" cy="100" r="11.5" fill="#1a1a1c" stroke="#0b0b0c" stroke-width="5.5"/><circle cx="100" cy="100" r="13.6" fill="none" stroke="url(#${id}s)" stroke-width="1.6"/></svg>`;
+    ${battle ? `<circle cx="100" cy="100" r="95.35" fill="none" stroke="#000" stroke-width="9.3"/><circle cx="100" cy="100" r="97" fill="none" stroke="#7d7d7d" stroke-width=".6"/>
+    <circle cx="100" cy="100" r="11.3" fill="#000"/><circle cx="100" cy="100" r="8.3" fill="none" stroke="#4c4c4c" stroke-width=".5"/></svg>` : `<circle cx="100" cy="100" r="93.5" fill="none" stroke="#0b0b0c" stroke-width="11"/><circle cx="100" cy="100" r="96.5" fill="none" stroke="url(#${id}s)" stroke-width="2.2"/><circle cx="100" cy="100" r="88.6" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width=".9"/>
+    <circle cx="100" cy="100" r="11.5" fill="#1a1a1c" stroke="#0b0b0c" stroke-width="5.5"/><circle cx="100" cy="100" r="13.6" fill="none" stroke="url(#${id}s)" stroke-width="1.6"/></svg>`}`;
 }
 // Roulette.SetZSkill: while a figure is in Z-state (marker z_state) it spins one full wheel, the Z-Move it was given at the power the
 // z_skill move named (range 96 of 96). The engine's status keeps the old attacks, so the Z-Move comes from the move that activated it.
@@ -2120,7 +2149,7 @@ function zWheel(i, s = st) {
   let z = null;
   if (rec) for (let k = rec.all_moves.length - 1; k >= 0 && !z; k--) { const v = rec.all_moves[k].value; if (v.type === 'z_skill' && sameLine(v.pokemon, i)) z = { id: v.dst_skill_id, val: v.speed_or_damage }; }
   z = z || zMoves.get(evoRoot(i));
-  return z ? [{ id: z.id, range: 96, speed_or_damage: z.val }] : null;
+  return z ? [{ id: z.id, range: 96, speed_or_damage: z.val, z: true }] : null;
 }
 const power = s => { const col = (D.skills[s.id] || [0, 0, 0])[2]; return col === 2 ? '★'.repeat(Math.min(s.speed_or_damage || 0, 5)) : col === 1 || col === 3 ? (s.speed_or_damage || 0) : ''; };
 // What each state badge means, for its tooltip, in the same order badges() lists them. The engine reports a figure's state but not what
@@ -2269,18 +2298,22 @@ function log(html) { const cls = P_COL[logSide] ? (logSide === (flip ? 'white' :
   logLines.push(`<div class="${cls}">${pic ? `<img class="lpic" src="${pic}" alt="" loading="lazy">` : ''}${html}</div>`); $('log').innerHTML = logLines.slice(-120).join(''); $('log').scrollTop = 1e6; }   // the row shows the still picture of the first figure it names (one decoded copy per figure, no animation to repaint), flush at its start
 const ask = (q, yes) => modal(`<h2 style="margin-top:0">${esc(q)}</h2><div class="rbtns"><button data-v="">Cancel</button><button data-v="1" class="dangerbtn">${esc(yes)}</button></div>`).then(Boolean);
 function modal(html) { $('box').innerHTML = html; $('modal').hidden = false; return new Promise(res => { $('box').onclick = e => { const b = e.target.closest('[data-v]'); if (b) { $('modal').hidden = true; res(b.dataset.v); } }; }); }
-// The battle screen. It covers the whole arena (HUD and board), with no dialog around it, and is laid out as the original lays it out: two large disks on a dark stage, the opponent's above and to the right and
-// yours below and to the left, touching at one point where a red gem marks what each wheel landed on. The wheels spin and stop with the
-// position the engine drew at the gem; each side's attack and value then appear in its corner, with the outcome under the stage.
-const LEAN = 24;   // degrees the line through the two disk centres leans from the vertical
-// The battle screen runs the way the original's roulette does (Roulette.cs, MatchMain.BattleSpin / SpinEndWait):
-//  - each wheel spins and eases to a stop after about a second (1 s x 0.8-1.2); a sealed attack shows as a Miss wedge;
-//  - a shifted result (confusion and the like) waits 0.5 s, then turns 0.3 s to the wedge it shifts to;
-//  - a re-spin shows "More", waits 0.5 s and spins again, each one 0.6 x as long as the last;
-//  - when a wheel is done its other wedges go dark and the attack's name and power appear (the panel opens in 0.1 s);
-//  - each change to the damage (ability, plate, condition) is then shown in turn, the number running to its new value in 0.3 s, a second apart;
-//  - 0.7 s after the wheels the result is shown and the screen closes by itself. The original shows the result as the two figures fighting;
-//    here the winner's wheel lights up, the loser's dims and shakes, and the outcome is written across the middle.
+// The battle screen, a port of the original's: MatchMain.BattleInfo / StartSpin / SpinTouchStop / BattleSpin / SpinEndWait / BattleResult,
+// Roulette (spin, stop, More, shift, damage notices) and SpinSkillDataUI (each side's attack and damage in its corner).
+//  - It opens with a 0.3 s fade (Se233); 0.5 s later each wheel slides in along the line between them (BattleStartMove).
+//  - Both wheels start turning by themselves (StartSpin: a turn every 0.2166 s, Se036 looping). A player in the duel stops them with a tap
+//    (Se223_2), or they stop by themselves after 3 s. Each then eases onto its result over at least a turn (0.65 s per 680 degrees).
+//  - A stop plays Se037, or Se060 when it lands on a Miss. A shift (confusion and the like) waits 0.5 s and turns 0.3 s to the next piece.
+//  - "More" (a spin again, Fire Spin and the like): 0.5 s later Se059, a step higher each time, and the wheel whirls six turns, faster each time.
+//  - The engine's damage notices are shown as the original shows them: the name and damage, the damage running to each new value in 0.3 s,
+//    "×N" for each landing of a multiplying attack, "＋N" for a support attack, one change a second; then, 0.7 s after the wheels, the result.
+//  - The result: Se061 when your side wins, Se063 for a draw. The original then shows the two figures fighting on a 3D stage
+//    (BattleController); here the winner's wheel lights, the loser's dims and a flare crosses the middle. Then a 0.3 s fade to the table.
+// Layout: the roulette camera is orthographic and shows 1.4 units from the middle to the top edge. A wheel is 0.9 units in radius (mesh 0.5
+// x Rot 1.5 x Show 1.2) in a frame that meets the other one at the middle; the centres sit 0.41615 across and 0.86275 up or down from it,
+// yours below and to the left (the camera looks back along the table). The corner panels are placed in the 750 x 1334 UI Root's units.
+const LEAN = 25.75;   // atan(0.41615 / 0.86275): the line through the two wheel centres, from the vertical
+const EASE_OUT = 'cubic-bezier(.39,.575,.565,1)';   // NGUI UITweener.Method.EaseOut (a quarter sine)
 const sealed = new Map();   // figure -> attack ids the engine has sealed (disable_skill), kept until its conditions are removed
 const battleMark = text => { const t = String(text || ''); return t.includes('win') ? 1 : t.includes('draw') ? 0 : t.includes('lose') ? -1 : null; };   // the original matches with IndexOf, so win_with_effect and the rest count
 function wheelSnap(src, battler, spin) {   // the disk is drawn from the figure the spin names (results[0].figure), and from the status the wheel started with
@@ -2306,105 +2339,305 @@ async function fieldSpins(v, opt) {
   if (willSpin) sfx('spin');
   await Promise.all(list.map(async ({ sp, info }) => {
     const segs = info.skills.map(x => { const col = x.sealed ? 0 : (D.skills[x.id] || [0, 0, 0])[2];
-      return { range: x.range, col: DISK_COL[col], ink: col === 2 ? '#fff' : '#111', label: col === 2 ? '★'.repeat(Math.min(x.speed_or_damage || 0, 5)) : col === 1 || col === 3 ? String(x.speed_or_damage || 0) : '' }; });
+      return { range: x.range, col: DISK_COL[col], ink: col === 2 ? '#fff' : '#111', label: pieceText(x.id, x.speed_or_damage, col, x.z) }; });
     const landed = await Board3D.fieldSpin(fieldForm(sp.pokemon), segs, sp.results || [], info.frozen, info.frozen ? null : stopped), x = info.skills[landed];
     log(`Spin · ${nameOf(sp.pokemon)} ${x ? (x.sealed ? 'Miss' : fmt('skill', x.id)) : (sp.results || []).map(r => r.num).join(', ')}`);
   }));
   probSealed.clear();
 }
-function closeSpin() { if (window.sfxStop) sfxStop('spin'); const ov = $('battle'); if (ov) { ov.hidden = true; ov.innerHTML = ''; } battleView = null; }
+function closeSpin() { if (window.sfxStop) { sfxStop('spin'); sfxStop('roulette'); } const ov = $('battle'); if (ov) { ov.hidden = true; ov.innerHTML = ''; } battleView = null; }
+// DamageNoticeManager: each *_damage_notice names what changed the damage (its kind) and carries the change (a set, a sum, a product or a
+// product sum). An ability's change is filed as a plate's (MatchMain.PokePowerDamageNotice calls PlateDamageNotice), and a base notice keeps
+// only a set or a product sum. The result of the battle is added last, under the support attack when one stood in.
+const NOTICE_KIND = { base_damage_notice: 'Base', skill_damage_notice: 'Skill', plate_damage_notice: 'Plate', pokepower_damage_notice: 'Plate', condition_damage_notice: 'Condition',
+  triangle_damage_notice: 'Triangle', mist_damage_notice: 'Mist', techno_charge_damage_notice: 'TechnoCharge', support_skill_damage_notice: 'SupportSkill' };
+function damageNotices(list, key, res, support) {
+  const out = [];
+  for (const e of list || []) {
+    const v = e.value; if (v.pokemon !== key && !sameLine(v.pokemon, key)) continue;
+    const kind = NOTICE_KIND[v.type] || 'Other', d = v.value || {}, n = { kind, skillId: v.skill_id, condition: v.condition };
+    if (d.type === 'damage_set_notice') n.set = Object.assign({}, d);
+    else if (d.type === 'damage_sum_notice') { if (kind === 'Base') continue; n.sum = Object.assign({}, d); }
+    else if (d.type === 'damage_product_notice') { if (kind === 'Base') continue; n.product = Object.assign({}, d); }
+    else if (d.type === 'damage_product_sum_notice') n.productSum = Object.assign({}, d);
+    else continue;
+    out.push(n);
+  }
+  if (res) out.push({ kind: 'Result', skillId: support != null ? support : res.skill, resultVal: res.speed_or_damage });
+  return out;
+}
+// SpinSkillDataUI: the attack's name, an added part ("×3", "＋20"), the damage (running to each new value in 0.3 s) and "Sealed".
+class SpinPanel {
+  constructor(stage, slot) {
+    this.el = document.createElement('div'); this.el.className = 'sdp ' + slot; this.el.hidden = true;
+    this.el.innerHTML = '<i class="bg"></i><span class="nmr"><b class="nm"></b><span class="add"></span></span><span class="dmg"></span><span class="imp">Sealed</span>';
+    stage.appendChild(this.el); [this.nm, this.add, this.dmg, this.imp] = ['.nm', '.add', '.dmg', '.imp'].map(q => this.el.querySelector(q));
+    this.reserved = false; this.reset(); this.init();
+  }
+  reset() { this.damage = 0; this.now = 0; this.base = 0; this.mult = 0; this.baseMult = 0; }
+  init() { this.reset(); this.time = 0; this.name = ''; this.nm.textContent = this.add.textContent = this.dmg.textContent = ''; this.imp.hidden = true; }
+  hide() { this.el.hidden = true; this.el.classList.remove('open'); }
+  text(t) {
+    if (this.reserved) { this.imp.hidden = false; this.reserved = false; }
+    this.nm.textContent = this.name = t || '';
+    if (this.el.hidden) { this.el.hidden = false; this.el.classList.remove('open'); void this.el.offsetWidth; this.el.classList.add('open'); }   // the panel opens in 0.1 s
+  }
+  value(d) {
+    this.text(this.name);
+    if (d == null) { this.dmg.textContent = ''; return; }
+    if (this.damage === 0) { this.dmg.textContent = String(d); this.now = d; }
+    this.damage = Math.max(d, 0); this.base = this.now; this.run();
+  }
+  named(name, d) { this.name = name; this.value(d); }
+  speed(name, s) { this.name = name; this.value(null); this.dmg.textContent = s; }
+  run() {   // SpinSkillDataUI.Update: the damage and the "×N" run from where they were to the new values in 0.3 s
+    const t0 = performance.now(), from = this.base, to = this.damage, m0 = this.baseMult, m1 = this.mult;
+    const step = () => {
+      const k = Math.min(1, (performance.now() - t0) / 300);
+      this.now = Math.round(from + (to - from) * k); this.dmg.textContent = String(this.now);
+      const m = Math.floor(m0 + (m1 - m0) * k); if (m > 0) this.add.textContent = '×' + m;
+      if (k < 1) this.raf = requestAnimationFrame(step); else { this.base = this.damage; this.baseMult = this.mult; }
+    };
+    cancelAnimationFrame(this.raf); step();
+  }
+  multiplier(n) { this.baseMult = this.mult; this.mult = Math.max(n, 0); }
+  addMultiplier(n = 1) { this.multiplier(this.mult + n); }
+  productMultiplier(n) { if (this.mult <= 0) this.mult = 1; this.multiplier(this.mult * n); }
+  addend(n) { this.add.textContent = n <= 0 ? String(n) : '＋' + n; }
+  effect(kind) { this.el.classList.remove('buff', 'debuff'); void this.el.offsetWidth; this.el.classList.add(kind); }   // Main_Buff_fx_UI / Main_Debuff_fx_UI
+}
+// Roulette: one figure's wheel on the battle screen.
+class BattleWheel {
+  constructor(view, k, key, info, slot) {
+    Object.assign(this, { view, k, key, info, slot, rot: 0, raf: 0, pich: 0, notices: [], stops: [], damage: 0, resultSkill: -1, displacement: false });
+    this.el = $('w' + k); this.disk = $('bd' + k);
+    const base = slot === 'up' ? 180 + LEAN : LEAN, starts = []; let a = 0;
+    this.pieces = info.skills.map(x => { const col = x.sealed ? 0 : (D.skills[x.id] || [0, 0, 0])[2];
+      starts.push(a); a += x.range;
+      return { id: x.id, range: x.range, col, val: x.speed_or_damage || 0, name: x.sealed ? (D.skills[1131] || ['Miss'])[0] : (D.skills[x.id] || ['?'])[0],
+        z: !!x.z, imprison: info.marker.triangle === 'imprison' && info.marker.skill_id === x.id }; });
+    this.starts = starts; this.base = base;
+    const m = this.el && /rotate\(([-\d.]+)deg\)/.exec(this.el.style.transform || ''); if (m) this.rot = +m[1];
+  }
+  angle(pos) { return this.base - pos / 96 * 360; }
+  pieceAt(num) { let a = 0; for (let n = 0; n < this.pieces.length; n++) { a += this.pieces[n].range; if (a > num) return n; } return 0; }
+  paint(sec, ease) { if (!this.el) return; this.el.style.transition = sec ? `transform ${sec}s ${ease}` : 'none'; this.el.style.transform = `rotate(${this.rot}deg)`; }
+  startLoop() {   // Roulette.StartSpin(1): a linear turn every 0.1666 s x 1.3
+    if (this.raf || this.info.frozen) return; let last = performance.now();
+    const f = t => { this.rot += (t - last) * 360 / 216.6; last = t; this.paint(); this.raf = requestAnimationFrame(f); };
+    this.raf = requestAnimationFrame(f);
+  }
+  stopLoop() { cancelAnimationFrame(this.raf); this.raf = 0; }
+  async turnTo(to, sec) { this.rot = to; this.paint(sec * this.view.pace, EASE_OUT); await this.view.wait(sec * 1000); }
+  async stopAt(sec, num) {   // Roulette.SetSpinTweenRotate: from a turning wheel, onto the result over at least one more turn; from a standing one, six turns
+    const target = this.angle(num + .01 + Math.random() * .98); let to = target;
+    if (this.raf) { this.stopLoop(); while (to < this.rot + 360) to += 360; await this.turnTo(to, sec * 1.3 * (to - this.rot) / 680); }
+    else { while (to < this.rot + 1800) to += 360; await this.turnTo(to, sec * 1.3); }
+  }
+  async shift(d, now) {   // Roulette.Displace: 0.3 s to the middle of the piece d along, the way it points
+    const L = this.pieces.length, t = ((this.pieceAt(now) + d) % L + L * 10) % L; let to = this.angle(this.starts[t] + this.pieces[t].range / 2);
+    if (d >= 0) { while (to < this.rot) to += 360; } else { while (to > this.rot) to -= 360; }
+    await this.turnTo(to, .3); return t;
+  }
+  power(p) { return p.col === 2 ? pieceText(p.id, p.val, 2) : null; }
+  showPiece(p) { if (p.col === 2) this.panel.speed(p.name, pieceText(p.id, p.val, 2)); else this.panel.named(p.name, (p.col === 1 || p.col === 3) && p.val > 0 ? p.val : null); }
+  resultName() { return (D.skills[this.resultSkill] || [''])[0]; }
+  initNotices() {   // Roulette.InitDamageNotices: a base set or product sum is folded into the attack's own product
+    const base = this.notices.filter(n => n.kind === 'Base'), skill = this.notices.filter(n => n.kind === 'Skill');
+    if (base.length && skill.length) {
+      if ((base[0].productSum || base[0].set) && skill[0].productSum) { skill[0].productSum.multiplier++; this.notices.splice(this.notices.indexOf(base[0]), 1); }
+      else if ((base[0].productSum || base[0].set) && skill[0].product) this.notices.splice(this.notices.indexOf(base[0]), 1);
+    }
+    const r = this.notices.find(n => n.kind === 'Result'); if (r) this.resultSkill = r.skillId;
+  }
+  effectOf(n) {   // SpinSkillDataUI.CreateEffect: a condition's damage has its own sound and ticker line; a plate's (or an ability's) is a buff or a debuff
+    const p = this.panel;
+    if (n.kind === 'Condition') { const s = { poison: 'st_poison', bad_poison: 'st_bad_poison', burn: 'st_burn' }[n.condition]; if (s) { this.view.sound(s); tickFig(this.key, `${plain(this.key)}: ${condName(n.condition)} lowers its damage.`); } }
+    else if (n.kind === 'Plate' || n.kind === 'TechnoCharge') { const down = n.sum && n.sum.addend <= 0; p.effect(down ? 'debuff' : 'buff'); this.view.sound(down ? 'mp_down' : 'mp_up'); }
+    else if (n.kind === 'Mist') { const down = n.productSum && n.productSum.multiplier <= 0; p.effect(down ? 'debuff' : 'buff'); this.view.sound(down ? 'mp_down' : 'mp_up'); }
+  }
+  calc(spinning) {   // Roulette.DamageNoticeCalc
+    if (!this.notices.length) return;
+    let n;
+    if (spinning) { n = this.notices.find(x => x.kind === 'Skill' || x.kind === 'Base'); if (!n) return; if (n.kind === 'Base') this.notices.splice(this.notices.indexOf(n), 1); }
+    else n = this.notices[0];
+    this.effectOf(n);
+    const p = this.panel, last = this.last || {}, battle = this.view.battle, left = this.stops.length;
+    if (n.kind === 'Result') {   // DamageResultNotice
+      const q = this.pieces.find(x => x.id === n.skillId); if (!q) return;
+      if (q.col === 2) p.speed(q.name, pieceText(q.id, n.resultVal, 2));
+      else p.named(q.name, (q.col === 1 || q.col === 3) && (n.resultVal > 0 || q.val > 0) ? n.resultVal : null);
+    } else if (n.set) { if (battle) p.named((D.skills[n.skillId] || [''])[0], n.set.result !== 0 ? n.set.result : null); }
+    else if (n.sum) {
+      if (left > 0) { this.damage = n.sum.result; if (battle) p.named(this.resultName(), this.damage); }
+      else if (battle) { p.text(this.resultName()); p.value(n.sum.result); }
+      if (n.kind === 'SupportSkill') p.addend(n.sum.addend);
+      if (spinning) { const b = this.notices.findIndex(x => x.kind === 'Base'); if (b >= 0) this.notices.splice(b, 1); }
+    } else if (n.productSum) {   // DamageProductSumNotice: a multiplying attack adds its damage for each landing
+      const ps = n.productSum;
+      if (left <= 1) { if (battle) { p.named(this.resultName(), ps.result); if ((n.kind === 'Skill' || n.kind === 'SupportSkill') && n.skillId === last.id) p.addMultiplier(ps.multiplier); } }
+      else if (n.skillId === last.id) {
+        if (ps.current >= 0) { this.damage = n.kind !== 'Base' ? ps.current : ps.result; ps.current = -1; }
+        else if (ps.multiplier > 0) { this.damage += ps.multiplicand; ps.multiplier--; }
+        if (battle) { p.named(this.resultName(), this.damage); if (n.kind !== 'Base') p.addMultiplier(); }
+      } else if (ps.multiplier > 1 && left === 1) { this.damage = ps.result; if (battle) p.named(this.resultName(), this.damage); }
+      else if (battle) p.value(ps.result);
+      if (n.kind === 'Base') { const b = this.notices.indexOf(n); if (b >= 0) this.notices.splice(b, 1); }
+    } else if (n.product) {   // DamageProductNotice
+      const pr = n.product;
+      if (pr.multiplier > 1 && left === 1) { if (battle) { p.named(this.resultName(), pr.result); p.productMultiplier(pr.multiplier); } }
+      else if (n.skillId === last.id) { if (pr.multiplier > 0) { this.damage += pr.current; pr.multiplier--; } if (battle) { p.named(this.resultName(), this.damage); p.addMultiplier(); } }
+      else { p.value(pr.result); p.productMultiplier(pr.multiplier); }
+    }
+  }
+  async damageDisp(delay = true) {   // Roulette.DamageDisp / DamageDispNext: every change but the attack's own, one a second
+    this.notices = this.notices.filter(n => n.kind !== 'Skill'); if (!this.notices.length) return;
+    if (this.notices.length > 1) this.dispDelay = .5;
+    await this.view.wait(delay ? (this.dispDelay || 0) * 1000 : 0); this.dispDelay = .5;
+    for (;;) {
+      this.calc(false); if (!this.notices.length) return;
+      const kind = this.notices.shift().kind;
+      if (!this.notices.length || kind === 'Result' || this.notices.every(n => n.kind === 'Result')) return;   // IsSpin: the result waits for SpinEndWait
+      await this.view.wait(1000);
+    }
+  }
+  darken(landed, a) {   // Roulette.SpinNext: the other pieces go dark
+    if (!this.el) return; const old = this.el.querySelector('.dimw'); if (old) old.remove();
+    const pt = (t, r) => [100 + r * Math.sin(t / 96 * 2 * Math.PI), 100 - r * Math.cos(t / 96 * 2 * Math.PI)];
+    this.el.insertAdjacentHTML('beforeend', `<svg class="dimw" viewBox="0 0 200 200">${this.pieces.map((y, n) => { if (n === landed || this.pieces.length < 2) return ''; const [x1, y1] = pt(this.starts[n], 90.7), [x2, y2] = pt(this.starts[n] + y.range, 90.7); return `<path d="M100 100L${x1} ${y1}A90.7 90.7 0 ${y.range > 48 ? 1 : 0} 1 ${x2} ${y2}Z" fill="#000" opacity="${a}"/>`; }).join('')}</svg>`);
+  }
+  fx(kind, ms) { if (!this.disk) return null; const d = document.createElement('div'); d.className = 'bfx ' + kind; this.disk.appendChild(d); if (ms) setTimeout(() => d.remove(), ms * this.view.pace); return d; }
+  async run(stops, stopSec) {   // Roulette.StopSpin and what follows each stop
+    this.stops = stops.slice(); this.damage = 0; this.pich = 0; this.initNotices(); this.panel.init();
+    const old = this.el && this.el.querySelector('.dimw'); if (old) old.remove();
+    if (this.info.frozen || !this.pieces.length) return;   // MatchMain.BattleSpin: a frozen wheel does not stop again
+    const battle = this.view.battle; let sec = stopSec;
+    if (this.displacement) {   // Roulette.SetDisplacement: a declared shift moves from the piece it stood on to the new result
+      this.displacement = false; const now = this.lastTarget != null ? this.lastTarget : this.stops[0].num;
+      const L = this.pieces.length, t = await this.shift(((this.pieceAt(this.stops[0].num) - this.pieceAt(now)) % L + L) % L, now);
+      this.last = this.pieces[t]; if (battle) this.showPiece(this.last); this.stops = []; this.darken(t, .5); return;
+    }
+    for (;;) {
+      const r = this.stops[0]; this.view.turning++;
+      await this.stopAt(sec, r.num); this.lastTarget = r.num;
+      if (--this.view.turning <= 0) this.view.soundOff();
+      let landed = this.pieceAt(r.num);
+      this.view.sound(this.pieces[landed].col === 0 ? 'miss' : 'spin_stop');
+      if (r.displace) {
+        if (this.info.marker.circle === 'panic') { this.fx('panic', 3000); this.view.sound('st_panic'); tickFig(this.key, `${plain(this.key)} is confused!`); }
+        await this.view.wait(500); landed = await this.shift(r.displace, r.num);
+        tickFig(this.key, `${plain(this.key)}: the result moved ${Math.abs(r.displace)} piece${Math.abs(r.displace) === 1 ? '' : 's'}.`);
+        this.last = this.pieces[landed];
+        if (!this.notices.some(n => n.kind === 'Skill') && battle) this.showPiece(this.last); else this.calc(true);
+      } else {
+        this.last = this.pieces[landed];
+        if (this.notices.every(n => n.kind !== 'Skill' && n.kind !== 'Base')) { if (battle && this.stops.length === 1 && !this.notices.length) this.showPiece(this.last); }
+        else this.calc(true);
+      }
+      const imprisoned = this.last.imprison && r.type === 'battle';   // SpinNext: a sealed attack does not spin on
+      if (this.stops.length > 1 && !imprisoned) {   // MoreSpin
+        this.stops.shift(); this.fx('more', 2000);
+        await this.view.wait(500); this.view.sound('multiplier', this.pich); this.pich += 2; this.view.soundOn();
+        sec = Math.min(1, Math.max(.1, sec * .6)); continue;
+      }
+      this.stops = [];
+      const shown = this.damageDisp();
+      if (battle) { this.panel.text(this.resultName()); if (imprisoned) this.showPiece(this.last); }
+      const L = this.pieces.length; this.darken(((this.pieceAt(r.num) + r.displace) % L + L) % L, battle ? .5 : .8);
+      await shown; return;
+    }
+  }
+}
 async function showSpin(e, result, notices, opt) {
   opt = opt || {};
   const spins = e.value.spins || [], human = ctrl.black === 'human' || ctrl.white === 'human';
   const typedBattle = spins.some(s => (s.results || []).some(r => r.type === 'battle'));
   const battle = typedBattle || !!(battleView && battleView.battle);   // a follow-up spin declared by the battle stays in the battle
   const ids = spins.map(s => s.pokemon);
-  const keep = !!(battleView && battleView.ids && ids.length && ids.every(id => battleView.ids.includes(id)) && $('bd0'));   // a one-wheel respin leaves the other disk where it is
-  let ov = $('battle'), shut = false;
+  const keep = !!(battleView && battleView.ids && ids.length && ids.every(id => battleView.ids.includes(id)) && $('bd0'));   // a respin turns the wheel that is already there
+  let ov = $('battle');
   if (!ov) { ov = document.createElement('div'); ov.id = 'battle'; document.querySelector('.arena').appendChild(ov); }
-  const done = new Promise(res => { ov.onclick = ev => { if (ev.target.closest('[data-v]')) { shut = true; if (window.sfxStop) sfxStop('spin'); res(); } }; }), wait = ms => shut ? Promise.resolve() : Promise.race([sleep(human ? ms : ms / 4), done]);
   const mineCol = ctrl[me] === 'human' ? me : 'black';
   const slotOf = (id, list) => list.length > 2 ? 'row' : list.length === 1 ? 'dn' : (id === (colorOf(list[0]) === mineCol ? list[1] : list[0]) ? 'up' : 'dn');
   if (!keep) {
     const row = ids.length > 2, solo = ids.length === 1;
-    const held = battleView;
-    ov.hidden = false; ov.innerHTML = `<div class="stage${row ? ' row' : solo ? ' solo' : ''}">${spins.map((sp, k) => {
+    ov.hidden = false; ov.innerHTML = `<div class="stage${row ? ' row' : solo ? ' solo' : ''}${battle ? ' open' : ''}">${spins.map((sp, k) => {
       const slot = slotOf(sp.pokemon, ids);
-      return `<div class="bdisk ${slot}" id="bd${k}" data-pk="${sp.pokemon}"><div class="spin" id="w${k}">${wheelSvg(wheelSnap(opt.wheelSt, sp.pokemon, sp).skills, 440)}</div></div><div class="cap ${slot}" id="r${k}" style="--c:${P_COL[colorOf(sp.pokemon)]}" hidden></div>`;
-    }).join('')}<div class="flare" id="flare"></div><div class="sparks" id="sparks">${Array.from({ length: 14 }, (_, k) => `<i style="--a:${(k % 2 ? 204 : 24) + ((k * 37) % 44) - 22}deg;--l:${26 + (k * 53) % 60}px;--far:${70 + (k * 29) % 120}px;--t:${(k % 5) * .05}s"></i>`).join('')}</div><div class="gem"></div><button class="skip" data-v="ok">Skip</button><div class="verdict" id="verdict"></div></div>`;
-    battleView = battle ? { battle: true, ids, lastResult: held && held.lastResult, landed: (held && held.landed) || {} } : null;
-  } else battleView.battle = true;
-  if (battle && result) battleView.lastResult = result;
-  const shownIds = (battleView && battleView.ids) || ids;
-  const willSpin = spins.some(sp => !wheelSnap(opt.wheelSt, sp.pokemon, sp).frozen);
-  let wheelsTurning = 0, spinEnded = false;
-  const endSpinSfx = () => { if (spinEnded || !willSpin) return; spinEnded = true; if (window.sfxStop) sfxStop('spin'); if (!shut) sfx('spin_stop'); };
-  await sleep(40); if (willSpin && !shut) sfx('spin');   // one looping se024 until every wheel has stopped turning
-  const powerOf = (x, v) => { const col = x.sealed ? 0 : (D.skills[x.id] || [0, 0, 0])[2]; return col === 2 ? '★'.repeat(Math.min(v == null ? x.speed_or_damage || 0 : v, 5)) : col === 1 || col === 3 ? String(v == null ? x.speed_or_damage || 0 : v) : ''; };
-  await Promise.all(spins.map(async sp => {
-    const k = shownIds.indexOf(sp.pokemon); if (k < 0) return;
-    const info = wheelSnap(opt.wheelSt, sp.pokemon, sp), el = $('w' + k), disk = $('bd' + k), segs = info.skills, slot = slotOf(sp.pokemon, shownIds);
-    const base = slot === 'up' ? 180 + LEAN : LEAN, starts = []; let a = 0; for (const x of segs) { starts.push(a); a += x.range; }
-    const at = num => Math.max(0, segs.findIndex((x, n) => num >= starts[n] && num < starts[n] + x.range));
-    const oldDim = el && el.querySelector('.dimw'); if (oldDim) oldDim.remove();
-    const oldMore = disk && disk.querySelector('.more'); if (oldMore) oldMore.remove();
-    if (disk) disk.classList.remove('won', 'lost');
-    const cap0 = $('r' + k); if (cap0) { cap0.hidden = true; cap0.classList.remove('in'); }
-    let rot = 0; const spun = el && /rotate\(([-\d.]+)deg\)/.exec(el.style.transform || ''); if (spun) rot = +spun[1];   // a respin continues from where this disk already stopped
-    const turn = async (pos, sec, turns, back) => {
-      let to = base - pos / 96 * 360; if (back) { while (to > rot) to -= 360; } else { while (to < rot + turns * 360) to += 360; }
-      rot = to; if (!el) return; el.style.transition = shut || !sec ? 'none' : `transform ${sec}s cubic-bezier(.12,.75,.2,1)`; el.style.transform = `rotate(${to}deg)`; await wait(sec * 1000); };
-    let sec = 1, landed = 0;
-    if (!info.frozen) wheelsTurning++;
-    for (let n = 0; n < (sp.results || []).length; n++) {
-      const r = sp.results[n];
-      if (info.frozen) { await turn(r.num + .5, 0, 0); landed = at(r.num); if (r.displace && segs[landed]) { landed = ((landed + r.displace) % segs.length + segs.length * 10) % segs.length; await turn(starts[landed] + segs[landed].range / 2, 0, 0, r.displace < 0); } break; }   // GetBattleFrizes: a frozen or melted wheel does not spin
-      if (n) { if (!shut && disk) { disk.insertAdjacentHTML('beforeend', '<div class="more">More</div>'); sfx('select'); } await wait(500); const m = disk && disk.querySelector('.more'); if (m) m.remove(); sec = Math.min(1, Math.max(.1, sec * .6)); if (!shut) sfx('spin_tick'); }
-      await turn(r.num + .5, sec * (n ? 1 : .8 + Math.random() * .4), n ? 2 : 3);
-      landed = at(r.num);
-      if (r.displace && segs.length) { await wait(500); landed = ((landed + r.displace) % segs.length + segs.length * 10) % segs.length; await turn(starts[landed] + segs[landed].range / 2, .3, 0, r.displace < 0); }
-      const landedId = (segs[landed] || {}).id, sid = info.marker.skill_id;
-      if (r.type === 'battle' && info.marker.triangle === 'imprison' && (sid == null || sid < 0 || sid === landedId)) break;   // SpinNext: an imprisoned battle attack does not spin on
+      return `<div class="bdisk ${slot}${battle ? ' wait' : ''}" id="bd${k}" data-pk="${sp.pokemon}"><div class="spin" id="w${k}">${wheelSvg(wheelSnap(opt.wheelSt, sp.pokemon, sp).skills, 440, true)}</div></div>`;
+    }).join('')}<div class="flare" id="flare"></div><div class="sparks" id="sparks">${Array.from({ length: 14 }, (_, k) => `<i style="--a:${(k % 2 ? 180 + LEAN : LEAN) + ((k * 37) % 44) - 22}deg;--l:${26 + (k * 53) % 60}px;--far:${70 + (k * 29) % 120}px;--t:${(k % 5) * .05}s"></i>`).join('')}</div><div class="gem"></div><button class="skip" data-v="ok">Skip</button></div>`;
+    battleView = { battle, ids, wheels: {}, support: {}, started: false, turning: 0, lastResult: battleView && battleView.lastResult };
+  } else battleView.battle = battleView.battle || battle;
+  const view = battleView, stage = ov.querySelector('.stage');
+  let shut = false;
+  const done = new Promise(res => { ov.onclick = ev => { if (ev.target.closest('[data-v]')) { shut = true; view.soundOff(); res(); } }; });
+  view.pace = human ? 1 : .25;   // a duel between two computers plays at four times the speed
+  view.wait = ms => shut ? Promise.resolve() : Promise.race([sleep(ms * view.pace), done]);
+  view.sound = (n, pitch) => { if (!shut) sfx(n, pitch); };
+  view.soundOn = () => { if (!shut) sfx('roulette'); };
+  view.soundOff = () => { if (window.sfxStop) sfxStop('roulette'); };
+  if (battle && result) view.lastResult = result;
+  const res = (view.lastResult || {}).value;
+  for (const x of notices || []) if (x.value.type === 'support_skill_damage_notice') view.support[x.value.pokemon] = x.value.skill_id;
+  const wheels = spins.map(sp => {
+    const k = view.ids.indexOf(sp.pokemon); if (k < 0) return null;
+    const info = wheelSnap(opt.wheelSt, sp.pokemon, sp), old = view.wheels[sp.pokemon];
+    const w = new BattleWheel(view, k, sp.pokemon, info, slotOf(sp.pokemon, view.ids));
+    w.panel = old ? old.panel : new SpinPanel(stage, slotOf(sp.pokemon, view.ids)); w.lastTarget = old && old.lastTarget; w.displacement = !!(old && old.displacement);
+    const side = res && [res.attack, res.defence].find(y => y && (y.pokemon === sp.pokemon || sameLine(y.pokemon, sp.pokemon)));
+    const sup = Object.keys(view.support).find(p => +p === sp.pokemon || sameLine(+p, sp.pokemon));
+    w.notices = damageNotices(notices, sp.pokemon, battle ? side : null, sup != null ? view.support[sup] : null);
+    w.panel.reserved = !!(side && info.marker.triangle === 'imprison' && info.marker.skill_id === side.skill);   // BattleResultInit: the sealed attack came up
+    view.wheels[sp.pokemon] = w; return { w, sp, info };
+  }).filter(Boolean);
+  if (battle && res) for (const w of Object.values(view.wheels)) if (!wheels.some(x => x.w === w) && !w.notices.some(n => n.kind === 'Result')) {   // the wheel that did not spin again gets the result too
+    const side = [res.attack, res.defence].find(y => y && (y.pokemon === w.key || sameLine(y.pokemon, w.key))); if (side) w.notices.push({ kind: 'Result', skillId: side.skill, resultVal: side.speed_or_damage }); }
+  if (!keep && battle) {   // BattleInfo: the fade, then each wheel slides in (BattleStartMove) and the condition shows on it (RouletteCircleEffect)
+    view.sound('attack_phase'); await view.wait(500);
+    for (const { w, info } of wheels) {
+      if (w.disk) { w.disk.classList.remove('wait'); w.disk.classList.add('in'); }
+      const c = info.marker.circle;
+      if (c === 'freeze' || c === 'melt') { w.fx('frozen'); tickFig(w.key, `${plain(w.key)} is frozen.`); }
+      else if (c === 'paralyze' && !info.marker.z_state) w.fx('paralyze'); else if (c === 'burn') w.fx('burn');
+      if (info.marker.z_state) { w.panel.text(''); w.fx('zseal'); }   // DispZSkillCutIn, ZSkillEffect
+      if (w.pieces.some(p => p.imprison)) w.fx('seal');
     }
-    if (!info.frozen) { wheelsTurning--; if (wheelsTurning <= 0) endSpinSfx(); }
-    const x = segs[landed] || {}, col = x.sealed ? 0 : (D.skills[x.id] || [0, 0, 0])[2];
-    if (battle && battleView) battleView.landed[sp.pokemon] = { miss: !x.id && !segs.length ? true : x.sealed || col === 0, col };
-    if (el) { const pt = (t, rad) => [100 + rad * Math.sin(t / 96 * 2 * Math.PI), 100 - rad * Math.cos(t / 96 * 2 * Math.PI)];
-      el.insertAdjacentHTML('beforeend', `<svg class="dimw" viewBox="0 0 200 200">${segs.map((y, n) => { if (n === landed || segs.length < 2) return ''; const [x1, y1] = pt(starts[n], 88), [x2, y2] = pt(starts[n] + y.range, 88); return `<path d="M100 100L${x1} ${y1}A88 88 0 ${y.range > 48 ? 1 : 0} 1 ${x2} ${y2}Z" fill="#000" opacity=".5"/>`; }).join('')}</svg>`); }
-    const resNow = result || (battleView && battleView.lastResult), side = resNow && [resNow.value.attack, resNow.value.defence].find(y => y && y.pokemon === sp.pokemon), cap = $('r' + k), steps = (notices || []).filter(y => y.value.pokemon === sp.pokemon && y.value.value);
-    const name = x.sealed ? 'Miss' : (D.skills[x.id] || ['spin'])[0]; let shown = x.speed_or_damage;
-    const paint = (extra, cls, why) => { if (!cap) return; cap.innerHTML = `<b>${esc(name)}${extra ? ` <span class="add">${esc(extra)}</span>` : ''}</b>${powerOf(x, shown) !== '' ? `<span class="val ${cls || ''}">${powerOf(x, shown)}</span>` : ''}${x.sealed ? '<span class="seal">Sealed</span>' : ''}` +
-      (why ? `<span class="why">${esc(why)}</span>` : '') + ((sp.results || []).some(y => y.displace) ? '<span class="out">shifted</span>' : '') + ((sp.results || []).length > 1 ? `<span class="out">${sp.results.length} spins</span>` : ''); };
-    paint(); if (cap) { cap.hidden = false; cap.classList.add('in'); }
-    for (let n = 0; n < steps.length; n++) {   // DamageDisp steps every notice, including a x0 and a set that does not change the number, starting from the wedge's printed damage
-      await wait(n ? 1000 : steps.length > 1 ? 500 : 0);
-      const v = steps[n].value, d = v.value, from = shown == null ? d.result : shown, t0 = performance.now(), up = d.result >= from;
-      const why = v.pokepower_id != null && D.abilities[v.pokepower_id] ? D.abilities[v.pokepower_id][0] : v.plate_id != null && plateById.has(v.plate_id) ? plateById.get(v.plate_id).n : v.condition ? condName(v.condition) : v.skill_id != null && D.skills[v.skill_id] ? D.skills[v.skill_id][0] : String(v.type).replace(/_damage_notice$/, '').replace(/_/g, ' ');
-      const extra = d.addend ? (d.addend > 0 ? '＋' : '') + d.addend : d.multiplier != null && d.multiplier !== 1 ? '×' + d.multiplier : '';
-      if (d.result !== from && !shut) sfx(up ? 'mp_up' : 'mp_down');
-      while (!shut && d.result !== from && performance.now() - t0 < 300) { shown = Math.round(from + (d.result - from) * (performance.now() - t0) / 300); paint(extra, up ? 'up' : 'down', why); await sleep(30); }
-      shown = d.result; paint(extra, up ? 'up' : 'down', why);
-    }
-    if (side && side.speed_or_damage != null && powerOf(x, side.speed_or_damage) !== '' && side.speed_or_damage !== shown) { shown = side.speed_or_damage; paint(); }
-  }));
-  endSpinSfx();
-  if (battle && battleView && !opt.hold) {
-    const res = (battleView.lastResult || result || {}).value;
-    await wait(700);
+    await view.wait(400);
+  }
+  if (!view.started && battle) {   // StartSpin: the wheels turn by themselves; a player in the duel stops them with a tap, or they stop after 3 s
+    view.started = true; const turning = wheels.filter(x => !x.info.frozen);
+    if (turning.length) { for (const x of turning) { x.w.startLoop(); x.w.fx('spark', 1000); } view.soundOn(); }
+    if (human && turning.length) {
+      const tapped = await Promise.race([new Promise(r => { stage.addEventListener('pointerdown', ev => { if (!ev.target.closest('[data-v]')) r(true); }, { once: true }); }), view.wait(3000).then(() => false)]);
+      if (tapped) view.sound('se223_2');
+    } else await view.wait(300);
+  } else if (wheels.some(x => !x.info.frozen && !x.w.displacement)) view.soundOn();
+  // BattleSpin (stops in 0.5 s) / FieldSpin (0.4 s, no panel)
+  await Promise.all(wheels.map(({ w, sp }) => w.run(sp.results || [], battle ? .5 : .4)));
+  view.soundOff();
+  if (battle && !opt.hold) {   // SpinEndWait, then AllNoticeClear shows each result, then BattleResult
+    await view.wait(700);
+    for (const w of Object.values(view.wheels)) w.damageDisp(false);
     if (res) {
-      const sides = [res.attack, res.defence].filter(Boolean); let winner = null, drawn = false;
-      for (const side of sides) { const w = battleMark(side.result), k = battleView.ids.indexOf(side.pokemon); if (w === 1) winner = k; else if (w === 0) drawn = true; }
-      if (winner != null && winner >= 0 && $('bd' + winner)) { $('bd' + winner).classList.add('won'); battleView.ids.forEach((_, k) => { if (k !== winner && $('bd' + k)) $('bd' + k).classList.add('lost'); }); }
-      const bothMiss = winner == null && !drawn && sides.length >= 2 && sides.every(side => { const hit = battleView.landed[side.pokemon]; return hit && hit.miss; });
-      const who = winner != null ? sides.find(s => battleMark(s.result) === 1) : null;
-      const land = who && (battleView.landed[who.pokemon] || {});
-      const atkName = who ? (D.skills[who.skill] || [''])[0] : '';
-      const strike = !who ? 'hit' : /knock|faint/.test(String(who.result)) ? 'ko' : (window.strikeSfx ? strikeSfx(atkName, land.col, land.miss) : (land.miss ? 'miss' : { 2: 'purple', 3: 'gold', 4: 'blue' }[land.col] || 'hit'));
-      if (!shut) { const fl = $('flare'), spk = $('sparks'); if (fl) fl.classList.add('on'); if (spk) spk.classList.add('on'); sfx(bothMiss ? 'miss' : drawn ? 'draw' : strike); }
-      const vd = $('verdict'); if (vd) vd.innerHTML = who ? `${nameOf(who.pokemon)} wins` : drawn ? 'Draw' : bothMiss ? 'Both miss' : '';
+      const sides = [res.attack, res.defence].filter(Boolean), mine = sides.find(s => colorOf(fieldForm(s.pokemon)) === mineCol) || sides[0];
+      if (mine && /draw/.test(mine.result)) view.sound('draw'); else if (mine && /win/.test(mine.result)) view.sound('attack');   // Se063 / Se061
+      // BattleController.BattleCheck: the figures fight when either attack is an attack and the battle is not a draw (a plain "win" counts as one)
+      const isAtk = s => { const sk = D.skills[s.skill] || [0, 0, 0, 0, 0], col = sk[2]; return col === 1 || col === 3 ? (s.speed_or_damage || 0) > 0 : !!sk[4]; };
+      const drawn = sides.some(s => s.result === 'win') || (sides.length > 1 && sides.every(s => /draw/.test(s.result)));
+      const winner = sides.find(s => battleMark(s.result) === 1), wk = winner ? view.ids.findIndex(id => id === winner.pokemon || sameLine(id, winner.pokemon)) : -1;
+      const nextField = winner && (D.skills[winner.skill] || [])[6] === 1;
+      if (sides.some(isAtk) && !drawn && !nextField) {
+        await view.wait(300);
+        if (wk >= 0 && $('bd' + wk)) { $('bd' + wk).classList.add('won'); view.ids.forEach((_, k) => { if (k !== wk && $('bd' + k)) $('bd' + k).classList.add('lost'); }); }
+        const land = winner && view.wheels[view.ids[wk]] && view.wheels[view.ids[wk]].last || {};
+        const atkName = winner ? (D.skills[winner.skill] || [''])[0] : '';
+        const strike = !winner ? 'hit' : /knock|faint/.test(String(winner.result)) ? 'ko' : (window.strikeSfx ? strikeSfx(atkName, land.col, land.col === 0) : (land.col === 0 ? 'miss' : { 2: 'purple', 3: 'gold', 4: 'blue' }[land.col] || 'hit'));
+        if (!shut) { const fl = $('flare'), spk = $('sparks'); if (fl) fl.classList.add('on'); if (spk) spk.classList.add('on'); sfx(strike); }
+        await view.wait(1500);
+      } else await view.wait(500);
     }
-    await wait(1300); closeSpin();
-  } else if (!battle) { await wait(2000); closeSpin(); }   // a spin outside a battle stays up two seconds
+    if (stage && !shut) { stage.classList.add('close'); await view.wait(300); }   // the 0.3 s fade back to the table
+    closeSpin();
+  } else if (!battle) { await view.wait(2000); closeSpin(); }   // a spin outside a battle stays up two seconds, then the wheel shrinks away (Hide 0.3 s)
 }
 function abilityFig(v) {   // figure index on a poké-power move or notice (evolve wraps the real figure in .value)
   if (!v || typeof v !== 'object') return null;
@@ -2429,10 +2662,12 @@ async function playEffects(list, opt) {
   }
   for (let k = 0; k < list.length; k++) {
     const e = list[k], v = e.value, t = v.type;
-    if (t === 'declare_respin') {   // the respin stays on this screen: "More" on the wheel that spins again, then the next spin turns it
-      for (const id of v.pokemons || []) { const i = battleView && battleView.ids ? battleView.ids.indexOf(id) : -1, disk = i >= 0 && $('bd' + i); if (disk && !disk.querySelector('.more')) { disk.insertAdjacentHTML('beforeend', '<div class="more">More</div>'); sfx('select'); } }
-      await sleep(500);
-    } else if (t === 'declare_displacement') continue;   // the shift is the spin result's displace, played when that wheel turns
+    if (t === 'declare_respin' || t === 'declare_displacement') {   // DeclareRespin: that side's panel closes, its wheel flashes, Se059, and the next spin turns it again;
+      const ids = v.pokemons || (v.pokemon != null ? [v.pokemon] : []);   // DeclareDisplacement: the panel closes and the next spin only shifts that wheel to its new result
+      for (const id of ids) { const w = battleView && battleView.wheels && Object.values(battleView.wheels).find(x => x.key === id || sameLine(x.key, id)); if (!w) continue;
+        w.panel.hide(); if (t === 'declare_respin') w.fx('respin', 1000); else w.displacement = true; }
+      if (t === 'declare_respin') { sfx('multiplier'); await sleep(1000); }
+    }
     else if (t === 'spin') {
       const after = list.slice(k + 1), ri = after.findIndex(x => x.value.type === 'battle_result'), result = ri < 0 ? null : after[ri];
       const typed = (v.spins || []).some(s => (s.results || []).some(r => r.type === 'battle'));
@@ -2447,7 +2682,7 @@ async function playEffects(list, opt) {
     else if (t === 'disable_skill') { sealed.set(v.pokemon, [].concat(v.skill_id || [])); if (sealed.get(v.pokemon).length) log(`${nameOf(v.pokemon)}: ${sealed.get(v.pokemon).map(id => fmt('skill', id)).join(', ')} sealed`); for (const id of sealed.get(v.pokemon)) tickFig(v.pokemon, `${plain(v.pokemon)}: ${(D.skills[id] || ['an attack'])[0]} became a Miss.`); }   // DisableSkill: Burn_miss per attack
     else if (t === 'remove_debuff') { for (const i of v.pokemons || []) sealed.delete(i); sfx('cured'); log(describe(v)); }
     else if (t === 'mp_move') { if (ctrl[st && st.selective_side] === 'ai') sfx('ai_step'); log(`${nameOf(figAt(v.route))} moves ${v.route.map(place).join(' → ')}`); }
-    else if (t === 'declare_battle') { sfx('attack'); sfx('attack_phase'); log(`${nameOf(v.from_pokemon)} attacks ${nameOf(v.to_pokemon)}`); }
+    else if (t === 'declare_battle') { log(`${nameOf(v.from_pokemon)} attacks ${nameOf(v.to_pokemon)}`); }
     else if (t === 'turn_end') { sfx('end_turn'); log('<span class="note">— turn ends —</span>'); if (P_COL[logSide]) logSide = other(logSide); }   // what follows in the same list already belongs to the next player
     else if (t === 'game_set') { over = { winner: v.win, reason: v.reason }; log(`<b>${P_COL[v.win] ? wins(v.win) : 'Draw'}</b> (${esc(String(v.reason).replace(/_/g, ' '))})`); }
     else if (t === 'add_z_gauge') { for (const c of ['black', 'white']) if (v[c] > 0) log(`Z-Move gauge · <b style="color:${P_COL[c]}">${esc(label(c))}</b> +${v[c]} (${Math.min(100, v[c + '_result'])}/100)`); }
